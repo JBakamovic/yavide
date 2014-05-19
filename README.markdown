@@ -1,11 +1,4 @@
-==================================================================================================================================
-											Vim Configuration
-==================================================================================================================================
-
-
-----------------------------------------------------------------------------------------------------------------------------------
 # Contents
-----------------------------------------------------------------------------------------------------------------------------------
 * Requirements
 * Plugins
 * Installation
@@ -18,9 +11,7 @@
 * TODO
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Requirements
-----------------------------------------------------------------------------------------------------------------------------------
 * Vim 7.4
   * http://www.vim.org
 * Exuberant Ctags
@@ -35,9 +26,7 @@
   * https://github.com/Lokaltog/powerline-fonts
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Plugins
-----------------------------------------------------------------------------------------------------------------------------------
 This configuration utilizes heavy usage of Vi plugins. Otherwise, this setup would not be possible. Here is the list of plugins 
 currently integrated:
 * NERDTree
@@ -93,9 +82,7 @@ Should you want to tweak the existing configuration or learn what additional fea
 consult its documentation for more details. This is not by any means an exhaustive configuration.
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Installation
-----------------------------------------------------------------------------------------------------------------------------------
 1. Vim
   * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
   * `sudo apt-get install vim-gtk` 		(for XFCE-, LXDE-, KDE-based desktops)
@@ -104,9 +91,7 @@ consult its documentation for more details. This is not by any means an exhausti
 4. Wait and hope it will finish successfuly :)
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Features
-----------------------------------------------------------------------------------------------------------------------------------
 * Bundled and tweaked for C/C++ development
 * Tree-like project browser
 * Session manager for handling projects/workspaces
@@ -132,17 +117,13 @@ consult its documentation for more details. This is not by any means an exhausti
 * Plugin manager
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Usage
-----------------------------------------------------------------------------------------------------------------------------------
 
 ## Workspace handling
-----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-o`				Open the session
 * `Ctrl-e`				Save the session
 
 ## Buffer handling
-----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-c`				Close buffer
 * `Ctrl-Tab`			Go to next buffer
 * `Ctrl-Shift-Tab`		Go to previous buffer
@@ -150,24 +131,20 @@ consult its documentation for more details. This is not by any means an exhausti
 * `Ctrl-Up`				Scroll buffer by one line (up)
 
 ## Window handling
-----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-w + c`			Close the current window
 * `Ctrl-w + <Arrow>`	Navigate through windows
 * `Ctrl-w + s`			Split the window horizontally
 * `Ctrl-w + v`			Split the window vertically
 
 ## Tab handling
-----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-PgDn`			Go to next tab
 * `Ctrl-PgUp`			Go to previous tab
 
 ## Build
-----------------------------------------------------------------------------------------------------------------------------------
 * `F7`					Build using :make
 * `Shift-F7`			Clean build using :make clean all
 
 ## Code navigation
-----------------------------------------------------------------------------------------------------------------------------------
 * `F3`					Open file under the cursor
 * `F4`					Switch between header and corresponding implementation file
 * `Shift-F4`			Switch between header/implementation in a vertically splitted window
@@ -179,7 +156,6 @@ consult its documentation for more details. This is not by any means an exhausti
 * `Ctrl-t`				Jump back from definition
 
 ## Editor
-----------------------------------------------------------------------------------------------------------------------------------
 * `a`					Enter the insert mode (append after cursor)
 * `i`					Enter the insert mode (insert before cursor)
 * `Shift-v`				Enter the visual mode (line mode)
@@ -199,7 +175,6 @@ consult its documentation for more details. This is not by any means an exhausti
 * `,cu`					Uncomment the selected line/block
 
 ## Search
-----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-f`				Open find dialog
 * `Ctrl-r`				Open find and replace dialog
 * `Ctrl-p`				Run CtrlP fuzzy search
@@ -208,14 +183,11 @@ consult its documentation for more details. This is not by any means an exhausti
 * `:Rgrep`				Run rgrep on provided input
 
 ## Misc
-----------------------------------------------------------------------------------------------------------------------------------
 * `:sh`					Enter the bash shell
 * `:make`				Start the build process in current directory
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Project workspace setup
-----------------------------------------------------------------------------------------------------------------------------------
 * Open GVim
 * Using the NERDTree, with your mouse and/or keyboard navigate to the root directory of your project
 * Press `C` to enter the directory
@@ -228,9 +200,7 @@ consult its documentation for more details. This is not by any means an exhausti
 * Every setting regarding the NERDTree root directory, window layout, previously opened tabs, buffers, etc. should be as in the last time
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Auto-completion
-----------------------------------------------------------------------------------------------------------------------------------
 This feature is provided by 3 different plugins:
 * `Clang_complete`
 * `YouCompleteMe`
@@ -257,9 +227,7 @@ providing a starting point can be found at `.ycm_extra_conf.py`. To learn how to
 YouCompleteMe documentation.
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Fuzzy search
-----------------------------------------------------------------------------------------------------------------------------------
 Search engine that fuzzy search (CtrlP plugin) utilizes by default is the one from Vi (`globpath()`). This mechanism seems to be 
 rather slow for big projects. One of the causes is probably interpreted Vimscript language that it is written in. Authors of the 
 plugin were aware enough of that fact so they have provided means to run external mechanism if needed. That's where 
@@ -270,9 +238,7 @@ To enable it one should use pre-defined variable located at top of the `.vimrc` 
   * otherwise, when set to 0, Vi mechanism will be used
 
 
-----------------------------------------------------------------------------------------------------------------------------------
 # Known issues
-----------------------------------------------------------------------------------------------------------------------------------
 Layout sometimes can become screwed up due to some command and/or plugin. This oftenly results in loss of a tree explorer and/or 
 tag list. To restore it:
 * Kill any empty windows that may have appeared (give focus to the window and press `Ctrl-w c`)
@@ -282,9 +248,7 @@ tag list. To restore it:
 * Adjust the size of the windows
 * `:SaveSession`
 
-----------------------------------------------------------------------------------------------------------------------------------
 # TODO
-----------------------------------------------------------------------------------------------------------------------------------
 * Doc generation (i.e. Doxygen)
 * CScope integration
 * Syntastic syntax checking on-the-fly
