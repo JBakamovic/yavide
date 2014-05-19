@@ -16,7 +16,6 @@ Contents
 * Fuzzy search
 * Known issues
 * TODO
-----------------------------------------------------------------------------------------------------------------------------------
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
@@ -27,7 +26,7 @@ Requirements
 * Exuberant Ctags
 	= http://ctags.sourceforge.net
 * LLVM 3.4
-	= llvm.org/releases/download.html
+	= http://llvm.org/releases/download.html
 * Git
 	= http://git-scm.com
 * Silver Searcher
