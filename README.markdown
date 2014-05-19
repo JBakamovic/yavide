@@ -4,7 +4,7 @@
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Contents
+# Contents
 ----------------------------------------------------------------------------------------------------------------------------------
 * Requirements
 * Plugins
@@ -19,7 +19,7 @@ Contents
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Requirements
+# Requirements
 ----------------------------------------------------------------------------------------------------------------------------------
 * Vim 7.4
   * http://www.vim.org
@@ -36,7 +36,7 @@ Requirements
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Plugins
+# Plugins
 ----------------------------------------------------------------------------------------------------------------------------------
 This configuration utilizes heavy usage of Vi plugins. Otherwise, this setup would not be possible. Here is the list of plugins 
 currently integrated:
@@ -94,7 +94,7 @@ consult its documentation for more details. This is not by any means an exhausti
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Installation
+# Installation
 ----------------------------------------------------------------------------------------------------------------------------------
 1. Vim
   * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
@@ -105,7 +105,7 @@ Installation
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Features
+# Features
 ----------------------------------------------------------------------------------------------------------------------------------
 * Bundled and tweaked for C/C++ development
 * Tree-like project browser
@@ -133,15 +133,15 @@ Features
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Usage
+# Usage
 ----------------------------------------------------------------------------------------------------------------------------------
 
-Workspace handling
+## Workspace handling
 ----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-o`				Open the session
 * `Ctrl-e`				Save the session
 
-Buffer handling
+## Buffer handling
 ----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-c`				Close buffer
 * `Ctrl-Tab`			Go to next buffer
@@ -149,24 +149,24 @@ Buffer handling
 * `Ctrl-Down`			Scroll buffer by one line (down)
 * `Ctrl-Up`				Scroll buffer by one line (up)
 
-Window handling
+## Window handling
 ----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-w + c`			Close the current window
 * `Ctrl-w + <Arrow>`	Navigate through windows
 * `Ctrl-w + s`			Split the window horizontally
 * `Ctrl-w + v`			Split the window vertically
 
-Tab handling
+## Tab handling
 ----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-PgDn`			Go to next tab
 * `Ctrl-PgUp`			Go to previous tab
 
-Build
+## Build
 ----------------------------------------------------------------------------------------------------------------------------------
 * `F7`					Build using :make
 * `Shift-F7`			Clean build using :make clean all
 
-Code navigation
+## Code navigation
 ----------------------------------------------------------------------------------------------------------------------------------
 * `F3`					Open file under the cursor
 * `F4`					Switch between header and corresponding implementation file
@@ -178,7 +178,7 @@ Code navigation
 * `Ctrl-RightMouse`		Jump back from definition
 * `Ctrl-t`				Jump back from definition
 
-Editor
+## Editor
 ----------------------------------------------------------------------------------------------------------------------------------
 * `a`					Enter the insert mode (append after cursor)
 * `i`					Enter the insert mode (insert before cursor)
@@ -198,7 +198,7 @@ Editor
 * `,cs`					Comment the selected line/block (other style)
 * `,cu`					Uncomment the selected line/block
 
-Search
+## Search
 ----------------------------------------------------------------------------------------------------------------------------------
 * `Ctrl-f`				Open find dialog
 * `Ctrl-r`				Open find and replace dialog
@@ -207,14 +207,14 @@ Search
 * `:GrepBuffer`			Run grep on current buffer
 * `:Rgrep`				Run rgrep on provided input
 
-Misc
+## Misc
 ----------------------------------------------------------------------------------------------------------------------------------
 * `:sh`					Enter the bash shell
 * `:make`				Start the build process in current directory
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Project workspace setup
+# Project workspace setup
 ----------------------------------------------------------------------------------------------------------------------------------
 * Open GVim
 * Using the NERDTree, with your mouse and/or keyboard navigate to the root directory of your project
@@ -229,7 +229,7 @@ Project workspace setup
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Auto-completion
+# Auto-completion
 ----------------------------------------------------------------------------------------------------------------------------------
 This feature is provided by 3 different plugins:
 * `Clang_complete`
@@ -258,7 +258,7 @@ YouCompleteMe documentation.
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Fuzzy search
+# Fuzzy search
 ----------------------------------------------------------------------------------------------------------------------------------
 Search engine that fuzzy search (CtrlP plugin) utilizes by default is the one from Vi (`globpath()`). This mechanism seems to be 
 rather slow for big projects. One of the causes is probably interpreted Vimscript language that it is written in. Authors of the 
@@ -271,7 +271,7 @@ To enable it one should use pre-defined variable located at top of the `.vimrc` 
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
-Known issues
+# Known issues
 ----------------------------------------------------------------------------------------------------------------------------------
 Layout sometimes can become screwed up due to some command and/or plugin. This oftenly results in loss of a tree explorer and/or 
 tag list. To restore it:
@@ -283,7 +283,7 @@ tag list. To restore it:
 * `:SaveSession`
 
 ----------------------------------------------------------------------------------------------------------------------------------
-TODO
+# TODO
 ----------------------------------------------------------------------------------------------------------------------------------
 * Doc generation (i.e. Doxygen)
 * CScope integration
