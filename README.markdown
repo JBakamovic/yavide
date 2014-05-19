@@ -234,17 +234,13 @@ Auto-completion
 This feature is provided by 3 different plugins:
 * Clang_complete
 * YouCompleteMe
-* YouCompleteMe fork
+* YouCompleteMe fork (defaults over original YouCompleteMe in the installation)
 
 To avoid problems, no more than 1 plugin should be running at the same time. Therefore, to select one of the mechanisms, 
 one should use pre-defined variables located at top of the '.vimrc' file:
 * use_ycm_plugin
 	= set this variable to 1 if you should want to use the YouCompleteMe plugin
 	= otherwise, when set to 0 (default), clang_complete plugin will be used
-* use_ycm_fork_plugin
-	= set this variable to 1 (default) if you should want to use the forked version of YouCompleteMe plugin
-	= otherwise, when set to 0, 'normal' version of YouCompleteMe plugin will be used
-	= this variable will not have effect if use_ycm_plugin is not set to 1
 
 At the time of writing, best results I have observed with clang_complete plugin. Hence, it is a default.
 YouCompleteMe plugin works well with C++ files, whereas it has problems with C files. Function arguments are not being 
@@ -257,7 +253,7 @@ YouCompleteMe plugin but still suffers from the same C-file problem mentioned pr
 Clang_complete seems not to have these kind of problems, or at least I have not observed them.
 
 Moreover, YouCompleteMe requires an additional configuration file to be tweaked on per-project basis. An example of this file 
-providing a starting point can be found at '~/vim/.vim/.ycm_extra_conf.py'. To learn how to configure it, consult the official 
+providing a starting point can be found at '.ycm_extra_conf.py'. To learn how to configure it, consult the official 
 YouCompleteMe documentation.
 
 
@@ -270,8 +266,8 @@ plugin were aware enough of that fact so they have provided means to run externa
 Silver Searcher comes in. It is implemented in C language and therefore provides much better performance.
 To enable it one should use pre-defined variable located at top of the '.vimrc' file:
 * use_ctrlp_ag_engine
-	= set this variable to 1 (default) if you should want to use the Silver Searcher
-	= otherwise, when set to 0, Vi mechanism will be used
+** set this variable to 1 (default) if you should want to use the Silver Searcher
+** otherwise, when set to 0, Vi mechanism will be used
 
 
 ----------------------------------------------------------------------------------------------------------------------------------
