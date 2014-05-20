@@ -95,7 +95,7 @@ fi
 echo "$passwd" | sudo -S apt-get update
 echo "$passwd" | sudo -S wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key
 echo "$passwd" | sudo -S apt-key add -
-echo "$passwd" | sudo -S apt-get install clang-3.4 lldb-3.4 libclang-3.4-dev
+echo "$passwd" | sudo -S apt-get install libclang1-3.4 libclang-3.4-dev clang-3.4 lldb-3.4
 echo "$passwd" | sudo -S apt-get install exuberant-ctags git silversearcher-ag build-essential cmake python-dev
 [ -d $/home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
