@@ -43,7 +43,7 @@
 " User-defined variables
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let myvar_libclang_location = "/usr/lib/llvm-3.4/lib"				" Set the correct location of libclang.so
-let myvar_ycm_extra_conf_file = "/opt/vim-ide/.ycm_extra_conf.py"	" Set the path to the YCM configuration file
+let myvar_ycm_extra_conf_file = "/opt/yavide/.ycm_extra_conf.py"	" Set the path to the YCM configuration file
 																	" Applicable only when YCM is employed
 let myvar_use_ycm_plugin = 0										" 1 for YouCompleteMe, 
 																	" 0 for clang-complete autocompletion plugin
@@ -221,7 +221,7 @@ let g:NERDTreeShowHidden = 1											" Show hidden files
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Pathogen plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-source /opt/vim-ide/bundle/vim-pathogen/autoload/pathogen.vim
+source /opt/yavide/bundle/vim-pathogen/autoload/pathogen.vim
 execute pathogen#infect()
 
 
