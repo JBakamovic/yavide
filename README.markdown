@@ -86,9 +86,11 @@ consult its documentation for more details. This is not by any means an exhausti
 1. Vim
   * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
   * `sudo apt-get install vim-gtk` 		(for XFCE-, LXDE-, KDE-based desktops)
-2. `cd vim-ide`
-3. `./install.sh` (do **NOT** run as `sudo`)
-4. Wait and hope it will finish successfuly :)
+2. `git clone https://github.com/JBakamovic/yavide.git`
+3. `cd yavide`
+4. `./install.sh` (do **NOT** run as `sudo`)
+5. Default install path is `/opt/yavide` (one may change it by altering the `$YAVIDE_ROOT_PATH` in `install.sh`)
+6. Wait and hope it will finish successfuly :)
 
 
 # Features

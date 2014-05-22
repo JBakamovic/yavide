@@ -1,10 +1,10 @@
 #!/bin/bash
-# vim-ide installation script
+# yavide installation script
 
 #####################################################################################################
 # Settings
 #####################################################################################################
-VIM_IDE_ROOT="/opt/vim-ide"
+YAVIDE_IDE_ROOT="/opt/yavide"
 
 #####################################################################################################
 # Plugins
@@ -106,22 +106,22 @@ fc-cache -vf /home/$USER/.fonts
 #####################################################################################################
 
 # Build the directory structure
-[ -d $VIM_IDE_ROOT ] || echo "$passwd" | sudo -S mkdir $VIM_IDE_ROOT
-[ -d $VIM_IDE_ROOT/bundle ] || echo "$passwd" | sudo -S mkdir $VIM_IDE_ROOT/bundle
-[ -d $VIM_IDE_ROOT/colors ] || echo "$passwd" | sudo -S mkdir $VIM_IDE_ROOT/colors
+[ -d $YAVIDE_IDE_ROOT ] || echo "$passwd" | sudo -S mkdir $YAVIDE_IDE_ROOT
+[ -d $YAVIDE_IDE_ROOT/bundle ] || echo "$passwd" | sudo -S mkdir $YAVIDE_IDE_ROOT/bundle
+[ -d $YAVIDE_IDE_ROOT/colors ] || echo "$passwd" | sudo -S mkdir $YAVIDE_IDE_ROOT/colors
 
 # Copy the pre-configured stuff
-echo "$passwd" | sudo -S cp gvim-ide.desktop $VIM_IDE_ROOT
-echo "$passwd" | sudo -S cp gvim-ide.desktop /home/$USER/Desktop
-echo "$passwd" | sudo -S cp .ycm_extra_conf.py $VIM_IDE_ROOT
-echo "$passwd" | sudo -S cp .vimrc $VIM_IDE_ROOT
-echo "$passwd" | sudo -S cp -R sessions $VIM_IDE_ROOT/sessions
+echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_IDE_ROOT
+echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
+echo "$passwd" | sudo -S cp .ycm_extra_conf.py $YAVIDE_IDE_ROOT
+echo "$passwd" | sudo -S cp .vimrc $YAVIDE_IDE_ROOT
+echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
 
 echo "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing plugins ..."
 echo "----------------------------------------------------------------------------"
-cd $VIM_IDE_ROOT/bundle
+cd $YAVIDE_IDE_ROOT/bundle
 
 # Fetch/update the plugins
 for URL in $PLUGINS; do
@@ -140,11 +140,11 @@ for URL in $PLUGINS; do
 done
 
 # YCM installation requires some more steps to be done
-cd $VIM_IDE_ROOT/bundle/YouCompleteMe
+cd $YAVIDE_IDE_ROOT/bundle/YouCompleteMe
 echo "$passwd" | sudo -S git submodule update --init --recursive
 echo "$passwd" | sudo -S mkdir temp_ycm_build
 cd temp_ycm_build
-echo "$passwd" | sudo -S cmake -G "Unix Makefiles" -DUSE_SYSTEM_LIBCLANG=ON . $VIM_IDE_ROOT/bundle/YouCompleteMe/third_party/ycmd/cpp
+echo "$passwd" | sudo -S cmake -G "Unix Makefiles" -DUSE_SYSTEM_LIBCLANG=ON . $YAVIDE_IDE_ROOT/bundle/YouCompleteMe/third_party/ycmd/cpp
 echo "$passwd" | sudo -S make ycm_support_libs
 cd ..
 echo "$passwd" | sudo -S rm -R temp_ycm_build
@@ -152,7 +152,7 @@ echo "$passwd" | sudo -S rm -R temp_ycm_build
 echo "----------------------------------------------------------------------------"
 echo "Installing color schemes ..."
 echo "----------------------------------------------------------------------------"
-cd $VIM_IDE_ROOT/colors
+cd $YAVIDE_IDE_ROOT/colors
 
 # Fetch/update the color schemes
 for URL in $SCHEMES; do
@@ -176,6 +176,6 @@ echo "$passwd" | sudo -S ln -s `find . -name '*.vim'` .
 echo "----------------------------------------------------------------------------"
 echo "Setting permissions ..."
 echo "----------------------------------------------------------------------------"
-echo "$passwd" | sudo -S chown $USER /home/$USER/Desktop/gvim-ide.desktop
-echo "$passwd" | sudo -S chown -R $USER $VIM_IDE_ROOT
+echo "$passwd" | sudo -S chown $USER /home/$USER/Desktop/yavide.desktop
+echo "$passwd" | sudo -S chown -R $USER $YAVIDE_IDE_ROOT
 

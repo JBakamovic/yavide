@@ -1,4 +1,4 @@
-" /opt/vim-ide/sessions/default.vim:
+" /opt/yavide/sessions/default.vim:
 " Vim session script.
 " Created by session.vim 2.4.9 on 19 Svibanj 2014 at 13:28:25.
 " Open this file in Vim and run :source % to restore your session.
