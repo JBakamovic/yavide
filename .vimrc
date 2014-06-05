@@ -109,6 +109,26 @@ endif
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Try not to pollute working directory with ~, *.swp, *.un~ files
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+if !isdirectory("/opt/yavide/.tmp")
+    call mkdir("/opt/yavide/.tmp", "p")
+endif
+if !isdirectory("/opt/yavide/.tmp/.backup")
+    call mkdir("/opt/yavide/.tmp/.backup", "p")
+endif
+if !isdirectory("/opt/yavide/.tmp/.swp")
+    call mkdir("/opt/yavide/.tmp/.swp", "p")
+endif
+if !isdirectory("/opt/yavide/.tmp/.undo")
+    call mkdir("/opt/yavide/.tmp/.undo", "p")
+endif
+set backupdir=/opt/yavide/.tmp/.backup//
+set directory=/opt/yavide/.tmp/.swp//
+set undodir=/opt/yavide/.tmp/.undo//
+
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " YouCompleteMe vs. clang_complete plugin setup
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 set completeopt=menu,menuone											" Complete options (disable preview scratch window, longest removed to aways show menu)
