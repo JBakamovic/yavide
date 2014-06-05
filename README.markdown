@@ -239,23 +239,3 @@ To enable it one should use pre-defined variable located at top of the `.vimrc` 
   * set this variable to 1 (default) if you should want to use the `Silver Searcher`
   * otherwise, when set to 0, Vi mechanism will be used
 
-
-# Known issues
-Layout sometimes can become screwed up due to some command and/or plugin. This oftenly results in loss of a tree explorer and/or 
-tag list. To restore it:
-* Kill any empty windows that may have appeared (give focus to the window and press `Ctrl-w c`)
-* Switch to some existing buffer (`Ctrl-Tab`)
-* If tree explorer is missing, enter `:NERDTree`
-* If tag list is missing, enter `:Tagbar`
-* Adjust the size of the windows
-* `:SaveSession`
-
-# TODO
-* Doc generation (i.e. Doxygen)
-* CScope integration
-* Syntastic syntax checking on-the-fly
-* Debugging
-* Code folding
-* Spell check
-
-
