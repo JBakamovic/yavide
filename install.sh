@@ -5,6 +5,22 @@
 # Settings
 #####################################################################################################
 YAVIDE_IDE_ROOT="/opt/yavide"
+if [ ! -z $1 ]; then
+	if [ $1 == "ubuntu" ]; then
+		PACKAGE_MANAGER="apt-get"
+		PACKAGE_MANAGER_INSTALL="apt-get install"
+		PACKAGE_MANAGER_UPDATE="apt-get update"
+	elif [ $1 == "opensuse" ]; then
+		PACKAGE_MANAGER="zypper"
+		PACKAGE_MANAGER_INSTALL="zypper install"
+		PACKAGE_MANAGER_UPDATE="zypper update"
+	fi
+else
+	echo "Please provide the system name you're running."
+	echo "Currently supported ones are:"
+	echo -e "\t'ubuntu'"
+	echo -e "\t'opensuse'"
+fi
 
 #####################################################################################################
 # Plugins
@@ -65,9 +81,9 @@ stty $stty_orig     # restore terminal setting.
 #####################################################################################################
 
 # Install required packages
-echo "$passwd" | sudo -S apt-get update
-echo "$passwd" | sudo -S apt-get install exuberant-ctags cscope git
-[ -d $/home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
+echo "$passwd" | sudo -S $PACKAGE_MANAGER_UPDATE
+echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git
+[ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts
 
