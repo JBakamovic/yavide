@@ -15,9 +15,7 @@
 "			Project explorer 				(NERDTree plugin)						https://github.com/scrooloose/nerdtree
 "			Session manager 				(Session plugin)						https://github.com/xolox/vim-session
 "			Building						(Vim-integrated)						http://www.vim.org
-"			Auto-completion Variant 1		(Clang-complete plugin)					https://github.com/Rip-Rip/clang_complete
-"			Auto-completion	Variant 2		(YouCompleteMe plugin)					https://github.com/Valloric/YouCompleteMe
-"			Auto-completion Variant 3		(YouCompleteMe plugin fork)				https://github.com/oblitum/YouCompleteMe
+"			Auto-completion					(Clang-complete plugin)					https://github.com/Rip-Rip/clang_complete
 "			Code navigation					(Exuberant Ctags)						http://ctags.sourceforge.net/
 "			Tab completion					(SuperTabs plugin)						https://github.com/ervandew/supertab
 "			Class outline 					(Tagbar plugin)							https://github.com/majutsushi/tagbar
@@ -32,7 +30,6 @@
 "			Highlight occurences			(Vim-integrated)						http://www.vim.org
 "			Code comments					(NERDCommenter plugin)					https://github.com/scrooloose/nerdcommenter
 "			Fuzzy search					(CtrlP plugin)							https://github.com/kien/ctrlp.vim
-"			Syntax check on-the-fly 		(YCM)									https://github.com/Valloric/YouCompleteMe
 "			Plugin manager					(Pathogen plugin)						https://github.com/tpope/vim-pathogen
 "
 " 	Author: 
@@ -43,10 +40,6 @@
 " User-defined variables
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let myvar_libclang_location = "/usr/lib/llvm-3.4/lib"				" Set the correct location of libclang.so
-let myvar_ycm_extra_conf_file = "/opt/yavide/.ycm_extra_conf.py"	" Set the path to the YCM configuration file
-																	" Applicable only when YCM is employed
-let myvar_use_ycm_plugin = 0										" 1 for YouCompleteMe, 
-																	" 0 for clang-complete autocompletion plugin
 let myvar_use_ctrlp_ag_engine = 1									" 1 to make CtrlP use a Silver Searcher,
 																	" 0 to use the default one from Vim (globpath())
 
@@ -129,36 +122,25 @@ set undodir=/opt/yavide/.tmp/.undo//
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" YouCompleteMe vs. clang_complete plugin setup
+" Code completion plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 set completeopt=menu,menuone											" Complete options (disable preview scratch window, longest removed to aways show menu)
 set pumheight=20														" Limit popup menu height
-let g:pathogen_disabled = []
-if myvar_use_ycm_plugin
-	call add(g:pathogen_disabled, 'clang_complete')						" Make sure we disable loading clang_complete plugin
-	let g:ycm_global_ycm_extra_conf = myvar_ycm_extra_conf_file			" Path to the ycm configuration file
-	"let g:ycm_min_num_of_chars_for_completion = 99						" Comment-out to disable identifier completion
-	let g:ycm_filetype_whitelist = {'c' : 1, 'cpp' : 1}					" Limit the YCM scope *only* to filetypes listed here (add more if you like or comment it out to work on all files)
-	let g:ycm_error_symbol = 'X'
-	let g:ycm_warning_symbol = '!'
-else
-	call add(g:pathogen_disabled, 'YouCompleteMe')						" Make sure we disable loading YouCompleteMe plugin
-	let g:clang_use_library = 1											" Use libclang directly
-	let g:clang_library_path = myvar_libclang_location					" Path to the libclang on the system
-	let g:clang_complete_auto = 1										" Run autocompletion immediatelly after ->, ., ::
-	let g:clang_complete_copen = 1										" Open quickfix window on error
-	let g:clang_periodic_quickfix = 0									" Turn-off periodic updating of quickfix window (g:ClangUpdateQuickFix() does the same)
-	let g:clang_snippets = 1											" Enable function args autocompletion
-	let g:clang_snippets_engine = 'ultisnips'							" Use UltiSnips engine for function args autocompletion (works better for me)
-	"let g:clang_snippets_engine = 'clang_complete'						" Use clang_complete engine for function args autocompletion (didn't work so well)
-	"let g:clang_trailing_placeholder = 1								" Relevant only when clang_complete engine is used
-	set concealcursor = vin												" Configure various parameters relevant to function args autocompletion
-	set conceallevel = 2												" 
-	let g:clang_conceal_snippets = 1									" 
-	"let g:clang_hl_errors = 0											" Turn-off error highlighting
-	"let g:clang_complete_patterns = 1									" (Does not work for me) Turn-on autocompletion for language constructs (i.e. loops)
-	"let g:clang_complete_macros = 1
-endif
+let g:clang_use_library = 1												" Use libclang directly
+let g:clang_library_path = myvar_libclang_location						" Path to the libclang on the system
+let g:clang_complete_auto = 1											" Run autocompletion immediatelly after ->, ., ::
+let g:clang_complete_copen = 1											" Open quickfix window on error
+let g:clang_periodic_quickfix = 0										" Turn-off periodic updating of quickfix window (g:ClangUpdateQuickFix() does the same)
+let g:clang_snippets = 1												" Enable function args autocompletion
+let g:clang_snippets_engine = 'ultisnips'								" Use UltiSnips engine for function args autocompletion (works better for me)
+"let g:clang_snippets_engine = 'clang_complete'							" Use clang_complete engine for function args autocompletion (didn't work so well)
+"let g:clang_trailing_placeholder = 1									" Relevant only when clang_complete engine is used
+set concealcursor = vin													" Configure various parameters relevant to function args autocompletion
+set conceallevel = 2													" 
+let g:clang_conceal_snippets = 1										" 
+"let g:clang_hl_errors = 0												" Turn-off error highlighting
+"let g:clang_complete_patterns = 1										" (Does not work for me) Turn-on autocompletion for language constructs (i.e. loops)
+"let g:clang_complete_macros = 1
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -20,10 +20,6 @@ PLUGINS="$PLUGINS https://github.com/xolox/vim-misc.git"
 # Clang_complete
 PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
-# YouCompleteMe
-#PLUGINS="$PLUGINS https://github.com/Valloric/YouCompleteMe" # This is an original YCM, but at the time of writing it didn't have function argument auto-complete
-PLUGINS="$PLUGINS https://github.com/oblitum/YouCompleteMe"
-
 # SuperTab
 PLUGINS="$PLUGINS https://github.com/ervandew/supertab"
 
@@ -74,28 +70,8 @@ stty $stty_orig     # restore terminal setting.
 # Check and install the prerequisites
 #####################################################################################################
 
-# Make sure we include the LLVM repo path
-UBUNTU_VER=`lsb_release -sr`
-if [ $UBUNTU_VER = "12.04" ]; then
-	echo "$passwd" | sudo -S add-apt-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main'
-elif [ $UBUNTU_VER = "12.10" ]; then
-	echo "$passwd" | sudo -S add-apt-repository 'deb http://llvm.org/apt/quantal/ llvm-toolchain-quantal-3.4 main'
-elif [ $UBUNTU_VER = "13.04" ]; then
-	echo "$passwd" | sudo -S add-apt-repository 'deb http://llvm.org/apt/raring/ llvm-toolchain-raring-3.4 main'
-elif [ $UBUNTU_VER = "13.10" ]; then
-	echo "$passwd" | sudo -S add-apt-repository 'deb http://llvm.org/apt/saucy/ llvm-toolchain-saucy-3.4 main'
-elif [ $UBUNTU_VER = "14.04" ]; then
-	echo "$passwd" | sudo -S add-apt-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.4 main'
-else
-	echo "Unsupported Ubuntu version! Exiting ..."
-	exit;
-fi
-
 # Install required packages
 echo "$passwd" | sudo -S apt-get update
-echo "$passwd" | sudo -S wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key
-echo "$passwd" | sudo -S apt-key add -
-echo "$passwd" | sudo -S apt-get install libclang1-3.4 libclang-3.4-dev clang-3.4 lldb-3.4
 echo "$passwd" | sudo -S apt-get install exuberant-ctags git silversearcher-ag build-essential cmake python-dev
 [ -d $/home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
@@ -113,7 +89,6 @@ fc-cache -vf /home/$USER/.fonts
 # Copy the pre-configured stuff
 echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
-echo "$passwd" | sudo -S cp .ycm_extra_conf.py $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp .vimrc $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
 
@@ -138,16 +113,6 @@ for URL in $PLUGINS; do
         echo "$passwd" | sudo -S git clone $URL $DIR
     fi
 done
-
-# YCM installation requires some more steps to be done
-cd $YAVIDE_IDE_ROOT/bundle/YouCompleteMe
-echo "$passwd" | sudo -S git submodule update --init --recursive
-echo "$passwd" | sudo -S mkdir temp_ycm_build
-cd temp_ycm_build
-echo "$passwd" | sudo -S cmake -G "Unix Makefiles" -DUSE_SYSTEM_LIBCLANG=ON . $YAVIDE_IDE_ROOT/bundle/YouCompleteMe/third_party/ycmd/cpp
-echo "$passwd" | sudo -S make ycm_support_libs
-cd ..
-echo "$passwd" | sudo -S rm -R temp_ycm_build
 
 echo "----------------------------------------------------------------------------"
 echo "Installing color schemes ..."
