@@ -175,7 +175,11 @@ let g:session_directory = expand('<sfile>:p:h') . "/sessions"			" Store session 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 set laststatus=2
 let g:airline_powerline_fonts = 1										" Use Powerline fonts to show beautiful symbols
+let g:airline_inactive_collapse = 0										" Do not collapse the status line while having multiple windows
 let g:airline#extensions#tabline#enabled = 1							" Display tab bar with buffers
+let g:airline#extensions#branch#enabled = 1								" Enable Git client integration
+let g:airline#extensions#tagbar#enabled = 1								" Enable Tagbar integration
+let g:airline#extensions#hunks#enabled = 1								" Enable Git hunks integration
 if ! has('gui_running')													" Fix the timout when leaving insert mode (see http://usevim.com/2013/07/24/powerline-escape-fix)
   set ttimeoutlen=10
   augroup FastEscape
