@@ -6,7 +6,6 @@
 "	Requirements:
 "		Vim v7.4		(http://www.vim.org)
 "		Exuberant Ctags	(http://ctags.sourceforge.net)
-"		LLVM v3.4		(llvm.org/releases/download.html)
 "		Powerline Fonts	(https://github.com/Lokaltog/powerline-fonts)
 "		Git				(http://git-scm.com)
 "
@@ -115,6 +114,10 @@ endif
 set backupdir=/opt/yavide/.tmp/.backup//
 set directory=/opt/yavide/.tmp/.swp//
 set undodir=/opt/yavide/.tmp/.undo//
+
+set nobackup
+set nowritebackup
+set noswapfile
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
