@@ -56,7 +56,7 @@ let &runtimepath = printf('%s,%s,%s/after', s:portable, &runtimepath, s:portable
 " General settings
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 autocmd! bufwritepost .vimrc source %								" Auto reload .vimrc when changed, this avoids reopening vim
-filetype plugin on													" Turn on the filetype plugin
+filetype plugin indent on											" Turn on the filetype plugin
 set enc=utf-8														" Set UTF-8 encoding
 set fenc=utf-8
 set termencoding=utf-8
@@ -67,16 +67,24 @@ set smartindent														" Use intelligent indentation for C
 set tabstop=4        												" Tab width is 4 spaces					
 set shiftwidth=4     												" Indent also with 4 spaces
 set expandtab        												" Expand tabs to spaces
-set textwidth=120													" Wrap lines at 120 chars. 80 is somewaht antiquated with nowadays displays.
+set nowrap															" Do not wrap lines
+set textwidth=120													" Wrap lines at 120 chars. 80 is somewhat antiquated with nowadays displays.
 let mapleader = ","													" Define ',' is leader key
 syntax on															" Turn syntax highlighting on
+set ignorecase
+set smartcase
+set incsearch
 set hlsearch														" Highlight all search results
 set number															" Turn line numbers on
 set showmatch														" Highlight matching braces
 set comments=sl:/*,mb:\ *,elx:\ */									" Intelligent comments
 set wildmode=longest:full											" Use intelligent file completion like in the bash
 set wildmenu
-set hidden															" Allow changeing buffers without saving them
+set hidden															" Allow changing buffers without saving them
+set cul																" Highlight the current line
+set backspace=2														" Backspace tweaks
+set backspace=indent,eol,start
+set smarttab
 if has("gui_running")												" GUI Vim settings
     colorscheme wombat												" Set the color scheme
 	set guifont=DejaVu\ Sans\ Mono\ for\ Powerline\ 9				" Set the nice Powerline font so Airline could make use of it
