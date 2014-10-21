@@ -264,3 +264,11 @@ imap <F7> <ESC>:w<CR>:make<CR>|"
 nmap <S-F7> :make clean all<CR>|"										Build using :make clean all
 imap <S-F7> <ESC>:w<CR>:make clean all<CR>|"
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" User-defined commands
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function MyLayoutRefresh()
+	:NERDTree
+	:Tagbar
+endfunction
+:command LayoutRefresh :call MyLayoutRefresh()
