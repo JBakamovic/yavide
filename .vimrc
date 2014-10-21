@@ -56,6 +56,7 @@ let &runtimepath = printf('%s,%s,%s/after', s:portable, &runtimepath, s:portable
 " General settings
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 autocmd! bufwritepost .vimrc source %								" Auto reload .vimrc when changed, this avoids reopening vim
+autocmd FileType qf wincmd J										" Make the quickfix window always appear at the bottom
 filetype plugin indent on											" Turn on the filetype plugin
 set enc=utf-8														" Set UTF-8 encoding
 set fenc=utf-8
@@ -233,6 +234,16 @@ function UpdateCScope()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function: 	MyMake()
+" Description:	Runs the Makefile and opens up the quickfix window afterwards
+" Dependency:	None
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function MyMake()
+	:make! | copen
+endfunction
+:command Make :call MyMake()
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Keyboard mappings
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nmap <C-o> :OpenSession<CR>|"											Open session
@@ -270,10 +281,10 @@ imap <C-LeftMouse> :tjump <C-R><C-W> <CR>|"
 nmap <F5> :call UpdateCTags()<CR>|"										Create/update ctags in currently selected NODETree directory
 nmap <F6> :call UpdateCScope()<CR>|"									Create/update cscope in currently selected NODETree directory
 
-nmap <F7> :make<CR>|"													Build using :make (in insert mode exit to command mode, save and compile)
-imap <F7> <ESC>:w<CR>:make<CR>|"
-nmap <S-F7> :make clean all<CR>|"										Build using :make clean all
-imap <S-F7> <ESC>:w<CR>:make clean all<CR>|"
+nmap <F7> :call MyMake()<CR>|"											Build using :make (in insert mode exit to command mode, save and compile)
+imap <F7> <ESC>:w<CR>:call MyMake()<CR>|"
+nmap <S-F7> :make clean<CR>|"											Build using :make clean all
+imap <S-F7> <ESC>:w<CR>:make clean<CR>|"
 
 " The following maps all invoke one of the following cscope search types:
 "
