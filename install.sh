@@ -66,7 +66,7 @@ stty $stty_orig     # restore terminal setting.
 
 # Install required packages
 echo "$passwd" | sudo -S apt-get update
-echo "$passwd" | sudo -S apt-get install exuberant-ctags git
+echo "$passwd" | sudo -S apt-get install exuberant-ctags cscope git
 [ -d $/home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts

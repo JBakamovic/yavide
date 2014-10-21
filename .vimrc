@@ -212,15 +212,25 @@ execute pathogen#infect()
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	CreateTags()
+" Function: 	UpdateCTags()
 " Description:	Starts generation of ctags in currently selected node in NERDTree
 " Dependency:	NERDTree, ctags exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function CreateTags()
+function UpdateCTags()
     let curNodePath = g:NERDTreeFileNode.GetSelected().path.str()
 	exec ':!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q -f ' . curNodePath . '/tags ' . curNodePath
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function: 	UpdateCScope()
+" Description:	Starts generation of cscope in currently selected node in NERDTree
+" Dependency:	NERDTree, cscope
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function UpdateCScope()
+    let curNodePath = g:NERDTreeFileNode.GetSelected().path.str()
+	exec ':!find ' . curNodePath . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . curNodePath . '/' . 'cscope.files'
+	exec ':!cscope -q -R -b -i ' . curNodePath . '/' . 'cscope.files'
+endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Keyboard mappings
@@ -257,12 +267,32 @@ nmap <S-F12> :vsp <CR>:tjump <C-R><C-W> <CR>|"							Goto definition in a vertic
 imap <S-F12> :vsp <CR>:tjump <C-R><C-W> <CR>|"
 nmap <C-LeftMouse> :tjump <C-R><C-W> <CR>|"								Goto definition (but show a list in case of multiple definitions)
 imap <C-LeftMouse> :tjump <C-R><C-W> <CR>|"
-nmap <F5> :call CreateTags()<CR>|"										Create/update ctags in currently selected NODETree directory
+nmap <F5> :call UpdateCTags()<CR>|"										Create/update ctags in currently selected NODETree directory
+nmap <F6> :call UpdateCScope()<CR>|"									Create/update cscope in currently selected NODETree directory
 
 nmap <F7> :make<CR>|"													Build using :make (in insert mode exit to command mode, save and compile)
 imap <F7> <ESC>:w<CR>:make<CR>|"
 nmap <S-F7> :make clean all<CR>|"										Build using :make clean all
 imap <S-F7> <ESC>:w<CR>:make clean all<CR>|"
+
+" The following maps all invoke one of the following cscope search types:
+"
+"   's'   symbol: find all references to the token under cursor
+"   'g'   global: find global definition(s) of the token under cursor
+"   'c'   calls:  find all calls to the function name under cursor
+"   't'   text:   find all instances of the text under cursor
+"   'e'   egrep:  egrep search for the word under cursor
+"   'f'   file:   open the filename under cursor
+"   'i'   includes: find files that include the filename under cursor
+"   'd'   called: find functions that function under cursor calls
+nmap <C-\>s :cs find s <C-R>=expand("<cword>")<CR><CR>	
+nmap <C-\>g :cs find g <C-R>=expand("<cword>")<CR><CR>	
+nmap <C-\>c :cs find c <C-R>=expand("<cword>")<CR><CR>	
+nmap <C-\>t :cs find t <C-R>=expand("<cword>")<CR><CR>	
+nmap <C-\>e :cs find e <C-R>=expand("<cword>")<CR><CR>	
+nmap <C-\>f :cs find f <C-R>=expand("<cfile>")<CR><CR>	
+nmap <C-\>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+nmap <C-\>d :cs find d <C-R>=expand("<cword>")<CR><CR>
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " User-defined commands
