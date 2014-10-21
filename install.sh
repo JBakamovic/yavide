@@ -20,10 +20,6 @@ PLUGINS="$PLUGINS https://github.com/xolox/vim-misc.git"
 # Clang_complete
 PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
-# YouCompleteMe
-#PLUGINS="$PLUGINS https://github.com/Valloric/YouCompleteMe" # This is an original YCM, but at the time of writing it didn't have function argument auto-complete
-PLUGINS="$PLUGINS https://github.com/oblitum/YouCompleteMe"
-
 # SuperTab
 PLUGINS="$PLUGINS https://github.com/ervandew/supertab"
 
@@ -43,16 +39,16 @@ PLUGINS="$PLUGINS https://github.com/Townk/vim-autoclose"
 PLUGINS="$PLUGINS https://github.com/scrooloose/nerdcommenter"
 
 # CtrlP
-PLUGINS="$PLUGINS https://github.com/kien/ctrlp.vim"
+#PLUGINS="$PLUGINS https://github.com/kien/ctrlp.vim"
 
 # Grep
-PLUGINS="$PLUGINS https://github.com/yegappan/grep"
+#PLUGINS="$PLUGINS https://github.com/yegappan/grep"
 
 # UltiSnips
 PLUGINS="$PLUGINS https://github.com/SirVer/ultisnips"
 
 # Git
-PLUGINS="$PLUGINS https://github.com/motemen/git-vim"
+#PLUGINS="$PLUGINS https://github.com/motemen/git-vim"
 
 # Pathogen
 PLUGINS="$PLUGINS https://github.com/tpope/vim-pathogen"
