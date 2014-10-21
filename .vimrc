@@ -7,7 +7,6 @@
 "		Vim v7.4		(http://www.vim.org)
 "		Exuberant Ctags	(http://ctags.sourceforge.net)
 "		LLVM v3.4		(llvm.org/releases/download.html)
-"		Silver Searcher	(https://github.com/ggreer/the_silver_searcher)
 "		Powerline Fonts	(https://github.com/Lokaltog/powerline-fonts)
 "		Git				(http://git-scm.com)
 "
@@ -29,7 +28,6 @@
 "			SCM integration					(Vim-fugitive plugin)					https://github.com/tpope/vim-fugitive.git
 "			Highlight occurences			(Vim-integrated)						http://www.vim.org
 "			Code comments					(NERDCommenter plugin)					https://github.com/scrooloose/nerdcommenter
-"			Fuzzy search					(CtrlP plugin)							https://github.com/kien/ctrlp.vim
 "			Plugin manager					(Pathogen plugin)						https://github.com/tpope/vim-pathogen
 "
 " 	Author: 
@@ -40,8 +38,6 @@
 " User-defined variables
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let myvar_libclang_location = "/usr/lib/llvm-3.4/lib"				" Set the correct location of libclang.so
-let myvar_use_ctrlp_ag_engine = 1									" 1 to make CtrlP use a Silver Searcher,
-																	" 0 to use the default one from Vim (globpath())
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -184,27 +180,6 @@ if ! has('gui_running')													" Fix the timout when leaving insert mode (s
     au InsertEnter * set timeoutlen=0
     au InsertLeave * set timeoutlen=10
   augroup END
-endif
-
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" CtrlP plugin
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"let g:ctrlp_working_path_mode = 'ra'									" 
-let g:ctrlp_match_window = 'bottom,order:btt,min:1,max:10,results:15'	" Setup the results window position and dimensions
-let g:ctrlp_by_filename = 1												" Rather search by filenames only
-let g:ctrlp_lazy_update = 50											" Update the matching window 50ms after user has stopped typing
-if myvar_use_ctrlp_ag_engine
-	let g:ctrlp_user_command = 'ag %s -l --nocolor -g ""'				" Use rather external tool (Silver Searcher) to obtain the results
-else
-	let g:ctrlp_max_files = 0											" Set no limit to maximum number of files to scan
-	"let g:ctrlp_max_depth = 80											" Set directory recursion depth (default is 40)
-	set wildignore+=*.exe,*.so,*.a,*.dll,*.o,*.bin,*.img,*.hex,*.fw		" Ignore particular directories and filetypes
-	let g:ctrlp_custom_ignore = {										" 
-	    \ 'dir': '\v[\/]\.(git|hg|svn|bzr)$',							" .git, .svn, .hg, .bzr
-	    \ 'file': '\v\.(exe|so|a|dll|o|bin|img|hex|fw)$',				" .exe, .so, .a, .dll, .o, .bin, .img, .hex, .fw
-		"\ 'link': 'SOME_BAD_SYMBOLIC_LINKS',
-	    \ }
 endif
 
 

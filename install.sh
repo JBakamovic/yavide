@@ -38,9 +38,6 @@ PLUGINS="$PLUGINS https://github.com/Townk/vim-autoclose"
 # NERDCommenter
 PLUGINS="$PLUGINS https://github.com/scrooloose/nerdcommenter"
 
-# CtrlP
-PLUGINS="$PLUGINS https://github.com/kien/ctrlp.vim"
-
 # Grep
 PLUGINS="$PLUGINS https://github.com/yegappan/grep"
 
@@ -72,7 +69,7 @@ stty $stty_orig     # restore terminal setting.
 
 # Install required packages
 echo "$passwd" | sudo -S apt-get update
-echo "$passwd" | sudo -S apt-get install exuberant-ctags git silversearcher-ag build-essential cmake python-dev
+echo "$passwd" | sudo -S apt-get install exuberant-ctags git
 [ -d $/home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts
