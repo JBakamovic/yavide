@@ -48,7 +48,7 @@ PLUGINS="$PLUGINS https://github.com/yegappan/grep"
 PLUGINS="$PLUGINS https://github.com/SirVer/ultisnips"
 
 # Git
-PLUGINS="$PLUGINS https://github.com/motemen/git-vim"
+PLUGINS="$PLUGINS https://github.com/tpope/vim-fugitive.git"
 
 # Pathogen
 PLUGINS="$PLUGINS https://github.com/tpope/vim-pathogen"

@@ -26,7 +26,7 @@
 "			Find and replace				(Vim-integrated)						http://www.vim.org
 "			Grep integration				(Grep plugin)							https://github.com/yegappan/grep
 "			Code snippets					(UltiSnips plugin)						https://github.com/SirVer/ultisnips
-"			SCM integration					(Git plugin)							https://github.com/motemen/git-vim
+"			SCM integration					(Vim-fugitive plugin)					https://github.com/tpope/vim-fugitive.git
 "			Highlight occurences			(Vim-integrated)						http://www.vim.org
 "			Code comments					(NERDCommenter plugin)					https://github.com/scrooloose/nerdcommenter
 "			Fuzzy search					(CtrlP plugin)							https://github.com/kien/ctrlp.vim
@@ -169,12 +169,6 @@ let g:session_autoload = 'yes'											" Automatically load previous session
 let g:session_autosave = 'yes'											" Automatically save current session
 let g:session_default_to_last = 1										" Open last active session
 let g:session_directory = expand('<sfile>:p:h') . "/sessions"			" Store session information where '.vimrc' is stored
-
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Git plugin
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"set statusline=%{GitBranch()}
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
