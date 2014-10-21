@@ -38,9 +38,6 @@ PLUGINS="$PLUGINS https://github.com/Townk/vim-autoclose"
 # NERDCommenter
 PLUGINS="$PLUGINS https://github.com/scrooloose/nerdcommenter"
 
-# Grep
-PLUGINS="$PLUGINS https://github.com/yegappan/grep"
-
 # UltiSnips
 PLUGINS="$PLUGINS https://github.com/SirVer/ultisnips"
 

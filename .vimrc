@@ -17,13 +17,13 @@
 "			Auto-completion					(Clang-complete plugin)					https://github.com/Rip-Rip/clang_complete
 "			Code navigation					(Exuberant Ctags)						http://ctags.sourceforge.net/
 "			Tab completion					(SuperTabs plugin)						https://github.com/ervandew/supertab
-"			Class outline 					(Tagbar plugin)							https://github.com/majutsushi/tagbar
+"			Code outline 					(Tagbar plugin)							https://github.com/majutsushi/tagbar
 "			Statusbar/Tabbar				(Airline plugin)						https://github.com/bling/vim-airline
 "			Switch hdr & impl				(A plugin)								https://github.com/vim-scripts/a.vim
 "			Switch to file					(A plugin)								https://github.com/vim-scripts/a.vim
 "			Parenthesis auto-complete		(Auto-close plugin)						https://github.com/Townk/vim-autoclose
 "			Find and replace				(Vim-integrated)						http://www.vim.org
-"			Grep integration				(Grep plugin)							https://github.com/yegappan/grep
+"			Grep integration				(Vim-integrated)						http://www.vim.org
 "			Code snippets					(UltiSnips plugin)						https://github.com/SirVer/ultisnips
 "			SCM integration					(Vim-fugitive plugin)					https://github.com/tpope/vim-fugitive.git
 "			Highlight occurences			(Vim-integrated)						http://www.vim.org
