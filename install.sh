@@ -38,6 +38,9 @@ PLUGINS="$PLUGINS https://github.com/xolox/vim-misc.git"
 # Clang_complete
 PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
+# Cscope
+CSCOPE_PLUGIN="http://cscope.sourceforge.net/cscope_maps.vim"
+
 # SuperTab
 PLUGINS="$PLUGINS https://github.com/ervandew/supertab"
 
@@ -133,6 +136,16 @@ echo "Installing clang_complete ..."
 echo "----------------------------------------------------------------------------"
 cd $YAVIDE_IDE_ROOT/bundle/clang_complete
 make install
+
+echo "\n"
+echo "----------------------------------------------------------------------------"
+echo "Installing cscope ..."
+echo "----------------------------------------------------------------------------"
+cd $YAVIDE_IDE_ROOT/bundle/
+mkdir cscope && cd cscope
+mkdir plugin && cd plugin
+wget $CSCOPE_PLUGIN
+
 
 echo "----------------------------------------------------------------------------"
 echo "Installing color schemes ..."
