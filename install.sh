@@ -61,6 +61,7 @@ PLUGINS="$PLUGINS https://github.com/SirVer/ultisnips"
 
 # Git
 PLUGINS="$PLUGINS https://github.com/tpope/vim-fugitive.git"
+PLUGINS="$PLUGINS https://github.com/airblade/vim-gitgutter.git"
 
 # Pathogen
 PLUGINS="$PLUGINS https://github.com/tpope/vim-pathogen"
