@@ -36,7 +36,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " User-defined variables
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let myvar_libclang_location = "/usr/lib/llvm-3.4/lib"				" Set the correct location of libclang.so
+let myvar_libclang_location = "/usr/lib/"							" Set the correct location of libclang.so
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -134,21 +134,22 @@ set noswapfile
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 set completeopt=menu,menuone											" Complete options (disable preview scratch window, longest removed to aways show menu)
 set pumheight=20														" Limit popup menu height
+set concealcursor=inv													" Conceal in insert (i), normal (n) and visual (v) modes
+set conceallevel=2														" Hide concealed text completely unless replacement character is defined
 let g:clang_use_library = 1												" Use libclang directly
 let g:clang_library_path = myvar_libclang_location						" Path to the libclang on the system
 let g:clang_complete_auto = 1											" Run autocompletion immediatelly after ->, ., ::
 let g:clang_complete_copen = 1											" Open quickfix window on error
 let g:clang_periodic_quickfix = 0										" Turn-off periodic updating of quickfix window (g:ClangUpdateQuickFix() does the same)
-let g:clang_snippets = 1												" Enable function args autocompletion
-let g:clang_snippets_engine = 'ultisnips'								" Use UltiSnips engine for function args autocompletion (works better for me)
-"let g:clang_snippets_engine = 'clang_complete'							" Use clang_complete engine for function args autocompletion (didn't work so well)
-"let g:clang_trailing_placeholder = 1									" Relevant only when clang_complete engine is used
-set concealcursor = vin													" Configure various parameters relevant to function args autocompletion
-set conceallevel = 2													" 
-let g:clang_conceal_snippets = 1										" 
+let g:clang_snippets = 1												" Enable function args autocompletion, template parameters, ...
+let g:clang_snippets_engine = 'ultisnips'								" Use UltiSnips engine for function args autocompletion (provides mechanism to jump over to the next argument)
+"let g:clang_snippets_engine = 'clang_complete'							" Use clang_complete engine for function args autocompletion
+let g:clang_conceal_snippets = 1										" clang_complete engine related setting
+"let g:clang_trailing_placeholder = 1									" clang_complete engine related setting
 "let g:clang_hl_errors = 0												" Turn-off error highlighting
 "let g:clang_complete_patterns = 1										" (Does not work for me) Turn-on autocompletion for language constructs (i.e. loops)
 "let g:clang_complete_macros = 1
+"let g:clang_user_options='|| exit 0'									" Avoid freezing on offending code
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -163,11 +164,11 @@ let g:UltiSnipsJumpBackwardTrigger="<s-tab>"
 " SuperTab plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "let loaded_supertab = 1												" Uncomment the this line to disable the plugin
-let g:SuperTabDefaultCompletionType='<c-x><c-u><c-p>'					" Set the default completion type
-"let g:SuperTabDefaultCompletionType = 'context'						" You can play with these settings as well but they didn't work well for me
-"let g:SuperTabCompletionContexts = ['s:ContextText', 's:ContextDiscover']
-"let g:SuperTabLongestHighlight=1
-"let g:SuperTabLongestEnhanced=1
+let g:SuperTabDefaultCompletionType='<c-x><c-u>'						" 'user' defined default completion type
+let g:SuperTabDefaultCompletionType = 'context'							" 'context' defined default completion type
+let g:SuperTabCompletionContexts = ['s:ContextText', 's:ContextDiscover']
+let g:SuperTabLongestHighlight=1
+let g:SuperTabLongestEnhanced=1
 
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
