@@ -56,6 +56,9 @@ PLUGINS="$PLUGINS https://github.com/vim-scripts/a.vim"
 # Auto-close
 PLUGINS="$PLUGINS https://github.com/Townk/vim-autoclose"
 
+# Multiple-cursors
+PLUGINS="$PLUGINS https://github.com/terryma/vim-multiple-cursors.git"
+
 # NERDCommenter
 PLUGINS="$PLUGINS https://github.com/scrooloose/nerdcommenter"
 
