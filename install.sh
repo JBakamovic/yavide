@@ -6,7 +6,7 @@
 #####################################################################################################
 YAVIDE_IDE_ROOT="/opt/yavide"
 if [ ! -z $1 ]; then
-	if [ $1 == "ubuntu" ]; then
+	if [[ ( $1 == "ubuntu" ) || ( $1 == "debian" ) ]]; then
 		PACKAGE_MANAGER="apt-get"
 		PACKAGE_MANAGER_INSTALL="apt-get install"
 		PACKAGE_MANAGER_UPDATE="apt-get update"
@@ -19,7 +19,9 @@ else
 	echo "Please provide the system name you're running."
 	echo "Currently supported ones are:"
 	echo -e "\t'ubuntu'"
+	echo -e "\t'debian'"
 	echo -e "\t'opensuse'"
+	exit
 fi
 
 #####################################################################################################
