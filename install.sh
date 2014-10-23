@@ -4,9 +4,18 @@
 #####################################################################################################
 # Settings
 #####################################################################################################
+print_error_and_exit(){
+	echo "Please provide the system name you're running."
+	echo "Currently supported ones are:"
+	echo -e "\t'ubuntu'"
+	echo -e "\t'debian'"
+	echo -e "\t'opensuse'"
+	exit
+}
+
 YAVIDE_IDE_ROOT="/opt/yavide"
 if [ ! -z $1 ]; then
-	if [[ ( $1 == "ubuntu" ) || ( $1 == "debian" ) ]]; then
+	if [ $1 == "ubuntu" ] || [ $1 == "debian" ]; then
 		PACKAGE_MANAGER="apt-get"
 		PACKAGE_MANAGER_INSTALL="apt-get install"
 		PACKAGE_MANAGER_UPDATE="apt-get update"
@@ -14,14 +23,11 @@ if [ ! -z $1 ]; then
 		PACKAGE_MANAGER="zypper"
 		PACKAGE_MANAGER_INSTALL="zypper install"
 		PACKAGE_MANAGER_UPDATE="zypper update"
+	else
+		print_error_and_exit
 	fi
 else
-	echo "Please provide the system name you're running."
-	echo "Currently supported ones are:"
-	echo -e "\t'ubuntu'"
-	echo -e "\t'debian'"
-	echo -e "\t'opensuse'"
-	exit
+	print_error_and_exit
 fi
 
 #####################################################################################################
@@ -40,6 +46,7 @@ PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
 # Cscope
 CSCOPE_PLUGIN="http://cscope.sourceforge.net/cscope_maps.vim"
+CSCOPE_AUTOLOAD_PLUGIN="http://vim.sourceforge.net/scripts/download_script.php?src_id=14884"
 
 # SuperTab
 PLUGINS="$PLUGINS https://github.com/ervandew/supertab"
@@ -72,18 +79,19 @@ PLUGINS="$PLUGINS https://github.com/airblade/vim-gitgutter.git"
 # Pathogen
 PLUGINS="$PLUGINS https://github.com/tpope/vim-pathogen"
 
-# Nice color scheme (wombat)
-SCHEMES="https://github.com/jeffreyiacono/vim-colors-wombat"
+# Color schemes
+SCHEMES="$SCHEMES https://github.com/jeffreyiacono/vim-colors-wombat"
+SCHEMES="$SCHEMES https://github.com/morhetz/gruvbox.git"
 
 #####################################################################################################
 # Root password needed for some operations
 #####################################################################################################
-echo -n "Enter the root password: "
+CURRENT_USER=`whoami`
+echo -n "Enter the password for $CURRENT_USER: "
 stty_orig=`stty -g` # save original terminal setting.
 stty -echo          # turn-off echoing.
 read passwd         # read the password
 stty $stty_orig     # restore terminal setting.
-
 
 #####################################################################################################
 # Check and install the prerequisites
@@ -91,7 +99,7 @@ stty $stty_orig     # restore terminal setting.
 
 # Install required packages
 echo "$passwd" | sudo -S $PACKAGE_MANAGER_UPDATE
-echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git
+echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git wget
 [ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts
@@ -145,9 +153,10 @@ echo "--------------------------------------------------------------------------
 echo "Installing cscope ..."
 echo "----------------------------------------------------------------------------"
 cd $YAVIDE_IDE_ROOT/bundle/
-mkdir cscope && cd cscope
-mkdir plugin && cd plugin
-wget $CSCOPE_PLUGIN
+echo "$passwd" | sudo -S mkdir cscope && cd cscope
+echo "$passwd" | sudo -S mkdir plugin && cd plugin
+echo "$passwd" | sudo -S wget $CSCOPE_PLUGIN
+echo "$passwd" | sudo -S wget $CSCOPE_AUTOLOAD_PLUGIN -O autoload_cscope.vim
 
 
 echo "----------------------------------------------------------------------------"
@@ -172,7 +181,7 @@ for URL in $SCHEMES; do
 done
 
 # Make symlinks to scheme files
-echo "$passwd" | sudo -S ln -s `find . -name '*.vim'` .
+echo "$passwd" | sudo -S ln -s `find . -wholename '*/colors/*.vim'` .
 
 echo "----------------------------------------------------------------------------"
 echo "Setting permissions ..."
