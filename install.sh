@@ -99,7 +99,7 @@ stty $stty_orig     # restore terminal setting.
 
 # Install required packages
 echo "$passwd" | sudo -S $PACKAGE_MANAGER_UPDATE
-echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git wget
+echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev
 [ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts
@@ -158,6 +158,18 @@ echo "$passwd" | sudo -S mkdir plugin && cd plugin
 echo "$passwd" | sudo -S wget $CSCOPE_PLUGIN
 echo "$passwd" | sudo -S wget $CSCOPE_AUTOLOAD_PLUGIN -O autoload_cscope.vim
 
+echo "\n"
+echo "----------------------------------------------------------------------------"
+echo "Installing cppcheck ..."
+echo "----------------------------------------------------------------------------"
+cd $YAVIDE_IDE_ROOT/bundle/
+echo "$passwd" | sudo -S mkdir cppcheck && cd cppcheck
+echo "$passwd" | sudo -S mkdir download && cd download
+echo "$passwd" | sudo -S wget http://sourceforge.net/projects/cppcheck/files/cppcheck/1.67/cppcheck-1.67.tar.bz2/download -O cppcheck.tar.bz2
+echo "$passwd" | sudo -S tar xf cppcheck.tar.bz2 && cd cppcheck-1.67
+echo "$passwd" | sudo -S make install SRCDIR=build CFGDIR=$YAVIDE_IDE_ROOT/bundle/cppcheck/cfg HAVE_RULES=yes
+cd ../../
+echo "$passwd" | sudo -S rm -r download
 
 echo "----------------------------------------------------------------------------"
 echo "Installing color schemes ..."

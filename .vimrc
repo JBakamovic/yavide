@@ -245,6 +245,30 @@ endfunction
 :command Make :call MyMake()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function: 	MyCppCheck()
+" Description:	Runs the cppcheck on given path
+" Dependency:	cppcheck
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! MyCppCheck(path, ...)
+	let additional_args = ''
+	if a:0 != 0
+		let additional_args = a:1
+		let i = 2
+		while i <= a:0
+		    execute "let additional_args = additional_args . \" \" . a:" . i
+		    let i = i + 1
+		endwhile
+    endif
+
+    let mp=&makeprg
+    let &makeprg = 'cppcheck --enable=all --force --quiet --template=gcc ' . additional_args . ' ' . a:path
+	exec "make!"
+    let &makeprg=mp
+endfunction
+:command -nargs=* -complete=file CppCheck :call MyCppCheck(".", <f-args>)
+:command -nargs=* -complete=file CppCheckBuf :call MyCppCheck("%", <f-args>)
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function: 	StripTrailingWhitespaces()
 " Description:	Strips trailing whitespaces from current buffer
 " Dependency:	None
