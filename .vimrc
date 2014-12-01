@@ -287,6 +287,21 @@ endfunction
 autocmd FileType c,cpp,java autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function: 	GoToBuffer()
+" Description:	Switches to the next/previous buffer but ignores 'quickfix' windows
+" Dependency:	None
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function GoToBuffer(bGoToNext)
+let cmd = a:bGoToNext == 1 ? ":bnext" : ":bprevious"
+exec cmd
+if &buftype ==# 'quickfix'
+	exec cmd
+endif
+endfunction
+:command -nargs=1 -complete=file GoToNextBuffer :call GoToBuffer(1)
+:command -nargs=1 -complete=file GoToPreviousBuffer :call GoToBuffer(0)
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Keyboard mappings
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nmap <C-o> :OpenSession<CR>|"											Open session
@@ -298,8 +313,8 @@ map <C-r> :promptrepl<CR>|" 											Open find and replace dialog
 nmap <C-s> <ESC>:w<CR>|" 												Save current buffer (normal mode)
 imap <C-s> <ESC>:w<CR>i|" 												Save current buffer (insert mode)
 nnoremap <C-c> :bp<bar>sp<bar>bn<bar>bd<CR>|"							Close current buffer (without killing the window!)
-map <C-Tab> :bnext<CR>|"												Go to next buffer
-map <C-S-Tab> :bprevious<CR>|"											Go to previous buffer
+map <C-Tab> :GoToNextBuffer()<CR>|"										Go to next buffer
+map <C-S-Tab> :GoToPreviousBuffer()<CR>|"								Go to previous buffer
 nnoremap <C-Down> <C-e>|"												Scroll buffer by one line (down)
 nnoremap <C-Up> <C-y>|"													Scroll buffer by one line (up)
 
