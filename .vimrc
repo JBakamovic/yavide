@@ -39,9 +39,9 @@
 source /opt/yavide/.core.vimrc
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" User-defined variables
+" User-configurable settings
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let myvar_libclang_location = "/usr/lib/"							" Set the correct location of libclang.so
+source /opt/yavide/.user_settings.vimrc
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Editor settings
@@ -56,7 +56,7 @@ set pumheight=20														" Limit popup menu height
 set concealcursor=inv													" Conceal in insert (i), normal (n) and visual (v) modes
 set conceallevel=2														" Hide concealed text completely unless replacement character is defined
 let g:clang_use_library = 1												" Use libclang directly
-let g:clang_library_path = myvar_libclang_location						" Path to the libclang on the system
+let g:clang_library_path = g:libclang_location							" Path to the libclang on the system
 let g:clang_complete_auto = 1											" Run autocompletion immediatelly after ->, ., ::
 let g:clang_complete_copen = 1											" Open quickfix window on error
 let g:clang_periodic_quickfix = 0										" Turn-off periodic updating of quickfix window (g:ClangUpdateQuickFix() does the same)
