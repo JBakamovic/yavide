@@ -20,14 +20,12 @@ let g:clang_conceal_snippets = 1										" clang_complete engine related settin
 "let g:clang_complete_macros = 1
 "let g:clang_user_options='|| exit 0'									" Avoid freezing on offending code
 
-
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " UltiSnips plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:UltiSnipsExpandTrigger="<tab>"
 let g:UltiSnipsJumpForwardTrigger="<tab>"
 let g:UltiSnipsJumpBackwardTrigger="<s-tab>"
-
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " SuperTab plugin
@@ -39,7 +37,6 @@ let g:SuperTabCompletionContexts = ['s:ContextText', 's:ContextDiscover']
 let g:SuperTabLongestHighlight=1
 let g:SuperTabLongestEnhanced=1
 
-
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Session plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -47,7 +44,6 @@ let g:session_autoload = 'yes'											" Automatically load previous session
 let g:session_autosave = 'yes'											" Automatically save current session
 let g:session_default_to_last = 1										" Open last active session
 let g:session_directory = expand('<sfile>:p:h') . "/sessions"			" Store session information where '.vimrc' is stored
-
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Airline plugin
@@ -59,15 +55,6 @@ let g:airline#extensions#tabline#enabled = 1							" Display tab bar with buffer
 let g:airline#extensions#branch#enabled = 1								" Enable Git client integration
 let g:airline#extensions#tagbar#enabled = 1								" Enable Tagbar integration
 let g:airline#extensions#hunks#enabled = 1								" Enable Git hunks integration
-if ! has('gui_running')													" Fix the timout when leaving insert mode (see http://usevim.com/2013/07/24/powerline-escape-fix)
-  set ttimeoutlen=10
-  augroup FastEscape
-    autocmd!
-    au InsertEnter * set timeoutlen=0
-    au InsertLeave * set timeoutlen=10
-  augroup END
-endif
-
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " NERDTree plugin
@@ -80,3 +67,4 @@ let g:NERDTreeShowHidden = 1											" Show hidden files
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 source /opt/yavide/bundle/vim-pathogen/autoload/pathogen.vim
 execute pathogen#infect()
+

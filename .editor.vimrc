@@ -1,14 +1,8 @@
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Editor settings
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-autocmd! bufwritepost .vimrc source %								" Auto reload .vimrc when changed, this avoids reopening vim
-autocmd FileType qf wincmd J										" Make the quickfix window always appear at the bottom
 filetype plugin indent on											" Turn on the filetype plugin
 set enc=utf-8														" Set UTF-8 encoding
 set fenc=utf-8
 set termencoding=utf-8
 set nocompatible													" Disable vi compatibility (emulation of old bugs)
-set tags=./tags;													" Begin searching for the 'tags' file starting from the directory of currently opened file
 set autoindent														" Use indentation of previous line
 set smartindent														" Use intelligent indentation for C
 set tabstop=4        												" Tab width is 4 spaces					
@@ -50,26 +44,33 @@ if has("win32")														" Make backspace working on Windows
     set bs=2
 endif
 
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Try not to pollute working directory with ~, *.swp, *.un~ files
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-if !isdirectory("/opt/yavide/.tmp")
-    call mkdir("/opt/yavide/.tmp", "p")
-endif
-if !isdirectory("/opt/yavide/.tmp/.backup")
-    call mkdir("/opt/yavide/.tmp/.backup", "p")
-endif
-if !isdirectory("/opt/yavide/.tmp/.swp")
-    call mkdir("/opt/yavide/.tmp/.swp", "p")
-endif
-if !isdirectory("/opt/yavide/.tmp/.undo")
-    call mkdir("/opt/yavide/.tmp/.undo", "p")
-endif
-set backupdir=/opt/yavide/.tmp/.backup//
-set directory=/opt/yavide/.tmp/.swp//
-set undodir=/opt/yavide/.tmp/.undo//
-
 set nobackup
-set nowritebackup
+if (g:editor_use_bkp_files == 1 || g:editor_use_swp_files == 1 || g:editor_use_undo_files == 1)
+	if !isdirectory("/opt/yavide/.tmp")
+		call mkdir("/opt/yavide/.tmp", "p")
+	endif
+endif
+
+if (g:editor_use_bkp_files == 1)
+	set backupdir=/opt/yavide/.tmp/.backup//
+	if !isdirectory("/opt/yavide/.tmp/.backup")
+		call mkdir("/opt/yavide/.tmp/.backup", "p")
+	endif
+endif
+
 set noswapfile
+if (g:editor_use_swp_files == 1)
+	set directory=/opt/yavide/.tmp/.swp//
+	if !isdirectory("/opt/yavide/.tmp/.swp")
+		call mkdir("/opt/yavide/.tmp/.swp", "p")
+	endif
+endif
+
+set nowritebackup
+if (g:editor_use_undo_files == 1)
+	set undodir=/opt/yavide/.tmp/.undo//
+	if !isdirectory("/opt/yavide/.tmp/.undo")
+		call mkdir("/opt/yavide/.tmp/.undo", "p")
+	endif
+endif
+
