@@ -3,32 +3,40 @@
 "	Global variables
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
-let g:project_name						= ""
-let g:project_root_directory			= ""
-let g:project_full_path					= ""
 let g:project_configuration_filename	= ".yavide_proj"
+let g:project_autocomplete_filename     = ".clang_complete"
 let g:project_java_tags 				= ""
 let g:project_java_tags_filename		= ".java_tags"
 let g:project_cxx_tags 					= ""
 let g:project_cxx_tags_filename			= ".cxx_tags"
 let g:project_cscope_db_filename		= "cscope.out"
+let g:project_supported_categories      = {
+\                                           'Generic'   :   1,
+\                                           'Makefile'  :   2
+\}
+let g:project_supported_types           = {
+\                                           'Generic'   :   1,
+\                                           'C'         :   2,
+\                                           'C++'       :   3,
+\                                           'Mixed'     :   4,
+\                                           'Existing'  :   5
+\}
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	PROJECT MANAGEMENT API
+"	ENVIRONMENT SETUP API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Project_Init()
-" Description:	Loads project specific settings
+" Function: 	Y_Env_Setup()
+" Description:	Setups the environment and loads project specific settings.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Project_Init()
-	let g:project_root_directory = fnamemodify(g:project_configuration_filename, ':p:h')
+function! Y_Env_Setup()
+	execute('source ' . g:project_configuration_filename)
 	let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
 	let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
 	call Y_CScope_Init()
-	execute('source ' . g:project_configuration_filename)
 endfunction
 
 
@@ -42,34 +50,81 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Session_New()
+function! Y_Project_New()
 	" Clean up all windows, buffers, previous sessions ...
 	:CloseSession!
 
-	" Ask user to provide a project root directory
-	call inputsave()
-	let g:project_root_directory = input('Enter project root directory: ', '', 'file')
-	call inputrestore()
+    " Ask user to provide project category
+    let l:category_list = ['Project category:']
+    for [category, category_id] in items(g:project_supported_categories)
+        let l:cat_string = category_id . ' ' . category
+        call add(l:category_list, cat_string)
+    endfor
+    call inputsave()
+    let l:project_category = inputlist(l:category_list)
+    call inputrestore()
 
-	" Ask user to provide a project name
-	call inputsave()
-	let g:project_name = input('Enter project name: ')
-	call inputrestore()
+    echo ' '
 
-	" Setup the project root directory and corresponding files
-	let g:project_full_path = g:project_root_directory . '/' . g:project_name
-	call mkdir(g:project_full_path, "p")
-	execute('cd ' . g:project_full_path)
-	call system('touch ' . g:project_configuration_filename)
+    if l:project_category > 0
+        " Ask user to provide project type
+        let l:type_list = ['Project type:']
+        for [type, type_id] in items(g:project_supported_types)
+            let l:type_string = type_id . ' ' . type
+            call add(l:type_list, type_string)
+        endfor
+        call inputsave()
+        let l:project_type = inputlist(l:type_list)
+        call inputrestore()
 
-	" Initialize project specific stuff
-	call Y_Project_Init()
+        if l:project_type > 0
+            " Ask user to provide a project root directory
+            call inputsave()
+            let l:project_root_directory = input('Enter project root directory: ', '', 'file')
+            call inputrestore()
 
-	" Restore the layout
-	call Y_Layout_Refresh()
+            if l:project_root_directory != ""
+                " Ask user to provide a project name
+                call inputsave()
+                let l:project_name = input('Enter project name: ')
+                call inputrestore()
 
-	" Finally, save project into the new session
-	execute('SaveSession! ' . g:project_name)
+                if l:project_name != ""
+	                " Create project root directory
+                    let l:curr_dir = getcwd()
+                    let l:project_root_directory = l:curr_dir . '/' . l:project_root_directory
+                    let l:project_full_path = l:project_root_directory . '/' . l:project_name
+                    call mkdir(l:project_full_path, "p")
+                    execute('cd ' . l:project_full_path)
+
+                    " Create project specific files
+                    call system('touch ' . g:project_configuration_filename)
+                    call system('touch ' . g:project_autocomplete_filename)
+                    if (l:project_category == g:project_supported_categories['Makefile'])
+                        call system('touch ' . 'Makefile')
+                    endif
+
+                    " Store project specific settings into the project configuration file
+                    let l:project_settings = []
+                    call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
+                    call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
+                    call add(l:project_settings, 'let g:' . 'project_full_path = ' . "\'" . l:project_full_path . "\'")
+                    call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
+                    call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
+                    call writefile(l:project_settings, g:project_configuration_filename)
+
+                    " Initialize project specific stuff
+                    call Y_Env_Setup()
+
+                    " Restore the layout
+                    call Y_Layout_Refresh()
+
+                    " Finally, save project into the new session
+                    execute('SaveSession! ' . g:project_name)
+                endif
+            endif
+        endif
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -77,7 +132,15 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Session_Open()
+function! Y_Project_Add()
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Project_Open()
 	:OpenSession!
 endfunction
 
@@ -86,7 +149,7 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Session_Close()
+function! Y_Project_Close()
 	:CloseSession!
 endfunction
 
@@ -95,7 +158,7 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Session_Save()
+function! Y_Project_Save()
 	:SaveSession!
 endfunction
 
@@ -104,8 +167,9 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Session_Delete()
-	:DeleteSession!
+function! Y_Project_Delete()
+    " TODO ask user if he wants to delete the project directory as well
+    :DeleteSession!
 endfunction
 
 
@@ -530,7 +594,7 @@ endfunction
 " Dependency:	NERDTree, Tagbar
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Layout_Refresh()
-	execute('NERDTree ' . g:project_root_directory)
+	execute('NERDTree ' . g:project_full_path)
 	execute('TagbarOpen')
 	call setqflist([])
 	execute('copen')

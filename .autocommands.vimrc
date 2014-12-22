@@ -3,7 +3,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 augroup yavide_session_mgmt_group
 	autocmd!
-	autocmd SessionLoadPost 	* 							call Y_Project_Init()							" Load project specific settings
+	autocmd SessionLoadPost 	* 							call Y_Env_Setup()							" Load project specific settings
 augroup END
 
 augroup yavide_src_parser_group

@@ -1,11 +1,11 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Session management
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap 		<C-s>n 			:YavideSessionNew<CR>|"								New session
-nmap 		<C-s>o 			:YavideSessionOpen<CR>|"							Open session
-nmap		<C-s>c			:YavideSessionClose<CR>|"							Close session
-nmap 		<C-s>s 			:YavideSessionSave<CR>|"							Save session
-nmap 		<C-s>d 			:YavideSessionDelete<CR>|"							Delete session
+nmap 		<C-s>n 			:YavideProjectNew<CR>|"								New session
+nmap 		<C-s>o 			:YavideProjectOpen<CR>|"							Open session
+nmap		<C-s>c			:YavideProjectClose<CR>|"							Close session
+nmap 		<C-s>s 			:YavideProjectSave<CR>|"							Save session
+nmap 		<C-s>d 			:YavideProjectDelete<CR>|"							Delete session
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Search tools

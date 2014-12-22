@@ -1,11 +1,11 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Session commands
+" Project commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=0 -complete=file YavideSessionNew	 						:call Y_Session_New()
-:command! -nargs=0 -complete=file YavideSessionOpen	 						:call Y_Session_Open()
-:command! -nargs=0 -complete=file YavideSessionClose 						:call Y_Session_Close()
-:command! -nargs=0 -complete=file YavideSessionSave	 						:call Y_Session_Save()
-:command! -nargs=0 -complete=file YavideSessionDelete 						:call Y_Session_Delete()
+:command! -nargs=0 -complete=file YavideProjectNew	 						:call Y_Project_New()
+:command! -nargs=0 -complete=file YavideProjectOpen	 						:call Y_Project_Open()
+:command! -nargs=0 -complete=file YavideProjectClose 						:call Y_Project_Close()
+:command! -nargs=0 -complete=file YavideProjectSave	 						:call Y_Project_Save()
+:command! -nargs=0 -complete=file YavideProjectDelete 						:call Y_Project_Delete()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Layout commands
