@@ -22,6 +22,7 @@ let g:project_supported_types           = {
 \                                           'Existing'  :   5
 \}
 
+
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "	ENVIRONMENT SETUP API
@@ -34,15 +35,15 @@ let g:project_supported_types           = {
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Setup()
 	execute('source ' . g:project_configuration_filename)
-	let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
-	let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
-	call Y_CScope_Init()
+	let g:project_java_tags		 = g:project_full_path . '/' . g:project_java_tags_filename
+	let g:project_cxx_tags 		 = g:project_full_path . '/' . g:project_cxx_tags_filename
+    call Y_CScope_Init()
 endfunction
 
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SESSION MANAGEMENT API
+"	PROJECT MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -434,7 +435,7 @@ endfunction
 " Dependency:	ctags-exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateCxxTags()
-	exec ':!ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -f ' . g:project_cxx_tags . ' ' . g:project_root_directory
+	exec ':!ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -f ' . g:project_cxx_tags . ' ' . g:project_full_path
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -443,18 +444,17 @@ endfunction
 " Dependency:	ctags-exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateJavaTags()
-	exec ':!ctags -R --languages=Java --extra=+q -f ' . g:project_java_tags . ' ' . g:project_root_directory
+	exec ':!ctags -R --languages=Java --extra=+q -f ' . g:project_java_tags . ' ' . g:project_full_path
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function: 	Y_SrcParser_GenerateCScope(bRunUpdate)
 " Description:	Starts generation of cscope in current project
 " Dependency:	cscope
-"	exec ':!cscope -q -R -b -i ' . g:project_root_directory . '/' . 'cscope.files'
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateCScope(bRunUpdate)
-	exec ':!find ' . g:project_root_directory . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . g:project_root_directory . '/' . 'cscope.files'
-	let cmd = ':!cscope -q -R -b -i ' . g:project_root_directory . '/' . 'cscope.files'
+	exec ':!find ' . g:project_full_path . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . g:project_full_path . '/' . 'cscope.files'
+	let cmd = ':!cscope -q -R -b -i ' . g:project_full_path . '/' . 'cscope.files'
 	if (a:bRunUpdate == 1)
 		let cmd .= ' -U'
 	endif
@@ -505,9 +505,9 @@ endfunction
 function! Y_CScope_Init()
 	set cscopetag
 	set csto=0
-	if filereadable(g:project_root_directory . '/' . g:project_cscope_db_filename)
+	if filereadable(g:project_full_path . '/' . g:project_cscope_db_filename)
 		set nocscopeverbose
-		execute('cs add ' . g:project_root_directory . '/' . g:project_cscope_db_filename)
+		execute('cs add ' . g:project_full_path . '/' . g:project_cscope_db_filename)
 	endif
 	set cscopeverbose
 endfunction
@@ -599,5 +599,4 @@ function! Y_Layout_Refresh()
 	call setqflist([])
 	execute('copen')
 endfunction
-
 
