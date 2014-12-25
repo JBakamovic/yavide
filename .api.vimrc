@@ -25,21 +25,28 @@ let g:project_supported_types           = {
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	ENVIRONMENT SETUP API
+"	ENVIRONMENT INIT/DEINIT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Env_Setup()
-" Description:	Setups the environment and loads project specific settings.
+" Function: 	Y_Env_Init()
+" Description:	Initializes the environment. Loads project specific settings.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Env_Setup()
+function! Y_Env_Init()
 	execute('source ' . g:project_configuration_filename)
 	let g:project_java_tags		 = g:project_full_path . '/' . g:project_java_tags_filename
 	let g:project_cxx_tags 		 = g:project_full_path . '/' . g:project_cxx_tags_filename
     call Y_CScope_Init()
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function: 	Y_Env_Deinit()
+" Description:	Deinitializes the environment.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Env_Deinit()
+endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "

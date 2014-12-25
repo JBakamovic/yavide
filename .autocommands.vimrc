@@ -3,7 +3,8 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 augroup yavide_session_mgmt_group
 	autocmd!
-	autocmd SessionLoadPost 	* 							call Y_Env_Setup()							" Load project specific settings
+	autocmd SessionLoadPost 	* 							call Y_Env_Init()
+    autocmd VimLeave            *                           call Y_Env_Deinit()
 augroup END
 
 augroup yavide_src_parser_group
@@ -16,7 +17,7 @@ augroup END
 
 augroup yavide_layout_mgmt_group
 	autocmd!
-	autocmd FileType 			qf 							wincmd J										" Make the quickfix window always appear at the bottom
+	autocmd FileType 			qf 							wincmd J
 augroup END
 
 augroup yavide_editor_group
