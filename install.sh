@@ -49,10 +49,6 @@ PLUGINS="$PLUGINS https://github.com/xolox/vim-misc.git"
 # Clang_complete
 PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
-# Cscope
-CSCOPE_PLUGIN="http://cscope.sourceforge.net/cscope_maps.vim"
-CSCOPE_AUTOLOAD_PLUGIN="http://vim.sourceforge.net/scripts/download_script.php?src_id=14884"
-
 # SuperTab
 PLUGINS="$PLUGINS https://github.com/ervandew/supertab"
 
@@ -152,16 +148,6 @@ echo "Installing clang_complete ..."
 echo "----------------------------------------------------------------------------"
 cd $YAVIDE_IDE_ROOT/bundle/clang_complete
 make install
-
-echo "\n"
-echo "----------------------------------------------------------------------------"
-echo "Installing cscope ..."
-echo "----------------------------------------------------------------------------"
-cd $YAVIDE_IDE_ROOT/bundle/
-echo "$passwd" | sudo -S mkdir cscope && cd cscope
-echo "$passwd" | sudo -S mkdir plugin && cd plugin
-echo "$passwd" | sudo -S wget $CSCOPE_PLUGIN
-echo "$passwd" | sudo -S wget $CSCOPE_AUTOLOAD_PLUGIN -O autoload_cscope.vim
 
 echo "\n"
 echo "----------------------------------------------------------------------------"
