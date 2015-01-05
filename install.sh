@@ -10,6 +10,7 @@ print_error_and_exit(){
 	echo -e "\t'ubuntu'"
 	echo -e "\t'debian'"
 	echo -e "\t'opensuse'"
+	echo -e "\t'centos'"
 	exit
 }
 
@@ -23,6 +24,10 @@ if [ ! -z $1 ]; then
 		PACKAGE_MANAGER="zypper"
 		PACKAGE_MANAGER_INSTALL="zypper install"
 		PACKAGE_MANAGER_UPDATE="zypper update"
+	elif [ $1 == "centos" ]; then
+		PACKAGE_MANAGER="yum"
+		PACKAGE_MANAGER_INSTALL="yum install"
+		PACKAGE_MANAGER_UPDATE="yum update"
 	else
 		print_error_and_exit
 	fi
