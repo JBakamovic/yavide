@@ -1,241 +1,214 @@
 # Contents
-* Requirements
-* Plugins
-* Installation
-* Features
-* Usage
-* Project workspace setup
-* Auto-completion
-* Fuzzy search
-* Known issues
-* TODO
+* [Description](Description)
+* [Features](Features)
+* [Requirements](Requirements)
+* [Installation](Installation)
+* [Workflow](Workflow)
+* [Credits](Credits)
+* [FAQ](FAQ)
 
 
-# Requirements
-* Vim 7.4
-  * http://www.vim.org
-* Exuberant Ctags
-  * http://ctags.sourceforge.net
-* LLVM 3.4
-  * http://llvm.org/releases/download.html
-* Git
-  * http://git-scm.com
-* Silver Searcher
-  * https://github.com/ggreer/the_silver_searcher
-* Powerline Fonts
-  * https://github.com/Lokaltog/powerline-fonts
-
-
-# Plugins
-This configuration utilizes heavy usage of Vi plugins. Otherwise, this setup would not be possible. Here is the list of plugins 
-currently integrated:
-* NERDTree
-  * Tree-like project browser
-  * https://github.com/scrooloose/nerdtree
-* Session
-  * Session manager for handling projects/workspaces
-  * https://github.com/xolox/vim-session
-* Clang_complete
-  * auto-completion
-  * https://github.com/Rip-Rip/clang_complete
-* YouCompleteMe
-  * auto-completion + syntax checking
-  * https://github.com/Valloric/YouCompleteMe
-* YouCompleteMeFork
-  * auto-completion + syntax checking + argument auto-completion
-  * https://github.com/oblitum/YouCompleteMe
-* SuperTab
-  * tab completion + argument auto-completion
-  * https://github.com/ervandew/supertab
-* Tagbar
-  * code outlining
-  * https://github.com/majutsushi/tagbar
-* Airline
-  * support for tabs + enhanced status bar
-  * https://github.com/bling/vim-airline
-* A
-  * switcher between header and implementation + jumping to a file
-  * https://github.com/vim-scripts/a.vim
-* Auto-close
-  * parenthesis auto-complete ("()", "[]", "{}")
-  * https://github.com/Townk/vim-autoclose
-* NERDCommenter
-  * code commenting
-  * https://github.com/scrooloose/nerdcommenter
-* CtrlP
-  * fuzzy search
-  * https://github.com/kien/ctrlp.vim
-* Grep
-  * grep search providing interactive UI to walk through the results
-  * https://github.com/yegappan/grep
-* UltiSnips
-  * code snippets
-  * https://github.com/SirVer/ultisnips
-* Git
-  * Git client
-  * https://github.com/motemen/git-vim
-* Pathogen
-  * package manager
-  * https://github.com/tpope/vim-pathogen
-
-Should you want to tweak the existing configuration or learn what additional features these plugins offer, please feel free to 
-consult its documentation for more details. This is not by any means an exhaustive configuration.
-
-
-# Installation
-1. Vim
-  * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
-  * `sudo apt-get install vim-gtk` 		(for XFCE-, LXDE-, KDE-based desktops)
-2. `git clone https://github.com/JBakamovic/yavide.git`
-3. `cd yavide`
-4. `./install.sh` (do **NOT** run as `sudo`)
-5. Default install path is `/opt/yavide` (one may change it by altering the `$YAVIDE_ROOT_PATH` in `install.sh`)
-6. Wait and hope it will finish successfuly :)
+# Description
+Aim of this open-source project is to develop a full-fledged IDE based on popular Vim editor. Its powerful plugin engine will be
+used as an entry point towards the implementation of features normally found in other development environments. Main goal will be to 
+encompass support for all kinds of various platforms so one could always utilize a single and unified interface to develop code for either:
+* `bare-metal`,
+* `RTOS`,
+* `embedded-Linux`,
+* `Android`,
+* `desktop`,
+* etc.
 
 
 # Features
 * Bundled and tweaked for C/C++ development
-* Tree-like project browser
-* Session manager for handling projects/workspaces
-* Build tools integration (i.e. make)
-* Syntax checking on-the-fly (only when YCM plugin is employed)
+* Project management 
+  * Multiple project workspaces support
+  * Various project types (`Generic`, `C`, `C++`, `Mixed`) support
+* Project explorer
+  * Tree-view support
+* Class browser
+  * Provides an overview of symbols defined in current file
+  * i.e. macro, variable, function, struct, method, class, namespace, etc.
 * Source code auto-completion
+  * Utilizes `clang` engine
 * Source code navigation
-* Source code outlining
-* Source code commenting
-* Source code occurence highlighting
-* Switching between header and implementation
-* Switching to a file under the cursor
-* Parenthesis auto-complete
-* Code snippets
-* Grep search (interactive-mode)
-* Fuzzy search
-* Search dialog
-* Search and replace dialog
+  * Open file under the cursor
+  * Switch between header & implementation files
+  * Go to declaration, go to definition
+  * Find all references to the given symbol
+  * Find all functions calling the given function
+  * Find all functions called by the given function
+  * Find all files that include the given filename
+* Source code static analysis
+  * `cppcheck` support
+  * `Clang Static Analyzer` support to be added
+* Build tools integration 
+  * `GNU make` support
+* SCM client integration
+  * `git` support along with the side-column showing modifications in real-time
+* Powerful search utilities
+  * Search dialog
+  * Search & replace dialog
+  * `grep` in interactive mode
+    * Enables easy navigation through the results
+* Miscellaneous editor features
+  * Highlight all occurrences
+  * Parenthesis auto-complete
+  * Context-aware text auto-complete
+  * Multiple-selection editing support
+  * Code snippets
 * Bash shell integration
-* Git client integration
-* Tab completion
-* Enhanced statusbar/tabbar
+* Support for various color schemes
 * Plugin manager
 
 
-# Usage
+# Requirements
+* Gnome version of Vim 7.3+ compiled with `python` support amongst other standard features like `clientserver`, `conceal`, `ctags` and alike.
+* Python 2.x+
+* GNU Make
+* GCC
+* `libclang`
+* Internet connection
 
-## Workspace handling
-* `Ctrl-o`				Open the session
-* `Ctrl-e`				Save the session
 
-## Buffer handling
-* `Ctrl-c`				Close buffer
-* `Ctrl-Tab`			Go to next buffer
-* `Ctrl-Shift-Tab`		Go to previous buffer
-* `Ctrl-Down`			Scroll buffer by one line (down)
-* `Ctrl-Up`				Scroll buffer by one line (up)
+# Installation
+Default installation path is set to `/opt/yavide`. Changing it is not currently supported but will be in future.
 
-## Window handling
-* `Ctrl-w + c`			Close the current window
-* `Ctrl-w + <Arrow>`	Navigate through windows
-* `Ctrl-w + s`			Split the window horizontally
-* `Ctrl-w + v`			Split the window vertically
+1. Vim (if not already present on the system)
+  * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
+  * `sudo apt-get install vim-gtk` 		(for XFCE-, LXDE-, KDE-based desktops)
+2. `cd ~/ && git clone https://github.com/JBakamovic/yavide.git`
+3. `cd yavide && ./install.sh`
+4. `rm -R ~/yavide`
 
-## Tab handling
-* `Ctrl-PgDn`			Go to next tab
-* `Ctrl-PgUp`			Go to previous tab
+If you experience any installation issues be sure to consult the [FAQ](FAQ) section first.
 
-## Build
-* `F7`					Build using :make
-* `Shift-F7`			Clean build using :make clean all
 
-## Code navigation
-* `F3`					Open file under the cursor
-* `F4`					Switch between header and corresponding implementation file
-* `Shift-F4`			Switch between header/implementation in a vertically splitted window
-* `F5`					Create/update ctags in currently selected tree-explorer directory (be cautious to select the root dir first!)
-* `F12`					Goto definition (but open a dialog to choose from if multiple definitions exist!)
-* `Shift-F12`			Goto definition in a vertically splitted window
-* `Ctrl-LeftMouse`		Goto definition (but open a dialog to choose from if multiple definitions exist!)
-* `Ctrl-RightMouse`		Jump back from definition
-* `Ctrl-t`				Jump back from definition
+# Workflow
 
-## Editor
-* `a`					Enter the insert mode (append after cursor)
-* `i`					Enter the insert mode (insert before cursor)
-* `Shift-v`				Enter the visual mode (line mode)
-* `v`					Enter the visual mode (character mode)
-* `Ctrl-s`				Save currently opened file
-* `Ctrl-a`				Select all
-* `Ctrl-x`				Cut
-* `Ctrl-c`				Copy
-* `Ctrl-v`				Paste
-* `Ctrl-z`				Undo
-* `Shift-s`				Delete the whole line
-* `*`					Highlight occurences of word under the cursor
-* `Shift-LeftMouse`		Highlight occurences of word under the cursor
-* `,cA`					Insert comment at the current line
-* `,cc`					Comment the selected line/block
-* `,cs`					Comment the selected line/block (other style)
-* `,cu`					Uncomment the selected line/block
+## Project management
+* `<Ctrl-s>n`			            Create new project
+* `<Ctrl-s>o`			            Open project
+* `<Ctrl-s>c`                       Close project
+* `<Ctrl-s>s`                       Save project
+* `<Ctrl-s>d`                       Delete project
 
-## Search
-* `Ctrl-f`				Open find dialog
-* `Ctrl-r`				Open find and replace dialog
-* `Ctrl-p`				Run CtrlP fuzzy search
-* `:Grep`				Run grep on provided input
-* `:GrepBuffer`			Run grep on current buffer
-* `:Rgrep`				Run rgrep on provided input
+## Buffer management
+* `<Ctrl-c>`			            Close current buffer
+* `<Ctrl-s>`                        Save current buffer
+* `<Ctrl-Tab>`			            Go to next buffer
+* `<Ctrl-Shift-Tab>`	            Go to previous buffer
+* `<Ctrl-Down>`			            Scroll buffer by one line (down)
+* `<Ctrl-Up>`			            Scroll buffer by one line (up)
+
+## Buffer modes
+* `<ESC>`                           Enter the `normal` mode
+* `<a>`					            Enter the `insert` mode (append after cursor)
+* `<i>`					            Enter the `insert` mode (insert before cursor)
+* `<Shift-v>`				        Enter the `visual` mode (line mode)
+* `<v>`					            Enter the `visual` mode (character mode)
+
+## Buffer editing
+* `<Ctrl-a>`                        Select all
+* `<Ctrl-x>`                        Cut
+* `<Ctrl-c>`                        Copy
+* `<Ctrl-v>`                        Paste
+* `<Ctrl-z>`                        Undo
+* `<Ctrl-r>`                        Redo
+* `<Shift-s>`				        Delete the whole line
+* `<*>` or `<Shift-LeftMouse>`      Highlight all occurrences of text under the cursor
+* `<Ctrl-n>`                        Start multiple-selection editing with the text under the cursor.
+                                    Each consecutive press will highlight the next occurrence of selected text.
+                                    After all occurrences have been marked, do the text editing with usual commands (`c`, `s`, `i`, `a`, etc.).
+* `<Ctrl-p>`                        When in multiple-selection editing mode, one may press this key combination
+                                    to remove the current occurrence and go back to the previous one.
+* `<Ctrl-x>`                        When in multiple-selection editing mode, one may press this key combination
+                                    to skip the current occurrence and go to the following one.
+
+## Window management
+* `<Ctrl-w>c`			            Close current window
+* `<Ctrl-w><Arrow>`	                Navigate through windows using `<left>`, `<right>`, `<up>` & `<down>` arrows
+* `<Ctrl-w>s`			            Create new horizontal window split
+* `<Ctrl-w>v`			            Create new vertical window split
+
+## Search utilities
+* `<Ctrl-f>`				        Open search dialog
+* `<Ctrl-h>`				        Open search and replace dialog
+* `:grep <input>`		            Run `grep` with provided `<input>`
+
+## Source code commenting
+* `<,cA>`				            Insert comment at the current line
+* `<,cc>`				            Comment the selected line/block
+* `<,cs>`				            Comment the selected line/block (other style)
+* `<,cu>`				            Uncomment the selected line/block
+
+## Source code navigation
+* `<F3>`				            Open file under the cursor
+* `<F4>`				            Switch between header & corresponding implementation file
+* `<Shift-F4>`			            Switch between header & implementation (in a vertical split window)
+* `<F12>` or `<Ctrl-LeftMouse>`     Goto definition of token under the cursor
+* `<Shift-F12>`			            Goto definition of token under the cursor (in a vertical split window)
+* `<Ctrl-t>` or `<Ctrl-RightMouse>`	Jump back from definition
+* `<Ctrl-\>s`                       Find all references to token under the cursor
+* `<Ctrl-\>g`                       Find global definition(s) of token under the cursor
+* `<Ctrl-\>c`                       Find all functions calling the function under the cursor
+* `<Ctrl-\>d`                       Find all functions called by the function under the cursor
+* `<Ctrl-\>i`                       Find all files that include the filename under the cursor
+* `<Ctrl-\>t`                       Find all instances of the text under the cursor
+* `<Ctrl-\>e`                       Search for the word under the cursor using `egrep`
+
+## Source code parser
+* `<F5>`				            Generate `ctags` for current project
+* `<F6>`                            Generate `cscope` for current project
+
+## Source code static analysis
+* `:YavideAnalyzerCppCheckBuf`      Runs the `cppcheck` static analysis on current buffer
+* `:YavideAnalyzerCppCheck`         Runs the `cppcheck` static analysis on whole project
+
+## Build management
+* `<F7>`				            Build project in `release` mode
+* `<Shift-F7>`                      Build project in `debug` mode
+* `<F8>`			                Clean build
+
+## SCM Git client
+* `:Gstatus`                        Runs `git status`
+* `:Gcommit`                        Runs `git commit`
+* `:Gmerge`                         Runs `git merge`
+* `:Gpull`                          Runs `git pull`
+* `:Gpush`                          Runs `git push`
+* `:Gfetch`                         Runs `git fetch`
+* `:Glog`                           Runs `git log`
+* `:Gdiff`                          Runs `git diff`
+* `:Gblame`                         Runs `git blame`
 
 ## Misc
-* `:sh`					Enter the bash shell
-* `:make`				Start the build process in current directory
+* `:YavideLayoutRefresh`            Refresh the layout (opens up project explorer, class browser and clears up the `quickfix` window)
+* `:sh`					            Enter the `bash` shell
 
 
-# Project workspace setup
-* Open GVim
-* Using the NERDTree, with your mouse and/or keyboard navigate to the root directory of your project
-* Press `C` to enter the directory
-* Issue `:SaveSession <arbitrary_name_of_the_session>` to save the session with corresponding name
-* To make sure that it works exit GVim
-* Open GVim again
-* Press `Ctrl-o` to open the session
-* If there is > 1 session available, session manager will let you select the one you want (by entering the number for session)
-* Otherwise it will just open the last used session
-* Every setting regarding the NERDTree root directory, window layout, previously opened tabs, buffers, etc. should be as in the last time
+# Credits
+This is an alphabetically ordered list of third-party plugins currently utilized in the system:
+* A (https://github.com/vim-scripts/a.vim)
+* Clang_complete (https://github.com/Rip-Rip/clang_complete)
+* NERDTree (https://github.com/scrooloose/nerdtree)
+* NERDCommenter (https://github.com/scrooloose/nerdcommenter)
+* SuperTab (https://github.com/ervandew/supertab)
+* Tagbar (https://github.com/majutsushi/tagbar)
+* vim-airline (https://github.com/bling/vim-airline)
+* UltiSnips (https://github.com/SirVer/ultisnips)
+* vim-autoclose (https://github.com/Townk/vim-autoclose)
+* vim-fugitive (https://github.com/tpope/vim-fugitive)
+* vim-gitgutter (https://github.com/airblade/vim-gitgutter)
+* vim-multiple-cursors (https://github.com/terryma/vim-multiple-cursors)
+* vim-pathogen (https://github.com/tpope/vim-pathogen)
+* vim-session (https://github.com/xolox/vim-session)
 
 
-# Auto-completion
-This feature is provided by 3 different plugins:
-* `Clang_complete`
-* `YouCompleteMe`
-* `YouCompleteMe` fork (defaults over original `YouCompleteMe` in the installation)
+# FAQ
+1. Installation process does not complete all the steps successfully
+  * Issues can arise when some required packages, like `libpcre3`, are named differently or 
+    not even present in your distribution repository. Identify these packages and 
+    install them manually.
 
-To avoid problems, no more than 1 plugin should be running at the same time. Therefore, to select one of the mechanisms, 
-one should use pre-defined variables located at top of the `.vimrc` file:
-* `use_ycm_plugin`
-  * set this variable to 1 if you should want to use the YouCompleteMe plugin
-  * otherwise, when set to 0 (default), `clang_complete` plugin will be used
-
-At the time of writing, best results I have observed with clang_complete plugin. Hence, it is a default.
-YouCompleteMe plugin works well with C++ files, whereas it has problems with C files. Function arguments are not being 
-recognized (displayed in a small bubble window) until user enters the OmniComplete mode (by pressing the `Ctrl-space`). This is 
-quite unhandy.
-
-Another problem that YouCompleteMe has is the auto-completion of function/method arguments. This is solved by the fork of 
-YouCompleteMe plugin but still suffers from the same C-file problem mentioned previously.
-
-Clang_complete seems not to have these kind of problems, or at least I have not observed them.
-
-Moreover, YouCompleteMe requires an additional configuration file to be tweaked on per-project basis. An example of this file 
-providing a starting point can be found at `.ycm_extra_conf.py`. To learn how to configure it, consult the official 
-YouCompleteMe documentation.
-
-
-# Fuzzy search
-Search engine that fuzzy search (CtrlP plugin) utilizes by default is the one from Vi (`globpath()`). This mechanism seems to be 
-rather slow for big projects. One of the causes is probably interpreted Vimscript language that it is written in. Authors of the 
-plugin were aware enough of that fact so they have provided means to run external mechanism if needed. That's where 
-Silver Searcher comes in. It is implemented in C language and therefore provides much better performance.
-To enable it one should use pre-defined variable located at top of the `.vimrc` file:
-* `use_ctrlp_ag_engine`
-  * set this variable to 1 (default) if you should want to use the `Silver Searcher`
-  * otherwise, when set to 0, Vi mechanism will be used
 
