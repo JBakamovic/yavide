@@ -1,11 +1,11 @@
 # Contents
-* [Description](#Description)
-* [Features](#Features)
-* [Requirements](#Requirements)
-* [Installation](#Installation)
-* [Workflow](#Workflow)
-* [Credits](#Credits)
-* [FAQ](#FAQ)
+* [Description](#description)
+* [Features](#features)
+* [Requirements](#requirements)
+* [Installation](#installation)
+* [Workflow](#workflow)
+* [Credits](#credits)
+* [FAQ](#faq)
 
 
 # Description
@@ -82,8 +82,7 @@ Default installation path is set to `/opt/yavide`. Changing it is not currently 
 3. `cd yavide && ./install.sh`
 4. `rm -R ~/yavide`
 
-If you experience any installation issues be sure to consult the [FAQ](FAQ) section first.
-
+If you experience any installation issues be sure to consult the [FAQ](#faq) section first.
 
 # Workflow
 
