@@ -1,11 +1,11 @@
 # Contents
-* [Description](Description)
-* [Features](Features)
-* [Requirements](Requirements)
-* [Installation](Installation)
-* [Workflow](Workflow)
-* [Credits](Credits)
-* [FAQ](FAQ)
+* [Description](#Description)
+* [Features](#Features)
+* [Requirements](#Requirements)
+* [Installation](#Installation)
+* [Workflow](#Workflow)
+* [Credits](#Credits)
+* [FAQ](#FAQ)
 
 
 # Description
