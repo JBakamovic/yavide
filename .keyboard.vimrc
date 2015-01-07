@@ -1,11 +1,11 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Session management
+" Project management
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap 		<C-s>n 			:YavideProjectNew<CR>|"								New session
-nmap 		<C-s>o 			:YavideProjectOpen<CR>|"							Open session
-nmap		<C-s>c			:YavideProjectClose<CR>|"							Close session
-nmap 		<C-s>s 			:YavideProjectSave<CR>|"							Save session
-nmap 		<C-s>d 			:YavideProjectDelete<CR>|"							Delete session
+nmap 		<C-s>n 			:YavideProjectNew<CR>|"								New project
+nmap 		<C-s>o 			:YavideProjectOpen<CR>|"							Open project
+nmap		<C-s>c			:YavideProjectClose<CR>|"							Close project
+nmap 		<C-s>s 			:YavideProjectSave<CR>|"							Save project
+nmap 		<C-s>d 			:YavideProjectDelete<CR>|"							Delete project
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Search tools
@@ -59,15 +59,15 @@ nmap 		<C-\>e 			:YavideSrcNavEGrepSearch<CR>|"						Search for the word under t
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code parser
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap 		<F5> 			:YavideSrcParserGenerateCxxTags<CR>|"				Create/update ctags in currently opened project
-nmap 		<F6> 			:YavideSrcParserGenerateCScope<CR>|"				Create/update cscope in currently opened project
+nmap 		<F5> 			:YavideSrcParserGenerateCxxTags<CR>|"				Create ctags for current project
+nmap 		<F6> 			:YavideSrcParserGenerateCScope<CR>|"				Create cscope for current project
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build process
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap 		<F7> 			:YavideBuildRunMake release<CR>|"					Start build in 'release' mode
+nmap 		<F7> 			:YavideBuildRunMake release<CR>|"					Build project in 'release' mode
 imap 		<F7> 			<ESC>:w<CR>:YavideBuildRunMake release<CR>|"
-nmap 		<S-F7> 			:YavideBuildRunMake debug<CR>|"						Start build in 'debug' mode
+nmap 		<S-F7> 			:YavideBuildRunMake debug<CR>|"						Build project in 'debug' mode
 imap 		<S-F7> 			<ESC>:w<CR>:YavideBuildRunMake debug<CR>|"
 nmap 		<F8> 			:YavideBuildRunMake clean<CR>|"						Clean build
 imap 		<F8> 			<ESC>:w<CR>:YavideBuildRunMake clean<CR>|"
