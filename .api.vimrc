@@ -122,7 +122,7 @@ function! Y_Project_New()
                     call writefile(l:project_settings, g:project_configuration_filename)
 
                     " Initialize project specific stuff
-                    call Y_Env_Setup()
+                    call Y_Env_Init()
 
                     " Restore the layout
                     call Y_Layout_Refresh()
