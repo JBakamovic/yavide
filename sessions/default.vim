@@ -19,7 +19,7 @@ if &cp | set nocp | endif
 let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
 let v:this_session=expand("<sfile>:p")
 silent only
-cd ~/
+cd /opt/yavide/default
 if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
@@ -99,7 +99,7 @@ tabnext 1
 1wincmd w
 let s:bufnr_save = bufnr("%")
 let s:cwd_save = getcwd()
-NERDTree ~/
+NERDTree /opt/yavide/default
 if !getbufvar(s:bufnr_save, '&modified')
   let s:wipebuflines = getbufline(s:bufnr_save, 1, '$')
   if len(s:wipebuflines) <= 1 && empty(get(s:wipebuflines, 0, ''))
