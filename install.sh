@@ -117,7 +117,7 @@ fc-cache -vf /home/$USER/.fonts
 # Copy the pre-configured stuff
 echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
-echo "$passwd" | sudo -S cp .*.vimrc common.plugin $YAVIDE_IDE_ROOT
+echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
 
 echo "\n"
