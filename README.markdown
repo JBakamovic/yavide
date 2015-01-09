@@ -4,6 +4,7 @@
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Workflow](#workflow)
+* [Screenshots](#screenshots)
 * [Credits](#credits)
 * [FAQ](#faq)
 
@@ -171,6 +172,10 @@ Category                          | Shortcut                          | Descript
                                   | `:YavideLayoutRefresh`            | Refresh the layout (opens up project explorer, class browser and clears up the `quickfix` window)
                                   | `:sh`					                        | Enter the `bash` shell
 
+# Screenshots
+
+![Yavide](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/yavide_in_action.png)
+[More details ...](https://github.com/JBakamovic/yavide/wiki/Screenshots#how-it-looks-like)
 
 # Credits
 This is an alphabetically ordered list of third-party plugins currently utilized in the system:
