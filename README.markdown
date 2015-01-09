@@ -3,7 +3,7 @@
 * [Features](#features)
 * [Requirements](#requirements)
 * [Installation](#installation)
-* [Workflow](#workflow)
+* [Usage](#usage)
 * [Screenshots](#screenshots)
 * [Credits](#credits)
 * [FAQ](#faq)
@@ -85,8 +85,7 @@ Default installation path is set to `/opt/yavide`. Changing it is not currently 
 
 If you experience any installation issues be sure to consult the [FAQ](#faq) section first.
 
-# Workflow
-
+# Usage
 Category                          | Shortcut                          | Description
 --------------------------------- | --------------------------------- | ---------------------------------
 **Project management**            |                                   |
@@ -96,18 +95,18 @@ Category                          | Shortcut                          | Descript
                                   | `<Ctrl-s>s`                       | Save project
                                   | `<Ctrl-s>d`                       | Delete project
 **Buffer management**             |                                   |
-                                  | `<Ctrl-c>`			                     | Close current buffer
+                                  | `<Ctrl-c>`			              | Close current buffer
                                   | `<Ctrl-s>`                        | Save current buffer
-                                  | `<Ctrl-Tab>`			                   | Go to next buffer
-                                  | `<Ctrl-Shift-Tab>`	               | Go to previous buffer
-                                  | `<Ctrl-Down>`			                  | Scroll buffer by one line (down)
-                                  | `<Ctrl-Up>`			                    | Scroll buffer by one line (up)
+                                  | `<Ctrl-Tab>`			          | Go to next buffer
+                                  | `<Ctrl-Shift-Tab>`	              | Go to previous buffer
+                                  | `<Ctrl-Down>`			          | Scroll buffer by one line (down)
+                                  | `<Ctrl-Up>`			              | Scroll buffer by one line (up)
 **Buffer modes**                  |                                   | 
                                   | `<ESC>`                           | Enter the `normal` mode
-                                  | `<a>`					                        | Enter the `insert` mode (append after cursor)
-                                  | `<i>`					                        | Enter the `insert` mode (insert before cursor)
+                                  | `<a>`					          | Enter the `insert` mode (append after cursor)
+                                  | `<i>`					          | Enter the `insert` mode (insert before cursor)
                                   | `<Shift-v>`	                      |	Enter the `visual` mode (line mode)
-                                  | `<v>`					                        | Enter the `visual` mode (character mode)
+                                  | `<v>`					          | Enter the `visual` mode (character mode)
 **Buffer editing**                |                                   | 
                                   | `<Ctrl-a>`                        | Select all
                                   | `<Ctrl-x>`                        | Cut
@@ -115,32 +114,33 @@ Category                          | Shortcut                          | Descript
                                   | `<Ctrl-v>`                        | Paste
                                   | `<Ctrl-z>`                        | Undo
                                   | `<Ctrl-r>`                        | Redo
-                                  | `<Shift-s>`				                   | Delete the whole line
+                                  | `<Shift-s>`				          | Delete the whole line
                                   | `<*>` or `<Shift-LeftMouse>`      | Highlight all occurrences of text under the cursor
                                   | `<Ctrl-n>`                        | Start multiple-selection editing with the text under the cursor. Each consecutive press will highlight the next occurrence of selected text. After all occurrences have been marked, do the text editing with usual commands (`c`, `s`, `i`, `a`, etc.).
                                   | `<Ctrl-p>`                        | When in multiple-selection editing mode, one may press this key combination to remove the current occurrence and go back to the previous one.
                                   | `<Ctrl-x>`                        | When in multiple-selection editing mode, one may press this key combination to skip the current occurrence and go to the following one.
 **Window management**             |                                   | 
-                                  | `<Ctrl-w>c`			                    | Close current window
-                                  | `<Ctrl-w><Arrow>`	                | Navigate through windows using `<left>`, `<right>`, `<up>` & `<down>` arrows
-                                  | `<Ctrl-w>s`			                    | Create new horizontal window split
-                                  | `<Ctrl-w>v`			                    | Create new vertical window split
+                                  | `<Ctrl-w>c`			              | Close current window
+                                  | `<Ctrl-w><Arrow>`	              | Navigate through windows using `<left>`, `<right>`, `<up>` & `<down>` arrows
+                                  | `<Ctrl-w>s`			              | Create new horizontal window split
+                                  | `<Ctrl-w>v`			              | Create new vertical window split
+                                  | `<Ctrl-w>=`                       | Make split windows equal in size
 **Search utilities**              |                                   |
                                   | `<Ctrl-f>`                        |	Open search dialog
-                                  | `<Ctrl-h>`				                    | Open search and replace dialog
-                                  | `:grep <input>`		                 | Run `grep` with provided `<input>`
+                                  | `<Ctrl-h>`				          | Open search and replace dialog
+                                  | `:grep <input>`		              | Run `grep` with provided `<input>`
 **Source code commenting**        |                                   |
-                                  | `<,cA>`				                       | Insert comment at the current line
-                                  | `<,cc>`				                       | Comment the selected line/block
-                                  | `<,cs>`				                       | Comment the selected line/block (other style)
-                                  | `<,cu>`				                       | Uncomment the selected line/block
+                                  | `<,cA>`				              | Insert comment at the current line
+                                  | `<,cc>`				              | Comment the selected line/block
+                                  | `<,cs>`				              | Comment the selected line/block (other style)
+                                  | `<,cu>`				              | Uncomment the selected line/block
 **Source code navigation**        |                                   |
-                                  | `<F3>`				                        | Open file under the cursor
-                                  | `<F4>`				                        | Switch between header & corresponding implementation file
-                                  | `<Shift-F4>`			                   | Switch between header & implementation (in a vertical split window)
+                                  | `<F3>`				              | Open file under the cursor
+                                  | `<F4>`				              | Switch between header & corresponding implementation file
+                                  | `<Shift-F4>`			          | Switch between header & implementation (in a vertical split window)
                                   | `<F12>` or `<Ctrl-LeftMouse>`     | Goto definition of token under the cursor
-                                  | `<Shift-F12>`			                  | Goto definition of token under the cursor (in a vertical split window)
-                                  | `<Ctrl-t>` or `<Ctrl-RightMouse>`	| Jump back from definition
+                                  | `<Shift-F12>`			          | Goto definition of token under the cursor (in a vertical split window)
+                                  | `<Ctrl-t>` or `<Ctrl-RightMouse>` | Jump back from definition
                                   | `<Ctrl-\>s`                       | Find all references to token under the cursor
                                   | `<Ctrl-\>g`                       | Find global definition(s) of token under the cursor
                                   | `<Ctrl-\>c`                       | Find all functions calling the function under the cursor
@@ -149,15 +149,15 @@ Category                          | Shortcut                          | Descript
                                   | `<Ctrl-\>t`                       | Find all instances of the text under the cursor
                                   | `<Ctrl-\>e`                       | Search for the word under the cursor using `egrep`
 **Source code parser**            |                                   | 
-                                  | `<F5>`				                        | Generate `ctags` for current project
+                                  | `<F5>`				              | Generate `ctags` for current project
                                   | `<F6>`                            | Generate `cscope` for current project
 **Source code static analysis**   |                                   | 
                                   | `:YavideAnalyzerCppCheckBuf`      | Runs the `cppcheck` static analysis on current buffer
                                   | `:YavideAnalyzerCppCheck`         | Runs the `cppcheck` static analysis on whole project
 **Build management**              |                                   | 
-                                  | `<F7>`				                        | Build project in `release` mode
+                                  | `<F7>`				              | Build project in `release` mode
                                   | `<Shift-F7>`                      | Build project in `debug` mode
-                                  | `<F8>`			                         | Clean build
+                                  | `<F8>`			                  | Clean build
 **SCM Git client**                |                                   | 
                                   | `:Gstatus`                        | Runs `git status`
                                   | `:Gcommit`                        | Runs `git commit`
@@ -170,7 +170,7 @@ Category                          | Shortcut                          | Descript
                                   | `:Gblame`                         | Runs `git blame`
 **Misc**                          |                                   | 
                                   | `:YavideLayoutRefresh`            | Refresh the layout (opens up project explorer, class browser and clears up the `quickfix` window)
-                                  | `:sh`					                        | Enter the `bash` shell
+                                  | `:sh`					          | Enter the `bash` shell
 
 # Screenshots
 
