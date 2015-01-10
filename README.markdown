@@ -1,5 +1,5 @@
 # Contents
-* [Description](#description)
+* [Introduction](#introduction)
 * [Features](#features)
 * [Requirements](#requirements)
 * [Installation](#installation)
@@ -9,16 +9,47 @@
 * [FAQ](#faq)
 
 
-# Description
-Aim of this open-source project is to develop a full-fledged IDE based on popular Vim editor. Its powerful plugin engine will be
-used as an entry point towards the implementation of features normally found in other development environments. Main goal will be to 
-encompass support for all kinds of various platforms so one could always utilize a single and unified interface to develop code for either:
+# Introduction
+Aim of this open-source project is to develop a fully-fledged IDE based on popular Vim editor reusing all of its features. Its powerful plugin 
+engine will be used as an entry point towards the implementation of features normally found in other development environments and hopefully more.
+
+Main goal will be to build an unified interface which will provide a common environment to develop code no matter what platform is targeted for. 
+I.e.:
 * `bare-metal`,
 * `RTOS`,
 * `embedded-Linux`,
 * `Android`,
 * `desktop`,
 * etc.
+
+Development for such a platforms is usually done in very specialized IDEs which:
+* mostly put focus on development for a particular platform 
+* do not support development for any other platform
+* contain only a subset of features usually found in more advanced and mainstream IDEs 
+* are not that easily extensible
+* are not free
+* etc.
+
+Not to mention that it gets pretty annoying to get used to a completely new environment each time your projects require you to develop
+code for a different platform. This is a pretty common scenario if you work in dynamic environments.
+
+Moreover, there is yet to be seen an IDE which can cope with a code base as large and as complex as Android. No IDE which has been set to 
+that challenge recently was able to handle it. Usually, an IDE would crash at the very beginning during the source code import operation. 
+
+What about projects (i.e. Android) containing source code written in multiple programming languages? IDEs present on the market usually 
+provide support to import the source code of only a single programming language. This has a consequence of making the file indexing service 
+ignore all of the source code written in other programming languages and thus making impossible to use IDE features such as
+`find symbol references` or `go to definition` to navigate through those parts of code. For example, one could easily imagine a project 
+which features a middleware written in Java and all other platform-specific or performance-wise stuff written in some of the native 
+programming languages such as C or C++. If one is employed in developing code for the whole stack, it would be very limiting to have IDE 
+features working only for the source code type which has been selected during the import and/or project creation. This is an issue 
+which has been already addressed by this IDE.
+
+Besides multi-platform support, this IDE will also provide a complete development environment which will incorporate all elements of good 
+software design including the integration of:
+* test automation frameworks,
+* code documenting tools,
+* static analysis tools
 
 
 # Features
