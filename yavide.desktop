@@ -1,12 +1,12 @@
 [Desktop Entry]
 Name=yavide
-GenericName=Text Editor
-Comment=Edit text files
+GenericName=IDE
+Comment=Integrated Development Environment for C/C++
 TryExec=gvim
-Exec=gvim -f %F -u /opt/yavide/.vimrc
+Exec=gvim -f %F -N -u /opt/yavide/.vimrc
 Terminal=false
 Type=Application
 Icon=vim
-Categories=Utility;TextEditor;
+Categories=Development;IDE;
 StartupNotify=true
 MimeType=text/plain;

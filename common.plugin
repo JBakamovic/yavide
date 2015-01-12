@@ -66,6 +66,6 @@ let g:NERDTreeShowHidden = 1											" Show hidden files
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Pathogen plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-source /opt/yavide/bundle/vim-pathogen/autoload/pathogen.vim
+execute('source ' . g:YAVIDE_ROOT_DIRECTORY . '/bundle/vim-pathogen/autoload/pathogen.vim')
 execute pathogen#infect()
 

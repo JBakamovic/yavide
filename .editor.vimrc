@@ -46,31 +46,31 @@ endif
 
 set nobackup
 if (g:editor_use_bkp_files == 1 || g:editor_use_swp_files == 1 || g:editor_use_undo_files == 1)
-	if !isdirectory("/opt/yavide/.tmp")
-		call mkdir("/opt/yavide/.tmp", "p")
+	if !isdirectory(g:YAVIDE_ROOT_DIRECTORY . '/.tmp')
+		call mkdir(g:YAVIDE_ROOT_DIRECTORY . '/.tmp', 'p')
 	endif
 endif
 
 if (g:editor_use_bkp_files == 1)
-	set backupdir=/opt/yavide/.tmp/.backup//
-	if !isdirectory("/opt/yavide/.tmp/.backup")
-		call mkdir("/opt/yavide/.tmp/.backup", "p")
+	set backupdir=g:YAVIDE_ROOT_DIRECTORY . '.tmp/.backup//'
+	if !isdirectory(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.backup')
+		call mkdir(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.backup', 'p')
 	endif
 endif
 
 set noswapfile
 if (g:editor_use_swp_files == 1)
-	set directory=/opt/yavide/.tmp/.swp//
-	if !isdirectory("/opt/yavide/.tmp/.swp")
-		call mkdir("/opt/yavide/.tmp/.swp", "p")
+	set directory=g:YAVIDE_ROOT_DIRECTORY . '.tmp/.swp//'
+	if !isdirectory(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.swp')
+		call mkdir(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.swp', 'p')
 	endif
 endif
 
 set nowritebackup
 if (g:editor_use_undo_files == 1)
-	set undodir=/opt/yavide/.tmp/.undo//
-	if !isdirectory("/opt/yavide/.tmp/.undo")
-		call mkdir("/opt/yavide/.tmp/.undo", "p")
+	set undodir=g:YAVIDE_ROOT_DIRECTORY . '.tmp/.undo//'
+	if !isdirectory(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.undo')
+		call mkdir(g:YAVIDE_ROOT_DIRECTORY . '/.tmp/.undo', 'p')
 	endif
 endif
 

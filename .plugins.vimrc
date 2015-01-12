@@ -1,7 +1,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source each plugin configuration file
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-for PLUGIN in split(globpath('/opt/yavide/', '*.plugin'), '\n')
-	execute "source " . PLUGIN
+for plugin in split(globpath(g:YAVIDE_ROOT_DIRECTORY, '*.plugin'), '\n')
+	execute('source ' . plugin)
 endfor
 
