@@ -230,9 +230,11 @@ This is an alphabetically ordered list of third-party plugins currently utilized
 
 
 # FAQ
-1. Installation process does not complete all the steps successfully
+1. Installation process does not complete all the steps successfully.
   * Issues can arise when some required packages, like `libpcre3`, are named differently or 
     not even present in your distribution repository. Identify these packages and 
     install them manually.
 
+2. Class browser does not show any symbols.
+  * Check if `exuberant-ctags` have been correctly installed on the system.
 
