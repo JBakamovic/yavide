@@ -2,38 +2,37 @@
 # yavide installation script
 
 #####################################################################################################
-# Settings
+# Variables
 #####################################################################################################
-print_error_and_exit(){
-	echo "Please provide the system name you're running."
-	echo "Currently supported ones are:"
-	echo -e "\t'ubuntu'"
-	echo -e "\t'debian'"
-	echo -e "\t'opensuse'"
-	echo -e "\t'centos'"
-	exit
-}
-
+SYSTEM_PACKAGE_MANAGER=""
 YAVIDE_IDE_ROOT="/opt/yavide"
-if [ ! -z $1 ]; then
-	if [ $1 == "ubuntu" ] || [ $1 == "debian" ]; then
-		PACKAGE_MANAGER="apt-get"
-		PACKAGE_MANAGER_INSTALL="apt-get install"
-		PACKAGE_MANAGER_UPDATE="apt-get update"
-	elif [ $1 == "opensuse" ]; then
-		PACKAGE_MANAGER="zypper"
-		PACKAGE_MANAGER_INSTALL="zypper install"
-		PACKAGE_MANAGER_UPDATE="zypper update"
-	elif [ $1 == "centos" ]; then
-		PACKAGE_MANAGER="yum"
-		PACKAGE_MANAGER_INSTALL="yum install"
-		PACKAGE_MANAGER_UPDATE="yum update"
-	else
-		print_error_and_exit
-	fi
-else
-	print_error_and_exit
-fi
+
+#####################################################################################################
+# Helper functions
+#####################################################################################################
+guess_system_package_manager(){
+    if [ `which apt-get` != "" ]; then
+        SYSTEM_PACKAGE_MANAGER="apt-get"
+        SYSTEM_PACKAGE_MANAGER_INSTALL="apt-get install"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="apt-get update"
+    elif [ `which zypper` != "" ]; then
+        SYSTEM_PACKAGE_MANAGER="zypper"
+        SYSTEM_PACKAGE_MANAGER_INSTALL="zypper install"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="zypper update"
+    elif [ `which yum` != "" ]; then
+        SYSTEM_PACKAGE_MANAGER="yum"
+        SYSTEM_PACKAGE_MANAGER_INSTALL="yum install"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="yum update"
+    elif [ `which pacman` != "" ]; then
+        SYSTEM_PACKAGE_MANAGER="pacman"
+        SYSTEM_PACKAGE_MANAGER_INSTALL="pacman -S"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="pacman -Syu"
+    elif [ `which emerge` != "" ]; then
+        SYSTEM_PACKAGE_MANAGER="emerge"
+        SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="emerge -uv world"
+    fi
+}
 
 #####################################################################################################
 # Plugins
@@ -85,6 +84,21 @@ SCHEMES="$SCHEMES https://github.com/jeffreyiacono/vim-colors-wombat"
 SCHEMES="$SCHEMES https://github.com/morhetz/gruvbox.git"
 
 #####################################################################################################
+# Identify the system package manager
+#####################################################################################################
+guess_system_package_manager
+if [ -z $SYSTEM_PACKAGE_MANAGER ]; then
+    echo "Identifying the system package manager failed. Currently supported ones are:
+    'apt-get', 'zypper', 'yum', 'pacman', 'emerge'
+
+Should you want to add support for new one, it should be easy enough to modify the
+'guess_system_package_manager()' function which can be found in 'install.sh' script.
+
+Alternatively, issue a support request on project homepage."
+fi
+echo "System package manager: '"$SYSTEM_PACKAGE_MANAGER"'"
+
+#####################################################################################################
 # Root password needed for some operations
 #####################################################################################################
 CURRENT_USER=`whoami`
@@ -99,8 +113,8 @@ stty $stty_orig     # restore terminal setting.
 #####################################################################################################
 
 # Install required packages
-echo "$passwd" | sudo -S $PACKAGE_MANAGER_UPDATE
-echo "$passwd" | sudo -S $PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev
+echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
+echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev
 [ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts

@@ -37,7 +37,7 @@ Moreover, there is yet to be seen an IDE which can cope with a code base as larg
 that challenge recently was able to handle it. Usually, an IDE would crash at the very beginning during the source code import operation. 
 
 What about projects (i.e. Android) containing source code written in multiple programming languages? IDEs present on the market usually 
-provide support to import the source code of only a single programming language. This has a consequence of making the file indexing service 
+provide support to import the source code of only a single programming language. This has a consequence of making the source code indexing service 
 ignore all of the source code written in other programming languages and thus making impossible to use IDE features such as
 `find symbol references` or `go to definition` to navigate through those parts of code. For example, one could easily imagine a project 
 which features a middleware written in Java and all other platform-specific or performance-wise stuff written in some of the native 
@@ -99,20 +99,23 @@ software design including the integration of:
 * Gnome version of Vim 7.3+ compiled with `python` support amongst other standard features like `clientserver`, `conceal`, `ctags` and alike.
 * Python 2.x+
 * GNU Make
-* GCC
-* `libclang`
+* GNU GCC
+* GNU G++
+* Git
+* `libclang.so`
 * Internet connection
+
+In `debian`-based distributions, one may install the requirements by running:
+* `sudo apt-get update`
+* `sudo apt-get install build-essential vim-gnome python2.7 git libclang-dev`
 
 
 # Installation
 Default installation path is set to `/opt/yavide`. Changing it is not currently supported but will be in future.
 
-1. Vim (if not already present on the system)
-  * `sudo apt-get install vim-gnome` 	(for GNOME-based desktops like Unity)
-  * `sudo apt-get install vim-gtk` 		(for XFCE-, LXDE-, KDE-based desktops)
-2. `cd ~/ && git clone https://github.com/JBakamovic/yavide.git`
-3. `cd yavide && ./install.sh`
-4. `rm -R ~/yavide`
+1. `cd ~/ && git clone https://github.com/JBakamovic/yavide.git`
+2. `cd yavide && ./install.sh`
+3. `sudo rm -R ~/yavide`
 
 If you experience any installation issues be sure to consult the [FAQ](#faq) section first.
 
