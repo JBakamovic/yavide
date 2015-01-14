@@ -135,6 +135,23 @@ echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
 echo "$passwd" | sudo -S cp -R default $YAVIDE_IDE_ROOT/default
 
+# Try to setup the 'libclang' path automatically by searching for it in '/usr/lib*' system paths.
+# In case multiple paths were found, the last one will be selected. Reasoning lays behind the fact
+# that paths will be sorted alphabetically and selecting the last entry will make the script pick
+# up the most recent version of the library. However, user is free to change the selection afterwards
+# in configuration files. This is only to get the things going.
+declare -a libclang_paths
+paths=`echo "$passwd" | sudo -S find /usr -type l -path "/usr/lib*/libclang.so"`
+libclang_paths=( ${paths} )
+echo "Found" ${#libclang_paths[@]} "'libclang' paths in total."
+for (( i = 0; i < ${#libclang_paths[@]}; i++ ));
+do
+    echo ${libclang_paths[$i]}
+done
+libclang_selected=${libclang_paths[${#libclang_paths[@]}-1]}
+echo "Selected 'libclang' is '"$libclang_selected"'"
+sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_IDE_ROOT/.user_settings.vimrc
+
 echo "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing plugins ..."
