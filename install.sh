@@ -140,6 +140,7 @@ echo "$passwd" | sudo -S cp -R default $YAVIDE_IDE_ROOT/default
 # that paths will be sorted alphabetically and selecting the last entry will make the script pick
 # up the most recent version of the library. However, user is free to change the selection afterwards
 # in configuration files. This is only to get the things going.
+echo "Searching for 'libclang' paths ..."
 declare -a libclang_paths
 paths=`echo "$passwd" | sudo -S find /usr -type l -path "/usr/lib*/libclang.so"`
 libclang_paths=( ${paths} )
@@ -150,7 +151,7 @@ do
 done
 libclang_selected=${libclang_paths[${#libclang_paths[@]}-1]}
 echo "Selected 'libclang' is '"$libclang_selected"'"
-sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_IDE_ROOT/.user_settings.vimrc
+echo "$passwd" | sudo -S sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_IDE_ROOT/.user_settings.vimrc
 
 echo "\n"
 echo "----------------------------------------------------------------------------"
