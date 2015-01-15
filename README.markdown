@@ -150,6 +150,7 @@ Category                          | Shortcut                          | Descript
                                   | `<Ctrl-r>`                        | Redo
                                   | `<Shift-s>`				          | Delete the whole line
                                   | `<*>` or `<Shift-LeftMouse>`      | Highlight all occurrences of text under the cursor
+                                  | `<Enter>`                         | Clear highlighted text occurences
                                   | `<Ctrl-n>`                        | Start multiple-selection editing with the text under the cursor. Each consecutive press will highlight the next occurrence of selected text. After all occurrences have been marked, do the text editing with usual commands (`c`, `s`, `i`, `a`, etc.).
                                   | `<Ctrl-p>`                        | When in multiple-selection editing mode, one may press this key combination to remove the current occurrence and go back to the previous one.
                                   | `<Ctrl-x>`                        | When in multiple-selection editing mode, one may press this key combination to skip the current occurrence and go to the following one.

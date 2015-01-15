@@ -32,6 +32,7 @@ vnoremap 	<C-x> 			"+x|"												Cut
 vnoremap 	<C-c> 			"+y|"												Copy
 nnoremap 	<C-v> 			"+gP|"												Paste
 nnoremap	<C-z> 			u|"													Undo
+nnoremap    <CR>            :let @/ = ""<CR><CR>|"                              Clear highlighted text occurences
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation
