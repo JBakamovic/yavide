@@ -234,11 +234,13 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_GoTo(bGoToNext)
-	let cmd = a:bGoToNext == 1 ? ":bnext" : ":bprevious"
-	exec cmd
-	if &buftype ==# 'quickfix'
-		exec cmd
-	endif
+    if &buftype != 'nofile' && &buftype != 'quickfix' && &buftype != 'help'
+	    let cmd = a:bGoToNext == 1 ? ":bnext" : ":bprevious"
+	    exec cmd
+	    if &buftype ==# 'quickfix'
+		    exec cmd
+        endif
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
