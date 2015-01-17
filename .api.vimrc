@@ -18,8 +18,7 @@ let g:project_supported_types           = {
 \                                           'Generic'   :   1,
 \                                           'C'         :   2,
 \                                           'C++'       :   3,
-\                                           'Mixed'     :   4,
-\                                           'Existing'  :   5
+\                                           'Mixed'     :   4
 \}
 
 
@@ -35,8 +34,8 @@ let g:project_supported_types           = {
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Init()
 	execute('source ' . g:project_configuration_filename)
-	let g:project_java_tags		 = g:project_full_path . '/' . g:project_java_tags_filename
-	let g:project_cxx_tags 		 = g:project_full_path . '/' . g:project_cxx_tags_filename
+	let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
+	let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
     call Y_CScope_Init()
 endfunction
 
@@ -58,56 +57,60 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Project_New()
-	" Clean up all windows, buffers, previous sessions ...
-	:CloseSession!
-
-    " Ask user to provide project category
-    let l:category_list = ['Project category:']
-    for [category, category_id] in items(g:project_supported_categories)
-        let l:cat_string = category_id . ' ' . category
-        call add(l:category_list, cat_string)
-    endfor
+function! s:Y_Project_Create(bEmptyProject)
+    " Ask user to provide a project name
     call inputsave()
-    let l:project_category = inputlist(l:category_list)
+    let l:project_name = input('Project name: ')
     call inputrestore()
 
-    echo ' '
-
-    if l:project_category > 0
-        " Ask user to provide project type
-        let l:type_list = ['Project type:']
-        for [type, type_id] in items(g:project_supported_types)
-            let l:type_string = type_id . ' ' . type
-            call add(l:type_list, type_string)
-        endfor
+    if l:project_name != ""
+        " Ask user to provide a project root directory
         call inputsave()
-        let l:project_type = inputlist(l:type_list)
+        let l:project_root_directory = input('Project directory: ', '', 'file')
         call inputrestore()
 
-        if l:project_type > 0
-            " Ask user to provide a project root directory
+        echo '  '
+
+        if l:project_root_directory != ""
+            " Ask user to provide project type
+            let l:type_list = ['Project type:']
+            for [type, type_id] in items(g:project_supported_types)
+                let l:type_string = type_id . ' ' . type
+                call add(l:type_list, type_string)
+            endfor
             call inputsave()
-            let l:project_root_directory = input('Enter project root directory: ', '', 'file')
+            let l:project_type = inputlist(l:type_list)
             call inputrestore()
 
-            if l:project_root_directory != ""
-                " Ask user to provide a project name
+            if l:project_type > 0
+                " Ask user to provide project category
+                let l:category_list = ['Project category:']
+                for [category, category_id] in items(g:project_supported_categories)
+                    let l:cat_string = category_id . ' ' . category
+                    call add(l:category_list, cat_string)
+                endfor
                 call inputsave()
-                let l:project_name = input('Enter project name: ')
+                let l:project_category = inputlist(l:category_list)
                 call inputrestore()
 
-                if l:project_name != ""
-	                " Create project root directory
-                    let l:curr_dir = getcwd()
-                    let l:project_root_directory = l:curr_dir . '/' . l:project_root_directory
-                    let l:project_full_path = l:project_root_directory . '/' . l:project_name
-                    call mkdir(l:project_full_path, "p")
-                    execute('cd ' . l:project_full_path)
+                if l:project_category > 0
+                    if a:bEmptyProject == 1
+                        " Create project root directory
+                        let l:project_root_directory = l:project_root_directory . '/' . l:project_name
+                        call mkdir(l:project_root_directory, "p")
+                    endif
+                    execute('cd ' . l:project_root_directory)
+
+                    " Make this an absolute path
+                    let l:project_root_directory = getcwd()
 
                     " Create project specific files
                     call system('touch ' . g:project_configuration_filename)
-                    call system('touch ' . g:project_autocomplete_filename)
+                    if (l:project_type == g:project_supported_types['C'] ||
+\                       l:project_type == g:project_supported_types['C++'] ||
+\                       l:project_type == g:project_supported_types['Mixed'])
+                        call system('touch ' . g:project_autocomplete_filename)
+                    endif
                     if (l:project_category == g:project_supported_categories['Makefile'])
                         call system('touch ' . 'Makefile')
                     endif
@@ -116,22 +119,50 @@ function! Y_Project_New()
                     let l:project_settings = []
                     call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
                     call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
-                    call add(l:project_settings, 'let g:' . 'project_full_path = ' . "\'" . l:project_full_path . "\'")
                     call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
                     call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
                     call writefile(l:project_settings, g:project_configuration_filename)
-
-                    " Initialize project specific stuff
-                    call Y_Env_Init()
-
-                    " Restore the layout
-                    call Y_Layout_Refresh()
-
-                    " Finally, save project into the new session
-                    execute('SaveSession! ' . g:project_name)
+                    return 0
                 endif
             endif
         endif
+    endif
+    return 1
+endfunction
+
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Project_New(bCreateEmpty)
+    " Create completely new project or import existing code base
+    let l:ret = s:Y_Project_Create(a:bCreateEmpty)
+
+    if l:ret == 0
+	    " Clean up all windows, buffers, previous sessions ...
+	    :CloseSession!
+
+        " Initialize project specific stuff
+        call Y_Env_Init()
+
+        " Generate initial indexer databases
+        call Y_SrcParser_GenerateCScope(0)
+        call Y_CScope_Init()
+        if (g:project_type == g:project_supported_types['C'] ||
+\           g:project_type == g:project_supported_types['C++'])
+            call Y_SrcParser_GenerateCxxTags()
+        elseif (g:project_type == g:project_supported_types['Mixed'])
+            call Y_SrcParser_GenerateCxxTags()
+            call Y_SrcParser_GenerateJavaTags()
+        endif
+
+        " Restore the layout
+        call Y_Layout_Refresh()
+
+        " Finally, save project into the new session
+        execute('SaveSession! ' . g:project_name)
     endif
 endfunction
 
@@ -444,7 +475,7 @@ endfunction
 " Dependency:	ctags-exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateCxxTags()
-	exec ':!ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -f ' . g:project_cxx_tags . ' ' . g:project_full_path
+	exec ':!ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -f ' . g:project_cxx_tags . ' ' . g:project_root_directory
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -453,7 +484,7 @@ endfunction
 " Dependency:	ctags-exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateJavaTags()
-	exec ':!ctags -R --languages=Java --extra=+q -f ' . g:project_java_tags . ' ' . g:project_full_path
+	exec ':!ctags -R --languages=Java --extra=+q -f ' . g:project_java_tags . ' ' . g:project_root_directory
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -462,8 +493,8 @@ endfunction
 " Dependency:	cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcParser_GenerateCScope(bRunUpdate)
-	exec ':!find ' . g:project_full_path . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . g:project_full_path . '/' . 'cscope.files'
-	let cmd = ':!cscope -q -R -b -i ' . g:project_full_path . '/' . 'cscope.files'
+	exec ':!find ' . g:project_root_directory . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . g:project_root_directory . '/' . 'cscope.files'
+	let cmd = ':!cscope -q -R -b -i ' . g:project_root_directory . '/' . 'cscope.files'
 	if (a:bRunUpdate == 1)
 		let cmd .= ' -U'
 	endif
@@ -514,9 +545,9 @@ endfunction
 function! Y_CScope_Init()
 	set cscopetag
 	set csto=0
-	if filereadable(g:project_full_path . '/' . g:project_cscope_db_filename)
+	if filereadable(g:project_root_directory . '/' . g:project_cscope_db_filename)
 		set nocscopeverbose
-		execute('cs add ' . g:project_full_path . '/' . g:project_cscope_db_filename)
+		execute('cs add ' . g:project_root_directory . '/' . g:project_cscope_db_filename)
 	endif
 	set cscopeverbose
 endfunction
@@ -603,7 +634,7 @@ endfunction
 " Dependency:	NERDTree, Tagbar
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Layout_Refresh()
-	execute('NERDTree ' . g:project_full_path)
+	execute('NERDTree ' . g:project_root_directory)
 	execute('TagbarOpen')
 	call setqflist([])
 	execute('copen')
