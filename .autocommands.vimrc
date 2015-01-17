@@ -10,9 +10,7 @@ augroup END
 augroup yavide_src_parser_group
 	autocmd!
 	autocmd BufEnter 			*.java 						exec 'set tags='.g:project_java_tags
-	autocmd BufEnter 			*.cpp,*.c,*.h,*.cxx,*.cc	exec 'set tags='.g:project_cxx_tags
-	autocmd FileType 			c,cpp						autocmd BufWritePost <buffer> call Y_SrcParser_UpdateCxxTags()
-	autocmd FileType 			java						autocmd BufWritePost <buffer> call Y_SrcParser_UpdateJavaTags()
+	autocmd BufEnter 			*.cpp,*.cc,*.c,*.h,*.hpp	exec 'set tags='.g:project_cxx_tags
 augroup END
 
 augroup yavide_layout_mgmt_group

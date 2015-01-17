@@ -109,12 +109,11 @@ read passwd         # read the password
 stty $stty_orig     # restore terminal setting.
 
 #####################################################################################################
-# Check and install the prerequisites
+# Install dependencies
 #####################################################################################################
-
-# Install required packages
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
-echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev
+echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip
+echo "$passwd" | sudo -S pip install watchdog
 [ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts

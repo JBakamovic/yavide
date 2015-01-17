@@ -10,5 +10,6 @@ let &runtimepath = printf('%s,%s,%s/after', g:YAVIDE_ROOT_DIRECTORY, &runtimepat
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Core variables
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:YAVIDE_SOURCE_CODE_INDEXER = g:YAVIDE_ROOT_DIRECTORY . '/yavide_indexer.py'
 let g:filesystem_separator = "/"
 
