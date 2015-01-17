@@ -124,6 +124,7 @@ Category                          | Shortcut                          | Descript
 --------------------------------- | --------------------------------- | ---------------------------------
 **Project management**            |                                   |
                                   | `<Ctrl-s>n`	                      | Create new project
+                                  | `<Ctrl-s>i`                       | Import project with already existing code base
                                   | `<Ctrl-s>o`                       | Open project
                                   | `<Ctrl-s>c`                       | Close project
                                   | `<Ctrl-s>s`                       | Save project
