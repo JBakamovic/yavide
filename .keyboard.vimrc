@@ -3,6 +3,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nmap 		<C-s>n 			:YavideProjectNew<CR>|"								New project
 nmap 		<C-s>o 			:YavideProjectOpen<CR>|"							Open project
+nmap        <C-s>i          :YavideProjectImport<CR>|"                          Import project
 nmap		<C-s>c			:YavideProjectClose<CR>|"							Close project
 nmap 		<C-s>s 			:YavideProjectSave<CR>|"							Save project
 nmap 		<C-s>d 			:YavideProjectDelete<CR>|"							Delete project

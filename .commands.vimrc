@@ -1,8 +1,9 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Project commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=0 -complete=file YavideProjectNew	 						:call Y_Project_New()
+:command! -nargs=0 -complete=file YavideProjectNew	 						:call Y_Project_New(1)
 :command! -nargs=0 -complete=file YavideProjectOpen	 						:call Y_Project_Open()
+:command! -nargs=0 -complete=file YavideProjectImport	 					:call Y_Project_New(0)
 :command! -nargs=0 -complete=file YavideProjectClose 						:call Y_Project_Close()
 :command! -nargs=0 -complete=file YavideProjectSave	 						:call Y_Project_Save()
 :command! -nargs=0 -complete=file YavideProjectDelete 						:call Y_Project_Delete()
