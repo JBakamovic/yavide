@@ -114,7 +114,7 @@ stty $stty_orig     # restore terminal setting.
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip
 echo "$passwd" | sudo -S pip install watchdog
-[ -d $/home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
+[ -d /home/$USER/.fonts ] | echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
 echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
 fc-cache -vf /home/$USER/.fonts
 
@@ -130,7 +130,7 @@ fc-cache -vf /home/$USER/.fonts
 # Copy the pre-configured stuff
 echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
-echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin $YAVIDE_IDE_ROOT
+echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
 echo "$passwd" | sudo -S cp -R default $YAVIDE_IDE_ROOT/default
 
