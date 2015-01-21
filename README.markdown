@@ -22,7 +22,7 @@ I.e.:
 * `desktop`,
 * etc.
 
-Development for such a platforms is usually done in very specialized IDEs which:
+Development for such platforms is usually done in very specialized IDEs which:
 * mostly put focus on development for a particular platform 
 * do not support development for any other platform
 * contain only a subset of features usually found in more advanced and mainstream IDEs 
@@ -228,7 +228,6 @@ This is an alphabetically ordered list of third-party plugins currently utilized
 * vim-gitgutter (https://github.com/airblade/vim-gitgutter)
 * vim-multiple-cursors (https://github.com/terryma/vim-multiple-cursors)
 * vim-pathogen (https://github.com/tpope/vim-pathogen)
-* vim-session (https://github.com/xolox/vim-session)
 
 
 # FAQ

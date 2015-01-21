@@ -1,4 +1,0 @@
-let g:project_root_directory = '/opt/yavide/default/'
-let g:project_name = 'default'
-let g:project_category = 1
-let g:project_type = 1

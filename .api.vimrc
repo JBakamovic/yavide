@@ -5,6 +5,8 @@
 " --------------------------------------------------------------------------------------------------------------------------------------
 let g:project_configuration_filename	= ".yavide_proj"
 let g:project_autocomplete_filename     = ".clang_complete"
+let g:project_session_filename          = ".yavide_session"
+let g:project_loaded                    = 0
 let g:project_java_tags 				= ""
 let g:project_java_tags_filename		= ".java_tags"
 let g:project_cxx_tags 					= ""
@@ -29,14 +31,10 @@ let g:project_supported_types           = {
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function: 	Y_Env_Init()
-" Description:	Initializes the environment. Loads project specific settings.
+" Description:	Initializes the environment.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Init()
-	execute('source ' . g:project_configuration_filename)
-	let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
-	let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
-    call Y_CScope_Init()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -72,6 +70,11 @@ function! s:Y_Project_Create(bEmptyProject)
         echo '  '
 
         if l:project_root_directory != ""
+            " Check if directory exists
+            if a:bEmptyProject == 0 && isdirectory(l:project_root_directory) == 0
+                return 1
+            endif
+
             " Ask user to provide project type
             let l:type_list = ['Project type:']
             for [type, type_id] in items(g:project_supported_types)
@@ -130,6 +133,24 @@ function! s:Y_Project_Create(bEmptyProject)
     return 1
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! s:Y_Project_Load()
+    if filereadable(g:project_configuration_filename)
+        execute('source ' . g:project_configuration_filename)
+        let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
+        let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
+        call Y_CScope_Init() " TODO remove this init from here?
+        if filereadable(g:project_session_filename)
+            execute('source ' . g:project_session_filename)
+        endif
+        call Y_Buffer_CloseEmpty()
+        let g:project_loaded = 1
+    endif
+endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:
@@ -137,15 +158,15 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Project_New(bCreateEmpty)
+    " Close any previously opened projects if any
+    call Y_Project_Close()
+
     " Create completely new project or import existing code base
     let l:ret = s:Y_Project_Create(a:bCreateEmpty)
 
     if l:ret == 0
-	    " Clean up all windows, buffers, previous sessions ...
-	    :CloseSession!
-
-        " Initialize project specific stuff
-        call Y_Env_Init()
+        " Load project specific stuff
+        call s:Y_Project_Load()
 
         " Generate initial indexer databases
         call Y_SrcParser_GenerateCScope(0)
@@ -162,7 +183,7 @@ function! Y_Project_New(bCreateEmpty)
         call Y_Layout_Refresh()
 
         " Finally, save project into the new session
-        execute('SaveSession! ' . g:project_name)
+        call Y_Project_Save()
     endif
 endfunction
 
@@ -171,16 +192,24 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Project_Add()
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:
-" Description:
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Project_Open()
-	:OpenSession!
+    " Close any previously opened projects if any
+    call Y_Project_Close()
+
+    " TODO present user with the list of recently opened projects
+
+    " Ask user to provide a project root directory
+    call inputsave()
+    let l:project_root_directory = input('Project directory: ', '', 'file')
+    call inputrestore()
+
+    " Initialize the environment
+    if l:project_root_directory != "" && isdirectory(l:project_root_directory) != 0
+        execute('cd ' . l:project_root_directory)
+        call s:Y_Project_Load()
+        call Y_Layout_Refresh()
+        " TODO lock the session
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -189,7 +218,37 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Project_Close()
-	:CloseSession!
+    if g:project_loaded == 0
+        return 1
+    endif
+
+    " Ask user if he wants to save the session
+    let l:save_changes = confirm('Save all changes made to "' . g:project_name . '"?', "&Yes\n&No", 1)
+    if l:save_changes == 1
+        call Y_Project_Save()
+    endif
+
+    " Close all buffers
+    call Y_Buffer_CloseAll(1)
+
+    " Close all but the current window
+    if winnr('$') > 1
+        execute 'only!'
+    endif
+
+    " Close all but the current tab
+    if tabpagenr('$') > 1
+        execute('tabonly!')
+    endif
+
+    " Reset the working directory
+    execute('cd ~/')
+
+    " TODO unlock the session
+
+    " Reset the session
+    let v:this_session = ''
+    let g:project_loaded = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -198,7 +257,19 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Project_Save()
-	:SaveSession!
+    if g:project_loaded == 0
+        return 1
+    endif
+
+    " Save all modified files
+    call Y_Buffer_SaveAll()
+
+    " Save Vim session
+    execute('mksession! ' . g:project_session_filename)
+
+    " Delete NERDTree related entries
+    let cmd = 'sed -i ' . '"' . '\:' . 'NERD_tree' . ':d' . '" ' . g:project_session_filename
+    let resp = system(cmd)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -207,8 +278,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Project_Delete()
+    if g:project_loaded == 0
+        return 1
+    endif
+
     " TODO ask user if he wants to delete the project directory as well
-    :DeleteSession!
 endfunction
 
 
@@ -246,8 +320,18 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Buffer_Save()
-	:w
+function! Y_Buffer_Save(buf_nr)
+    let l:curr_buffer = bufnr('%')
+    let l:buf_modified = getbufvar(a:buf_nr, "&modified")
+    if l:buf_modified == 1
+        execute('buffer ' . a:buf_nr)
+        if bufname(a:buf_nr) == ''
+            :browse w
+        else
+	        :w
+        endif
+        execute('buffer ' . l:curr_buffer)
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -255,8 +339,71 @@ endfunction
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Buffer_Close()
-	call Y_Buffer_GoTo(0) | sp | call Y_Buffer_GoTo(1) | bd
+function! Y_Buffer_SaveAll()
+    let [i, n; buf] = [1, bufnr('$')]
+    while i <= n
+        if bufexists(i)
+            call Y_Buffer_Save(i)
+        endif
+        let i += 1
+    endwhile
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Buffer_Close(buf_nr, override_buf_modified)
+    let l:close_cmd = 'call Y_Buffer_GoTo(0) | sp | call Y_Buffer_GoTo(1) | bwipeout'
+    let l:buf_modified = getbufvar(a:buf_nr, "&modified")
+    if l:buf_modified == 1
+        if a:override_buf_modified == 1
+            let l:close_cmd .= '!'
+        else
+            let l:save_changes = confirm('Save changes to "' . bufname(a:buf_nr) . '"?', "&Yes\n&No", 1)
+            if l:save_changes == 1
+                call Y_Buffer_Save(a:buf_nr)
+            else
+                let l:close_cmd .= '!'
+            endif
+        endif
+    endif
+    let l:close_cmd .= ' ' . a:buf_nr
+    execute(l:close_cmd)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Buffer_CloseAll(override_buf_modified)
+    let [i, n; buf] = [1, bufnr('$')]
+    while i <= n
+        if bufexists(i)
+            call Y_Buffer_Close(i, a:override_buf_modified)
+        endif
+        let i += 1
+    endwhile
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Buffer_CloseEmpty()
+    let [i, n; empty] = [1, bufnr('$')]
+    while i <= n
+        if bufexists(i) && bufname(i) == ''
+            call add(empty, i)
+        endif
+        let i += 1
+    endwhile
+    if len(empty) > 0
+        exe 'bwipeout' join(empty)
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

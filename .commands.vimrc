@@ -22,8 +22,8 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Buffer commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=0 -complete=file YavideBufferSave	 						:call Y_Buffer_Save()
-:command! -nargs=0 -complete=file YavideBufferClose	 						:call Y_Buffer_Close()
+:command! -nargs=0 -complete=file YavideBufferSave	 						:call Y_Buffer_Save('%')
+:command! -nargs=0 -complete=file YavideBufferClose	 						:call Y_Buffer_Close('%', 0)
 :command! -nargs=0 -complete=file YavideBufferPrev	 						:call Y_Buffer_GoTo(0)
 :command! -nargs=0 -complete=file YavideBufferNext	 						:call Y_Buffer_GoTo(1)
 :command! -nargs=0 -complete=file YavideBufferScrollUp						:call Y_Buffer_Scroll(0)

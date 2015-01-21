@@ -1,4 +1,5 @@
 filetype plugin indent on											        " Turn on the filetype plugin
+set sessionoptions=blank,buffers,folds,help,resize,tabpages,winpos,winsize  " Set session persistence options
 set enc=utf-8														        " Set UTF-8 encoding
 set fenc=utf-8
 set termencoding=utf-8

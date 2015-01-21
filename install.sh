@@ -41,10 +41,6 @@ guess_system_package_manager(){
 # Nerdtree
 PLUGINS="$PLUGINS https://github.com/scrooloose/nerdtree"
 
-# Session
-PLUGINS="$PLUGINS https://github.com/xolox/vim-session"
-PLUGINS="$PLUGINS https://github.com/xolox/vim-misc.git"
-
 # Clang_complete
 PLUGINS="$PLUGINS https://github.com/Rip-Rip/clang_complete"
 
@@ -131,8 +127,6 @@ fc-cache -vf /home/$USER/.fonts
 echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_IDE_ROOT
 echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
 echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_IDE_ROOT
-echo "$passwd" | sudo -S cp -R sessions $YAVIDE_IDE_ROOT/sessions
-echo "$passwd" | sudo -S cp -R default $YAVIDE_IDE_ROOT/default
 
 # Try to setup the 'libclang' path automatically by searching for it in '/usr/lib*' system paths.
 # In case multiple paths were found, the last one will be selected. Reasoning lays behind the fact

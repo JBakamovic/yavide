@@ -1,9 +1,9 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " AutoCommands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-augroup yavide_session_mgmt_group
+augroup yavide_environment_mgmt_group
 	autocmd!
-	autocmd SessionLoadPost 	* 							call Y_Env_Init()
+	autocmd VimEnter 	        * 							call Y_Env_Init()
     autocmd VimLeave            *                           call Y_Env_Deinit()
 augroup END
 
@@ -22,6 +22,4 @@ augroup yavide_editor_group
 	autocmd!
 	autocmd FileType 			c,cpp,java 					autocmd BufWritePre <buffer> :call Y_Buffer_StripTrailingWhitespaces()
 augroup END
-
-"autocmd! BufWritePost .vimrc source % " Reload '.vimrc' when modified
 
