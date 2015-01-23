@@ -355,21 +355,27 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_Close(buf_nr, override_buf_modified)
-    let l:close_cmd = 'call Y_Buffer_GoTo(0) | sp | call Y_Buffer_GoTo(1) | bwipeout'
-    let l:buf_modified = getbufvar(a:buf_nr, "&modified")
+    let l:listed_buf_nr = len(filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&buftype") == ""'))
+    let l:curr_buf = bufnr(a:buf_nr)
+    if l:listed_buf_nr == 1
+        let l:close_cmd = 'new | bwipeout'
+    else
+        let l:close_cmd = 'call Y_Buffer_GoTo(0) | sp | call Y_Buffer_GoTo(1) | bwipeout'
+    endif
+    let l:buf_modified = getbufvar(l:curr_buf, "&modified")
     if l:buf_modified == 1
         if a:override_buf_modified == 1
             let l:close_cmd .= '!'
         else
-            let l:save_changes = confirm('Save changes to "' . bufname(a:buf_nr) . '"?', "&Yes\n&No", 1)
+            let l:save_changes = confirm('Save changes to "' . bufname(l:curr_buf) . '"?', "&Yes\n&No", 1)
             if l:save_changes == 1
-                call Y_Buffer_Save(a:buf_nr)
+                call Y_Buffer_Save(l:curr_buf)
             else
                 let l:close_cmd .= '!'
             endif
         endif
     endif
-    let l:close_cmd .= ' ' . a:buf_nr
+    let l:close_cmd .= ' ' . l:curr_buf
     execute(l:close_cmd)
 endfunction
 
