@@ -59,12 +59,6 @@ nmap 		<C-\>t 			:YavideSrcNavFindAllInstancesOfText<CR>|"			Find all instances 
 nmap 		<C-\>e 			:YavideSrcNavEGrepSearch<CR>|"						Search for the word under the cursor using 'egrep'
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Source code parser
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap 		<F5> 			:YavideSrcParserGenerateCxxTags<CR>|"				Create ctags for current project
-nmap 		<F6> 			:YavideSrcParserGenerateCScope<CR>|"				Create cscope for current project
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build process
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nmap 		<F7> 			:YavideBuildRunMake release<CR>|"					Build project in 'release' mode

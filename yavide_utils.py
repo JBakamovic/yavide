@@ -1,10 +1,14 @@
+import subprocess
+from subprocess import call
+import shlex
+
 class YavideUtils():
     @staticmethod
-    def file_extension_to_programming_language(extension):
-        if (extension == '.c' or extension == '.cpp' or extension == '.cc' or
-            extension == '.h' or extension == '.hpp'):
+    def file_type_to_programming_language(file_type):
+        if (file_type == '.c' or file_type == '.cpp' or file_type == '.cc' or
+            file_type == '.h' or file_type == '.hpp'):
             return 'Cxx'
-        elif (extension == '.java'):
+        elif (file_type == '.java'):
             return 'Java'
         else:
             return ''
@@ -17,4 +21,9 @@ class YavideUtils():
             return ['.java']
         else:
             return ''
+
+    @staticmethod
+    def send_vim_remote_command(vim_instance, command):
+        cmd = 'vim --servername ' + vim_instance + ' --remote-send "<ESC>' + command + '<CR>"'
+        call(shlex.split(cmd))
 

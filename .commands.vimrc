@@ -55,13 +55,6 @@
 :command! -nargs=0 -complete=file YavideSrcNavEGrepSearch					:call Y_SrcNav_EGrepSearch()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Source code parser commands
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=0 -complete=file YavideSrcParserGenerateJavaTags			:call Y_SrcParser_GenerateJavaTags()
-:command! -nargs=0 -complete=file YavideSrcParserGenerateCxxTags			:call Y_SrcParser_GenerateCxxTags()
-:command! -nargs=0 -complete=file YavideSrcParserGenerateCScope				:call Y_SrcParser_GenerateCScope(0)
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code static analysis commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 :command! -nargs=* -complete=file YavideAnalyzerCppCheck 					:call Y_Analyzer_RunCppCheck(".", <f-args>)

@@ -3,24 +3,32 @@
 "	Global variables
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
-let g:project_configuration_filename	= ".yavide_proj"
-let g:project_autocomplete_filename     = ".clang_complete"
-let g:project_session_filename          = ".yavide_session"
+let g:project_configuration_filename	= '.yavide_proj'
+let g:project_autocomplete_filename     = '.clang_complete'
+let g:project_session_filename          = '.yavide_session'
 let g:project_loaded                    = 0
-let g:project_java_tags 				= ""
-let g:project_java_tags_filename		= ".java_tags"
-let g:project_cxx_tags 					= ""
-let g:project_cxx_tags_filename			= ".cxx_tags"
-let g:project_cscope_db_filename		= "cscope.out"
+let g:project_java_tags 				= ''
+let g:project_java_tags_filename		= '.java_tags'
+let g:project_cxx_tags 					= ''
+let g:project_cxx_tags_filename			= '.cxx_tags'
+let g:project_cscope_db_filename		= 'cscope.out'
+
+let g:project_category_generic          = { 'id' : 1 }
+let g:project_category_makefile         = { 'id' : 2 }
 let g:project_supported_categories      = {
-\                                           'Generic'   :   1,
-\                                           'Makefile'  :   2
+\                                           'Generic'   :   g:project_category_generic,
+\                                           'Makefile'  :   g:project_category_makefile
 \}
+
+let g:project_type_generic              = { 'id' : 1, 'extensions' : ['.*'] }
+let g:project_type_c                    = { 'id' : 2, 'extensions' : ['.c', '.h'] }
+let g:project_type_cpp                  = { 'id' : 3, 'extensions' : ['.cpp', '.cc', '.h', '.hpp'] }
+let g:project_type_mixed                = { 'id' : 4, 'extensions' : [] }
 let g:project_supported_types           = {
-\                                           'Generic'   :   1,
-\                                           'C'         :   2,
-\                                           'C++'       :   3,
-\                                           'Mixed'     :   4
+\                                           'Generic'   :   g:project_type_generic,
+\                                           'C'         :   g:project_type_c,
+\                                           'C++'       :   g:project_type_cpp,
+\                                           'Mixed'     :   g:project_type_mixed,
 \}
 
 
@@ -77,23 +85,23 @@ function! s:Y_Project_Create(bEmptyProject)
 
             " Ask user to provide project type
             let l:type_list = ['Project type:']
-            for [type, type_id] in items(g:project_supported_types)
-                let l:type_string = type_id . ' ' . type
+            for [descr, proj_type] in items(g:project_supported_types)
+                let l:type_string = '[' . proj_type.id . '] ' . descr
                 call add(l:type_list, type_string)
             endfor
             call inputsave()
-            let l:project_type = inputlist(l:type_list)
+            let l:project_type = inputlist(sort(l:type_list))
             call inputrestore()
 
             if l:project_type > 0
                 " Ask user to provide project category
                 let l:category_list = ['Project category:']
-                for [category, category_id] in items(g:project_supported_categories)
-                    let l:cat_string = category_id . ' ' . category
+                for [descr, proj_category] in items(g:project_supported_categories)
+                    let l:cat_string = '[' . proj_category.id . '] ' . descr
                     call add(l:category_list, cat_string)
                 endfor
                 call inputsave()
-                let l:project_category = inputlist(l:category_list)
+                let l:project_category = inputlist(sort(l:category_list))
                 call inputrestore()
 
                 if l:project_category > 0
@@ -109,12 +117,12 @@ function! s:Y_Project_Create(bEmptyProject)
 
                     " Create project specific files
                     call system('touch ' . g:project_configuration_filename)
-                    if (l:project_type == g:project_supported_types['C'] ||
-\                       l:project_type == g:project_supported_types['C++'] ||
-\                       l:project_type == g:project_supported_types['Mixed'])
+                    if (l:project_type == g:project_supported_types['C'].id ||
+\                       l:project_type == g:project_supported_types['C++'].id ||
+\                       l:project_type == g:project_supported_types['Mixed'].id)
                         call system('touch ' . g:project_autocomplete_filename)
                     endif
-                    if (l:project_category == g:project_supported_categories['Makefile'])
+                    if (l:project_category == g:project_supported_categories['Makefile'].id)
                         call system('touch ' . 'Makefile')
                     endif
 
@@ -139,15 +147,21 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! s:Y_Project_Load()
+    " Load project general settings
     if filereadable(g:project_configuration_filename)
         execute('source ' . g:project_configuration_filename)
-        let g:project_java_tags		 = g:project_root_directory . '/' . g:project_java_tags_filename
-        let g:project_cxx_tags 		 = g:project_root_directory . '/' . g:project_cxx_tags_filename
-        call Y_CScope_Init() " TODO remove this init from here?
+        let g:project_java_tags = g:project_root_directory . '/' . g:project_java_tags_filename
+        let g:project_cxx_tags 	= g:project_root_directory . '/' . g:project_cxx_tags_filename
+
+        " Load project session information
         if filereadable(g:project_session_filename)
             execute('source ' . g:project_session_filename)
         endif
         call Y_Buffer_CloseEmpty()
+
+        " Initialize the source code indexer
+        call Y_SrcIndexer_Init()
+
         let g:project_loaded = 1
     endif
 endfunction
@@ -167,17 +181,6 @@ function! Y_Project_New(bCreateEmpty)
     if l:ret == 0
         " Load project specific stuff
         call s:Y_Project_Load()
-
-        " Generate initial indexer databases
-        call Y_SrcParser_GenerateCScope(0)
-        call Y_CScope_Init()
-        if (g:project_type == g:project_supported_types['C'] ||
-\           g:project_type == g:project_supported_types['C++'])
-            call Y_SrcParser_GenerateCxxTags()
-        elseif (g:project_type == g:project_supported_types['Mixed'])
-            call Y_SrcParser_GenerateCxxTags()
-            call Y_SrcParser_GenerateJavaTags()
-        endif
 
         " Restore the layout
         call Y_Layout_Refresh()
@@ -619,90 +622,44 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SOURCE CODE PARSER API
+"	SOURCE CODE INDEXER API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_GenerateCxxTags()
-" Description:	Starts generation of ctags for C & C++ files in current project
-" Dependency:	ctags-exuberant
+" Function: 	Y_SrcIndexer_Init()
+" Description:	Initialization of source code indexer
+" Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_GenerateCxxTags()
-	exec ':!ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -f ' . g:project_cxx_tags . ' ' . g:project_root_directory
+function! Y_SrcIndexer_Init()
+    " TODO kill it upon the Yavide exit
+    " TODO check if it is already running? Kill it and re-run it? Reconfigure it?
+
+    " Serialize parameters for the source code indexer
+    let l:indexer_params  = v:servername . ' '
+    for proj_type in values(g:project_supported_types)
+        if proj_type.id == g:project_type
+            let l:indexer_params .= len(proj_type.extensions) . ' '
+            for extension in proj_type.extensions
+                let l:indexer_params .= extension . ' '
+            endfor
+            break
+        endif
+    endfor
+    let l:indexer_params .= g:project_root_directory     . ' '
+    let l:indexer_params .= g:project_cxx_tags_filename  . ' '
+    let l:indexer_params .= g:project_java_tags_filename . ' '
+    let l:indexer_params .= g:project_cscope_db_filename . ' '
+
+    " Run source code indexer in background
+    call system('python ' . g:YAVIDE_SOURCE_CODE_INDEXER . ' ' . l:indexer_params . ' &')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_GenerateJavaTags()
-" Description:	Starts generation of ctags for Java files in current project
-" Dependency:	ctags-exuberant
+" Function: 	Y_SrcIndexer_Deinit()
+" Description:	Deinitialization of source code indexer
+" Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_GenerateJavaTags()
-	exec ':!ctags -R --languages=Java --extra=+q -f ' . g:project_java_tags . ' ' . g:project_root_directory
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_GenerateCScope(bRunUpdate)
-" Description:	Starts generation of cscope in current project
-" Dependency:	cscope
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_GenerateCScope(bRunUpdate)
-	exec ':!find ' . g:project_root_directory . ' -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.java" > ' . g:project_root_directory . '/' . 'cscope.files'
-	let cmd = ':!cscope -q -R -b -i ' . g:project_root_directory . '/' . 'cscope.files'
-	if (a:bRunUpdate == 1)
-		let cmd .= ' -U'
-	endif
-	exec cmd
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_UpdateCxxTags()
-" Description:	Updates tags for C & C++ files in current project
-" Dependency:	ctags-exuberant
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_UpdateCxxTags()
-  	let file = expand("%:p")
-  	let cmd = 'sed -i ' . '"' . '\:' . file . ':d' . '" ' . g:project_cxx_tags
-  	let resp = system(cmd)
-  	let cmd = 'ctags --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q -a -f ' . g:project_cxx_tags . ' "' . file . '"'
-  	let resp = system(cmd)
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_UpdateJavaTags()
-" Description:	Updates tags for Java files in current project
-" Dependency:	ctags-exuberant
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_UpdateJavaTags()
-  	let file = expand("%:p")
-  	let cmd = 'sed -i ' . '"' . '\:' . file . ':d' . '" ' . g:project_java_tags
-  	let resp = system(cmd)
-  	let cmd = 'ctags --languages=Java --extra=+q -a -f ' . g:project_java_tags . ' "' . file . '"'
-  	let resp = system(cmd)
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcParser_UpdateCScope()
-" Description:	Updates cscope database in current project
-" Dependency:	cscope
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcParser_UpdateCScope()
-	call Y_SrcParser_GenerateCScope(1)
-	exec 'cscope reset'
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_CScope_Init()
-" Description:	Initialization of cscope
-" Dependency:	cscope
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_CScope_Init()
-	set cscopetag
-	set csto=0
-	if filereadable(g:project_root_directory . '/' . g:project_cscope_db_filename)
-		set nocscopeverbose
-		execute('cs add ' . g:project_root_directory . '/' . g:project_cscope_db_filename)
-	endif
-	set cscopeverbose
+function! Y_SrcIndexer_Deinit()
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
