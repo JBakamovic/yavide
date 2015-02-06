@@ -10,89 +10,95 @@
 
 
 # Introduction
-Aim of this open-source project is to develop a fully-fledged IDE based on popular Vim editor reusing all of its features. Its powerful plugin 
-engine will be used as an entry point towards the implementation of features normally found in other development environments and hopefully more.
+This open-source project is about making a fully-fledged and modern IDE built on top of popular Vim editor. Already existing numerous features
+found in Vim editor along with its powerful plugin engine will be used to carry out the features which can be found in more popular and
+mainstream IDEs. In contrast, this IDE will additionally put focus on some specific requirements not being addressed by any other IDE.
 
-Main goal will be to build an unified interface which will provide a common environment to develop code no matter what platform is targeted for. 
-I.e.:
+## One to rule them all
+Has it ever occurred to you to participate in a project(s) encompassing multiple platforms and/or technologies where each of them would impose a
+requirement for specific development toolsets, such as different IDEs, toolchains, debuggers, build systems etc.? If it has, then you will
+know how valuable would be to have a single and open-source product which could be utilized for whole such development. Why? There are numerous
+reasons behind it but development targeting various platforms is usually done in very specialized, and very often commercial, IDEs which:
+* mostly put focus on development for a particular platform
+* do not support development for any other platform or provide a very limited support
+* contain only a subset of features usually found in more advanced and mainstream IDEs
+* are not easily extensible by the community
+* are proprietary
+* etc.
+
+Having a standard and unified product would mitigate the aforementioned problems, but will also make you not to unnecessary waste your precious 
+time by constantly re-learning the same tools. This is a pretty much common scenario if you are performing in dynamic work environment 
+(i.e. short-term projects). So, one of the main goals of this project will be to build a single toolset which will provide an integrated 
+environment to develop code no matter what platform is targeted for, such as:
 * `bare-metal`,
 * `RTOS`,
 * `embedded-Linux`,
 * `Android`,
-* `desktop`,
-* etc.
+* `desktop Linux, OS X, Windows, ...`
 
-Development for such platforms is usually done in very specialized IDEs which:
-* mostly put focus on development for a particular platform 
-* do not support development for any other platform
-* contain only a subset of features usually found in more advanced and mainstream IDEs 
-* are not that easily extensible
-* are not free
-* etc.
+## Large-scale software
+Moreover, there is yet to be seen an IDE which can cope with a code base as large and as complex as Android. This is what you definitely 
+want to have if you do Android platform development. No IDE which has been set to that challenge was able to handle it. Be it Eclipse, 
+Qt Creator or Codelite, each one of them would crash on a 64-bit Intel-i5 @2.5GHz machine with 12GB of RAM. Crash would always occur 
+during the very basic operation: creating a new project and importing an existing Android source code. In either case, RAM would be 
+eventually eaten up, probably by background source code indexing services, resulting in an application and/or system freeze.
+This IDE will not get you into such problems.
 
-Not to mention that it gets pretty annoying to get used to a completely new environment each time your projects require you to develop
-code for a different platform. This is a pretty common scenario if you work in dynamic environments.
+## Mixed programming languages software
+And what about projects such as Android containing source code written in multiple programming languages? IDEs present on the market, or
+at least those that I am aware of, are usually able to handle single programming language per project. This in turn has a consequence of 
+making the source code indexing service ignore all of the source code written in other programming languages and thus making impossible 
+to utilize a whole lot of IDE features on such code (i.e. `find symbol references`, `go to definition`, `auto-complete` and alike).
+To give you an example, one could easily imagine a project which features a middleware written in Java and all other platform-specific or 
+performance-wise stuff written in some of the native programming languages such as C or C++. If one is employed in developing code for 
+the whole stack, it would be very limiting to have IDE features working only for the subset of programming languages used in the project. 
+This is a very important issue which has been genuinely addressed by this IDE.
 
-Moreover, there is yet to be seen an IDE which can cope with a code base as large and as complex as Android. No IDE which has been set to 
-that challenge recently was able to handle it. Usually, an IDE would crash at the very beginning during the source code import operation. 
+## Good software design principles
+Besides the aforementioned points, this IDE will also provide a complete development environment which will incorporate a programmers toolkit
+which provides more seamless way to design better software. For example, it will integrate tools for:
+* source code static analysis,
+* unit-testing,
+* source code management systems,
+* docs generation
 
-What about projects (i.e. Android) containing source code written in multiple programming languages? IDEs present on the market usually 
-provide support to import the source code of only a single programming language. This has a consequence of making the source code indexing service 
-ignore all of the source code written in other programming languages and thus making impossible to use IDE features such as
-`find symbol references` or `go to definition` to navigate through those parts of code. For example, one could easily imagine a project 
-which features a middleware written in Java and all other platform-specific or performance-wise stuff written in some of the native 
-programming languages such as C or C++. If one is employed in developing code for the whole stack, it would be very limiting to have IDE 
-features working only for the source code type which has been selected during the import and/or project creation. This is an issue 
-which has been already addressed by this IDE.
-
-Besides multi-platform support, this IDE will also provide a complete development environment which will incorporate all elements of good 
-software design including the integration of:
-* test automation frameworks,
-* code documenting tools,
-* static analysis tools
+## Open-source at its finest
+One may ask themselves is it really possible and realistic task to build a full-blown IDE in a reasonable time by a single developer? 
+Thanks to the huge amount of open-source software which can be re-used and perfectly fitted into the IDE features, I think there is no 
+space for doubt. Let me list just some of the open-source software this IDE relies on: `Vim`, `GNU GCC`, `Clang`, `GDB`, `LLDB`, 
+`GNU Make`, `ctags`, `cscope`, `gtags`, `cppcheck`, `clang-analyzer`, `Git`, etc. Having in mind that open-source became a main driver
+in nowadays technology advances, this list will only get bigger and better.
 
 
 # Features
 * Bundled and tweaked for C/C++ development
-* Project management 
-  * Multiple project workspaces support
-  * Various project types (`Generic`, `C`, `C++`, `Mixed`) support
-* Project explorer
-  * Tree-view support
+  * With plans to add support for Python & Java
+* Project management & Project explorer
+  * Featuring seamless project handling 
 * Class browser
-  * Provides an overview of symbols defined in current file
-  * i.e. macro, variable, function, struct, method, class, namespace, etc.
+  * Featuring an overview of symbols defined in current unit 
+    (i.e. macro, struct, class, method, namespace, etc.)
 * Source code auto-completion
-  * Utilizes `clang` engine
+  * Featuring real C/C++ compiler back-end to ensure total correctness
 * Source code navigation
-  * Open file under the cursor
-  * Switch between header & implementation files
-  * Go to declaration, go to definition
-  * Find all references to the given symbol
-  * Find all functions calling the given function
-  * Find all functions called by the given function
-  * Find all files that include the given filename
+  * Featuring a fully automated tag generation system running in background
+    to ensure the best UI experience
 * Source code static analysis
-  * `cppcheck` support
-  * `Clang Static Analyzer` support to be added
-* Build tools integration 
-  * `GNU make` support
-* SCM client integration
-  * `git` support along with the side-column showing modifications in real-time
-* Powerful search utilities
-  * Search dialog
-  * Search & replace dialog
-  * `grep` in interactive mode
-    * Enables easy navigation through the results
-* Miscellaneous editor features
+  * Featuring variety of tools to strengthen your code even more
+* Source code management client integration
+  * Featuring integration of `Git` client (and more to follow)
+* Build tools
+  * Featuring integration of `make` (and more to follow)
+* Many more miscellaneous features like:
+  * Syntax highlighting
   * Highlight all occurrences
   * Parenthesis auto-complete
-  * Context-aware text auto-complete
+  * Context-aware ordinary text auto-complete
   * Multiple-selection editing support
   * Code snippets
-* Bash shell integration
-* Support for various color schemes
-* Plugin manager
+  * `grep` support
+  * `bash` shell integration
+  * Color schemes support
 
 
 # Requirements
@@ -121,7 +127,8 @@ Default installation path is set to `/opt/yavide`. To use different installation
 
 If you experience any installation issues be sure to consult the [FAQ](#faq) section first.
 
-# Usage
+
+# Usage overview
 Category                          | Shortcut                          | Description
 --------------------------------- | --------------------------------- | ---------------------------------
 **Project management**            |                                   |
@@ -186,9 +193,6 @@ Category                          | Shortcut                          | Descript
                                   | `<Ctrl-\>i`                       | Find all files that include the filename under the cursor
                                   | `<Ctrl-\>t`                       | Find all instances of the text under the cursor
                                   | `<Ctrl-\>e`                       | Search for the word under the cursor using `egrep`
-**Source code parser**            |                                   | 
-                                  | `<F5>`				              | Generate `ctags` for current project
-                                  | `<F6>`                            | Generate `cscope` for current project
 **Source code static analysis**   |                                   | 
                                   | `:YavideAnalyzerCppCheckBuf`      | Runs the `cppcheck` static analysis on current buffer
                                   | `:YavideAnalyzerCppCheck`         | Runs the `cppcheck` static analysis on whole project
@@ -216,7 +220,7 @@ Category                          | Shortcut                          | Descript
 [More details ...](https://github.com/JBakamovic/yavide/wiki/Screenshots#how-it-looks-like)
 
 # Credits
-This is an alphabetically ordered list of third-party plugins currently utilized in the system:
+This is an alphabetically ordered list of third-party Vim plugins currently utilized in the system:
 * A (https://github.com/vim-scripts/a.vim)
 * Clang_complete (https://github.com/Rip-Rip/clang_complete)
 * NERDTree (https://github.com/scrooloose/nerdtree)
