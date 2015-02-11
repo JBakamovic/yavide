@@ -43,6 +43,10 @@ let g:project_supported_types           = {
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Init()
+    " Initialize the source code indexer
+    python import sys
+    python sys.argv = ['init']
+    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -51,6 +55,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Deinit()
+    " Deinitialize (shutdown) the source code indexer
+    python import sys
+    python sys.argv = ['deinit']
+    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -230,6 +238,9 @@ function! Y_Project_Close()
     if l:save_changes == 1
         call Y_Project_Save()
     endif
+
+    " Stop the source code indexer
+    call Y_SrcIndexer_Deinit()
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -631,9 +642,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcIndexer_Init()
-    " TODO kill it upon the Yavide exit
-    " TODO check if it is already running? Kill it and re-run it? Reconfigure it?
-
     " Serialize parameters for the source code indexer
     let l:indexer_params  = v:servername . ' '
     for proj_type in values(g:project_supported_types)
@@ -650,8 +658,10 @@ function! Y_SrcIndexer_Init()
     let l:indexer_params .= g:project_java_tags_filename . ' '
     let l:indexer_params .= g:project_cscope_db_filename . ' '
 
-    " Run source code indexer in background
-    call system('python ' . g:YAVIDE_SOURCE_CODE_INDEXER . ' ' . l:indexer_params . ' &')
+    " Run the source code indexer
+    python import sys
+    python sys.argv = ['start']
+    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -660,6 +670,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcIndexer_Deinit()
+    " Stop the source code indexer
+    python import sys
+    python sys.argv = ['stop']
+    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------

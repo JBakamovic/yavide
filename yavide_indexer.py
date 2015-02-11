@@ -2,10 +2,12 @@ import sys
 import time
 import shlex
 import os.path
+import logging
 import subprocess
 from subprocess import call
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from multiprocessing.connection import Listener
 from yavide_utils import YavideUtils
 
 class YavideIndexerBase():
@@ -21,35 +23,35 @@ class YavideIndexerBase():
 
         # If no tags db is available, generate one
         if os.path.isfile(os.path.join(self.root_directory, self.tags_filename)) == False:
+            logging.info('Generating initial tags db.')
             self.db_generate()
 
     def update(self, filename, event_type):
+        logging.info("Triggering update process on '{0}' event.".format(event_type))
         self.action[event_type](filename)
 
     def on_create(self, filename):
-        print "[YavideIndexerBase]: File created"
+        return
 
     def on_delete(self, filename):
-        print "[YavideIndexerBase]: File deleted"
+        return
 
     def on_modify(self, filename):
-        print "[YavideIndexerBase]: File modified"
+        return
 
     def on_move(self, filename):
-        print "[YavideIndexerBase]: File moved"
+        return
 
 class YavideCtagsIndexer(YavideIndexerBase):
     def db_generate(self):
-        print "[YavideCtagsIndexer]: Generating initial tags"
         self.db_generate_impl(0, self.root_directory)
 
     def db_delete_entry(self, filename):
         cmd = 'sed -i ' + '"' + '\:' + os.path.basename(filename) + ':d' + '" ' + os.path.join(self.root_directory, self.tags_filename)
-        print "[YavideCtagsIndexer]: " + cmd
+        logging.info("Deleting an entry from db: '{0}'".format(cmd))
         call(shlex.split(cmd))
 
     def update(self, filename, event_type):
-        print "[YavideCtagsIndexer]: Root directory: {0}".format(self.root_directory)
         YavideIndexerBase.update(self, filename, event_type)
 
 class YavideCtagsIndexer_Cxx(YavideCtagsIndexer):
@@ -57,17 +59,17 @@ class YavideCtagsIndexer_Cxx(YavideCtagsIndexer):
         cmd  = 'ctags --languages=C,C++ --c++-kinds=+p --fields=+iaS --extra=+q '
         cmd += '-a ' if (doDbUpdate == 1) else '-R '
         cmd += '-f ' + os.path.join(self.root_directory, self.tags_filename) + ' "' + files + '"'
-        print "[YavideCtagsIndexer_Cxx]: " + cmd
+        logging.info("Generating the db: '{0}'".format(cmd))
         call(shlex.split(cmd))
 
     def on_create(self, filename):
-        print "[YavideCtagsIndexer_Cxx]: File created"
+        logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
     def on_delete(self, filename):
-        print "[YavideCtagsIndexer_Cxx]: File deleted"
+        logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
 
     def on_modify(self, filename):
-        print "[YavideCtagsIndexer_Cxx]: File modified"
+        logging.info("File modified: '{0}'".format(os.path.basename(filename)))
 
         # Remove all entries from tags database which are referencing the given filename
         self.db_delete_entry(filename)
@@ -76,24 +78,24 @@ class YavideCtagsIndexer_Cxx(YavideCtagsIndexer):
         self.db_generate_impl(1, filename)
 
     def on_move(self, filename):
-        print "[YavideCtagsIndexer_Cxx]: File moved"
+        logging.info("File moved: '{0}'".format(os.path.basename(filename)))
 
 class YavideCtagsIndexer_Java(YavideCtagsIndexer):
     def db_generate_impl(self, doDbUpdate, files):
         cmd  = 'ctags --languages=Java --extra=+q '
         cmd += '-a ' if (doDbUpdate == 1) else '-R '
         cmd += '-f ' + os.path.join(self.root_directory, self.tags_filename) + ' "' + files + '"'
-        print "[YavideCtagsIndexer_Java]: " + cmd
+        logging.info("Generating the db: '{0}'".format(cmd))
         call(shlex.split(cmd))
 
     def on_create(self, filename):
-        print "[YavideCtagsIndexer_Java]: File created"
+        logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
     def on_delete(self, filename):
-        print "[YavideCtagsIndexer_Java]: File deleted"
+        logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
 
     def on_modify(self, filename):
-        print "[YavideCtagsIndexer_Java]: File modified"
+        logging.info("File modified: '{0}'".format(os.path.basename(filename)))
 
         # Remove all entries from tags database which are referencing the given filename
         self.db_delete_entry(filename)
@@ -102,7 +104,7 @@ class YavideCtagsIndexer_Java(YavideCtagsIndexer):
         self.db_generate_impl(1, filename)
 
     def on_move(self, filename):
-        print "[YavideCtagsIndexer_Java]: File moved"
+        logging.info("File moved: '{0}'".format(os.path.basename(filename)))
 
 class YavideCScopeIndexer(YavideIndexerBase):
     def __init__(self, yavide_instance, root_directory, tags_filename, file_types):
@@ -113,38 +115,40 @@ class YavideCScopeIndexer(YavideIndexerBase):
         self.db_add()
 
     def db_generate(self):
-        print "[YavideCScopeIndexer]: Generating initial tags"
         self.db_generate_impl(0)
         self.db_add()
 
     def db_set_default_params(self):
         cmd = ':set cscopetag | set cscopetagorder=0'
         YavideUtils.send_vim_remote_command(self.yavide_instance, cmd)
+        logging.info("Setting default parameters: '{0}'".format(cmd))
 
     def db_add(self):
         cmd = ':cscope add ' + os.path.join(self.root_directory, self.tags_filename)
         YavideUtils.send_vim_remote_command(self.yavide_instance, cmd)
+        logging.info("Adding a new db connection: '{0}'".format(cmd))
 
     def db_reset(self):
-        YavideUtils.send_vim_remote_command(self.yavide_instance, ":cscope reset")
+        cmd = ':cscope reset'
+        YavideUtils.send_vim_remote_command(self.yavide_instance, cmd)
+        logging.info("Resetting the db connection: '{0}'".format(cmd))
 
     def update(self, filename, event_type):
-        print "[YavideCScopeIndexer]: Root directory: {0}".format(self.root_directory)
         YavideIndexerBase.update(self, filename, event_type)
         self.db_reset()
 
     def on_create(self, filename):
-        print "[YavideCScopeIndexer]: File created"
+        logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
     def on_delete(self, filename):
-        print "[YavideCScopeIndexer]: File deleted"
+        logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
 
     def on_modify(self, filename):
-        print "[YavideCScopeIndexer]: File modified"
+        logging.info("File modified: '{0}'".format(os.path.basename(filename)))
         self.db_generate_impl(1)
 
     def on_move(self, filename):
-        print "[YavideCScopeIndexer]: File moved"
+        logging.info("File moved: '{0}'".format(os.path.basename(filename)))
 
     def db_generate_file_list(self):
         cmd = 'find .'
@@ -153,7 +157,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
             cmd += ' -iname *' + ext
             if (i != length-1):
                 cmd += ' -o'
-        print "[YavideCScopeIndexer]: " + cmd
+        logging.info("Generating file list: '{0}'".format(cmd))
         f = open(os.path.join(self.root_directory, 'cscope.files'), "w")
         p = subprocess.Popen(shlex.split(cmd), stdout=f, shell=False, cwd=self.root_directory)
         p.wait()
@@ -163,10 +167,9 @@ class YavideCScopeIndexer(YavideIndexerBase):
         self.db_generate_file_list()
         cmd  = 'cscope -q -R -b'
         cmd += ' -U' if (doDbUpdate == 1) else ''
-        print "[YavideCScopeIndexer]: " + cmd
+        logging.info("Generating the db: '{0}'".format(cmd))
         p = subprocess.Popen(shlex.split(cmd), shell=False, cwd=self.root_directory)
         p.wait()
-        print "[YavideCScopeIndexer]: Finished!"
 
 class YavideFileSystemEventHandler(FileSystemEventHandler):
     def __init__(self, indexer):
@@ -227,13 +230,13 @@ class YavideSourceCodeIndexer():
         self.observer.schedule(self.event_handler, params.proj_root_directory, recursive=True)
 
         # Print some debug information
-        print "File extension whitelist: {0}".format(self.file_types_whitelist)
-        print "Indexers:"
+        logging.info("File extension whitelist: {0}".format(self.file_types_whitelist))
+        logging.info("Active indexers:")
         for prog_language in programming_languages:
-            print "\t[{0}]".format(prog_language)
+            logging.info("For [{0}] programming language:".format(prog_language))
             indexers = self.indexers[prog_language]
             for indexer in indexers:
-                print "\t\t {0}".format(indexer)
+                logging.info("\t\t {0}".format(indexer))
 
     def run(self):
         self.observer.start()
@@ -246,41 +249,105 @@ class YavideSourceCodeIndexer():
 
     def update(self, filename, event_type):
         file_type = os.path.splitext(filename)[1]
-        print "[YavideSourceCodeIndexer] Filename: {0} Extension: {1}".format(filename, file_type)
         if file_type in self.file_types_whitelist:
             programming_language = YavideUtils.file_type_to_programming_language(file_type)
-            print "[YavideSourceCodeIndexer] ProgLanguage: {0}".format(programming_language)
             if programming_language in self.indexers:
-                print "[YavideSourceCodeIndexer]: Filename: {0} Event_type: {1}".format(filename, event_type)
+                logging.info("Filename: '{0}' Event_type: '{1}' Programming lang: '{2}'".format(
+                    os.path.basename(filename), event_type, programming_language)
+                )
                 indexers = self.indexers[programming_language]
                 for indexer in indexers:
                     indexer.update(filename, event_type)
 
-if __name__ == "__main__":
-    # Parse the indexer parameters
-    yavide_instance = sys.argv[1]
-    offset = int(sys.argv[2])
-    file_types = []
-    for idx, param in enumerate(sys.argv):
-        if idx > 2 and idx < 3 + offset:
-            file_types.append(param)
-    proj_root_directory = sys.argv[3 + offset]
-    proj_cxx_tags_filename = sys.argv[4 + offset]
-    proj_java_tags_filename = sys.argv[5 + offset]
-    proj_cscope_db_filename = sys.argv[6 + offset]
 
-    # Run the indexer
-    indexer = YavideSourceCodeIndexer(
-                YavideSourceCodeIndexerParams(
-                    yavide_instance, file_types,
-                    proj_root_directory, proj_cxx_tags_filename,
-                    proj_java_tags_filename, proj_cscope_db_filename)
-    )
-    indexer.run()
-    try:
+class YavideCommandHandler():
+    def __init__(self, port):
+        self.host = 'localhost'
+        self.port = port
+        self.indexer_running = False
+        self.indexer = None
+
+    def run(self):
         while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        indexer.stop()
-    indexer.finalize()
+            # Start the server
+            server_shutdown = False
+            logging.info("Listening on {0} port".format(self.port))
+            listener = Listener((self.host, self.port))
+            conn = listener.accept()
+            logging.info("Connection accepted from {0}".format(listener.last_accepted))
+
+            # Handle client requests
+            while True:
+                try:
+                    msg = conn.recv()
+                    if not msg: continue
+                    logging.info('Client request: {0}'.format(msg))
+                    if msg[0] == 'start' and self.indexer_running == False:
+                        self.__start_indexer(msg)
+                    elif msg[0] == 'stop' and self.indexer_running == True:
+                        self.__stop_indexer()
+                    elif msg[0] == 'shutdown':
+                        server_shutdown = True
+                        break
+                    else:
+                        logging.warning('Unknown client request.')
+                except (EOFError):
+                    logging.info('Connection closed.')
+                    conn.close()
+                    listener.close()
+                    break
+
+            # Handle shutdown request
+            if server_shutdown == True:
+                logging.info('Shutting the indexer down ...')
+                break
+
+        # Clean-up and exit
+        conn.close()
+        listener.close()
+        if self.indexer != None:
+            if self.indexer_running == True:
+                self.__stop_indexer()
+            self.indexer.finalize()
+        logging.info('Exiting ...')
+
+    def __start_indexer(self, msg):
+        logging.info('Starting the indexer ...')
+        yavide_instance = msg[1]
+        offset = int(msg[2])
+        file_types = []
+        for idx, param in enumerate(msg):
+            if idx > 2 and idx < 3 + offset:
+                file_types.append(param)
+        proj_root_directory = msg[3 + offset]
+        proj_cxx_tags_filename = msg[4 + offset]
+        proj_java_tags_filename = msg[5 + offset]
+        proj_cscope_db_filename = msg[6 + offset]
+
+        self.indexer = YavideSourceCodeIndexer(
+                        YavideSourceCodeIndexerParams(
+                            yavide_instance, file_types,
+                            proj_root_directory, proj_cxx_tags_filename,
+                            proj_java_tags_filename, proj_cscope_db_filename)
+        )
+        self.indexer.run()
+        self.indexer_running = True
+
+    def __stop_indexer(self):
+        logging.info('Stopping the indexer ...')
+        self.indexer.stop()
+        self.indexer_running = False
+
+def main():
+    FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
+    logging.basicConfig(filename='.yavide_indexer.log', filemode='w', format=FORMAT, level=logging.INFO)
+    if len(sys.argv) > 1:
+        logging.info('Starting a Yavide indexer server ...')
+        cmd_handler = YavideCommandHandler(int(sys.argv[1]))
+        cmd_handler.run()
+    else:
+        logging.error('Insufficient number of arguments.')
+
+if __name__ == "__main__":
+    main()
 

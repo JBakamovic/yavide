@@ -1,3 +1,4 @@
+import socket
 import subprocess
 from subprocess import call
 import shlex
@@ -26,4 +27,22 @@ class YavideUtils():
     def send_vim_remote_command(vim_instance, command):
         cmd = 'vim --servername ' + vim_instance + ' --remote-send "<ESC>' + command + '<CR>"'
         call(shlex.split(cmd))
+
+    @staticmethod
+    def is_port_available(port):
+        s = socket.socket()
+        try:
+            s.bind(('localhost', port))
+            s.close()
+            return True
+        except socket.error, msg:
+            s.close()
+            return False
+
+    @staticmethod
+    def get_available_port(port_begin, port_end):
+        for port in range(port_begin, port_end):
+            if YavideUtils.is_port_available(port) == True:
+                return port
+        return -1
 
