@@ -65,8 +65,14 @@ class YavideCtagsIndexer_Cxx(YavideCtagsIndexer):
     def on_create(self, filename):
         logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1, filename)
+
     def on_delete(self, filename):
         logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
+
+        # Remove all entries from tags database which are referencing the given filename
+        self.db_delete_entry(filename)
 
     def on_modify(self, filename):
         logging.info("File modified: '{0}'".format(os.path.basename(filename)))
@@ -79,6 +85,12 @@ class YavideCtagsIndexer_Cxx(YavideCtagsIndexer):
 
     def on_move(self, filename):
         logging.info("File moved: '{0}'".format(os.path.basename(filename)))
+
+        # Remove all entries from tags database which are referencing the given filename
+        self.db_delete_entry(filename)
+
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1, filename)
 
 class YavideCtagsIndexer_Java(YavideCtagsIndexer):
     def db_generate_impl(self, doDbUpdate, files):
@@ -91,8 +103,14 @@ class YavideCtagsIndexer_Java(YavideCtagsIndexer):
     def on_create(self, filename):
         logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1, filename)
+
     def on_delete(self, filename):
         logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
+
+        # Remove all entries from tags database which are referencing the given filename
+        self.db_delete_entry(filename)
 
     def on_modify(self, filename):
         logging.info("File modified: '{0}'".format(os.path.basename(filename)))
@@ -106,10 +124,17 @@ class YavideCtagsIndexer_Java(YavideCtagsIndexer):
     def on_move(self, filename):
         logging.info("File moved: '{0}'".format(os.path.basename(filename)))
 
+        # Remove all entries from tags database which are referencing the given filename
+        self.db_delete_entry(filename)
+
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1, filename)
+
 class YavideCScopeIndexer(YavideIndexerBase):
     def __init__(self, yavide_instance, root_directory, tags_filename, file_types):
         self.file_types = file_types
         self.yavide_instance = yavide_instance
+        self.source_file_list_db = 'cscope.files'
         YavideIndexerBase.__init__(self, root_directory, tags_filename)
         self.db_set_default_params()
         self.db_add()
@@ -140,15 +165,63 @@ class YavideCScopeIndexer(YavideIndexerBase):
     def on_create(self, filename):
         logging.info("File created: '{0}'".format(os.path.basename(filename)))
 
+        # Insert a corresponding file entry
+        self.db_add_file_entry(filename)
+
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1)
+
     def on_delete(self, filename):
         logging.info("File deleted: '{0}'".format(os.path.basename(filename)))
 
+        # Remove a corresponding file entry
+        self.db_delete_file_entry(filename)
+
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1)
+
     def on_modify(self, filename):
         logging.info("File modified: '{0}'".format(os.path.basename(filename)))
+
+        # Rebuild the tags database for the given filename
         self.db_generate_impl(1)
 
     def on_move(self, filename):
         logging.info("File moved: '{0}'".format(os.path.basename(filename)))
+
+        # Replace a corresponding file entry
+        self.db_replace_file_entry(filename)
+
+        # Rebuild the tags database for the given filename
+        self.db_generate_impl(1)
+
+    def db_add_file_entry(self, filename):
+        if not self.__file_db_exists():
+            self.db_generate_file_list()
+        else:
+            cmd = 'sed -i ' + '"' + '\$a' + './' + os.path.relpath(filename, self.root_directory) + '" ' + os.path.join(self.root_directory, self.source_file_list_db)
+            logging.info("Adding an entry to source file list db: '{0}'".format(cmd))
+            call(shlex.split(cmd))
+
+    def db_delete_file_entry(self, filename):
+        if not self.__file_db_exists():
+            self.db_generate_file_list()
+        else:
+            cmd = 'sed -i ' + '"' + '\:' + os.path.relpath(filename, self.root_directory) + ':d' + '" ' + os.path.join(self.root_directory, self.source_file_list_db)
+            logging.info("Deleting an entry from source file list db: '{0}'".format(cmd))
+            call(shlex.split(cmd))
+
+    def db_replace_file_entry(self, filename):
+        if not self.__file_db_exists():
+            self.db_generate_file_list()
+        else:
+            # TODO  This can be optimized by using sed replace expression but we are missing an information about the destination filename.
+            #       Destination filename information is provided by the handled event objects but it was not anticipated that this kind 
+            #       of information will be required.
+            self.db_generate_file_list()
+            #cmd = 'sed -i ' + '"' + '\:' + os.path.relpath(src_filename, self.root_directory) + ':c' + dest_filename + " ' + os.path.join(self.root_directory, self.source_file_list_db)
+            #logging.info("Replacing an entry in source file list db: '{0}'".format(cmd))
+            #call(shlex.split(cmd))
 
     def db_generate_file_list(self):
         cmd = 'find .'
@@ -158,18 +231,22 @@ class YavideCScopeIndexer(YavideIndexerBase):
             if (i != length-1):
                 cmd += ' -o'
         logging.info("Generating file list: '{0}'".format(cmd))
-        f = open(os.path.join(self.root_directory, 'cscope.files'), "w")
+        f = open(os.path.join(self.root_directory, self.source_file_list_db), "w")
         p = subprocess.Popen(shlex.split(cmd), stdout=f, shell=False, cwd=self.root_directory)
         p.wait()
         f.close()
 
     def db_generate_impl(self, doDbUpdate):
-        self.db_generate_file_list()
+        if not self.__file_db_exists():
+            self.db_generate_file_list()
         cmd  = 'cscope -q -R -b'
         cmd += ' -U' if (doDbUpdate == 1) else ''
         logging.info("Generating the db: '{0}'".format(cmd))
         p = subprocess.Popen(shlex.split(cmd), shell=False, cwd=self.root_directory)
         p.wait()
+
+    def __file_db_exists(self):
+        return os.path.isfile(os.path.join(self.root_directory, self.source_file_list_db))
 
 class YavideFileSystemEventHandler(FileSystemEventHandler):
     def __init__(self, indexer):
