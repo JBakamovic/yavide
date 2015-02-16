@@ -23,7 +23,8 @@ let g:project_supported_categories      = {
 let g:project_type_generic              = { 'id' : 1, 'extensions' : ['.*'] }
 let g:project_type_c                    = { 'id' : 2, 'extensions' : ['.c', '.h'] }
 let g:project_type_cpp                  = { 'id' : 3, 'extensions' : ['.cpp', '.cc', '.h', '.hpp'] }
-let g:project_type_mixed                = { 'id' : 4, 'extensions' : [] }
+let g:project_type_java                 = { 'id' : 4, 'extensions' : ['.java'] }
+let g:project_type_mixed                = { 'id' : 5, 'extensions' : [] }
 let g:project_supported_types           = {
 \                                           'Generic'   :   g:project_type_generic,
 \                                           'C'         :   g:project_type_c,
@@ -134,6 +135,25 @@ function! s:Y_Project_Create(bEmptyProject)
                         call system('touch ' . 'Makefile')
                     endif
 
+                    " 'Mixed' type of projects require an information about programming languages being used throughout the project
+                    if (l:project_type == g:project_supported_types['Mixed'].id)
+                        " Let us 'auto-detect' the languages
+                        let l:lang_list = s:Y_Project_AutoDetectProgLanguages(l:project_root_directory)
+
+                        " Build a file extension list
+                        let l:extension_list = []
+                        if index(l:lang_list, 'Cxx') >= 0
+                            call extend(l:extension_list, g:project_type_c.extensions)
+                            call extend(l:extension_list, g:project_type_cpp.extensions)
+                        endif
+                        if index(l:lang_list, 'Java') >= 0
+                            call extend(l:extension_list, g:project_type_java.extensions)
+                        endif
+
+                        " Remove duplicates if any
+                        let g:project_type_mixed.extensions = filter(copy(l:extension_list), 'index(l:extension_list, v:val, v:key+1)==-1')
+                    endif
+
                     " Store project specific settings into the project configuration file
                     let l:project_settings = []
                     call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
@@ -147,6 +167,28 @@ function! s:Y_Project_Create(bEmptyProject)
         endif
     endif
     return 1
+endfunction
+
+function s:Y_Project_AutoDetectProgLanguages(project_root_directory)
+    let l:lang_list = []
+
+python << EOF
+import vim
+import os
+
+prog_languages = set()
+for dirpath, dirnames, files in os.walk(vim.eval('a:project_root_directory')):
+    for file in files:
+        file_type = os.path.splitext(file)[1]
+        if file_type != '':
+            plang = YavideUtils.file_type_to_programming_language(file_type)
+            if plang != '':
+                prog_languages.add(plang)
+for lang in prog_languages:
+    vim.command("call add(l:lang_list, '" + lang + "')")
+EOF
+
+    return l:lang_list
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
