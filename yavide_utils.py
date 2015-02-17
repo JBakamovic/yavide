@@ -25,7 +25,7 @@ class YavideUtils():
 
     @staticmethod
     def send_vim_remote_command(vim_instance, command):
-        cmd = 'vim --servername ' + vim_instance + ' --remote-send "<ESC>' + command + '<CR>"'
+        cmd = 'gvim --servername ' + vim_instance + ' --remote-send "<ESC>' + command + '<CR>"'
         call(shlex.split(cmd))
 
     @staticmethod

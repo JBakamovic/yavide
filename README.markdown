@@ -102,7 +102,7 @@ in nowadays technology advances, this list will only get bigger and better.
 
 
 # Requirements
-* Gnome version of Vim 7.3+ compiled with `python` support amongst other standard features like `clientserver`, `conceal`, `ctags` and alike.
+* Gnome version of Vim 7.3+ compiled with `python` support amongst other standard features like `clientserver`, `servername`, `conceal`, `ctags` and alike.
 * Python 2.x+
 * GNU Make
 * GNU GCC
