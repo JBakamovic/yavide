@@ -166,16 +166,18 @@ echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_INSTALL_D
 # in configuration files. This is only to get the things going.
 echo "Searching for 'libclang' paths ..."
 declare -a libclang_paths
-paths=`echo "$passwd" | sudo -S find /usr -type l -path "/usr/lib*/libclang.so"`
+paths=`echo "$passwd" | sudo -S find /usr -path "/usr/lib*/libclang.so"`
 libclang_paths=( ${paths} )
 echo "Found" ${#libclang_paths[@]} "'libclang' paths in total."
-for (( i = 0; i < ${#libclang_paths[@]}; i++ ));
-do
-    echo ${libclang_paths[$i]}
-done
-libclang_selected=${libclang_paths[${#libclang_paths[@]}-1]}
-echo "Selected 'libclang' is '"$libclang_selected"'"
-echo "$passwd" | sudo -S sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_INSTALL_DIR/.user_settings.vimrc
+if [ ${#libclang_paths[@]} != 0 ]; then
+	for (( i = 0; i < ${#libclang_paths[@]}; i++ ));
+	do
+		echo ${libclang_paths[$i]}
+	done
+	libclang_selected=${libclang_paths[${#libclang_paths[@]}-1]}
+	echo "Selected 'libclang' is '"$libclang_selected"'"
+	echo "$passwd" | sudo -S sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_INSTALL_DIR/.user_settings.vimrc
+fi
 
 echo "\n"
 echo "----------------------------------------------------------------------------"
