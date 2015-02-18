@@ -132,7 +132,9 @@ function! s:Y_Project_Create(bEmptyProject)
                         call system('touch ' . g:project_autocomplete_filename)
                     endif
                     if (l:project_category == g:project_supported_categories['Makefile'].id)
-                        call system('touch ' . 'Makefile')
+                        if !filereadable('Makefile')
+                            call system('touch ' . 'Makefile')
+                        endif
                     endif
 
                     " 'Mixed' type of projects require an information about programming languages being used throughout the project
