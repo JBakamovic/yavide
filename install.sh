@@ -157,6 +157,7 @@ fc-cache -vf /home/$USER/.fonts
 echo "$passwd" | sudo -S sed -i '/^Exec=/ s\$\ -u '"$YAVIDE_INSTALL_DIR"'/.vimrc\' yavide.desktop
 echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_INSTALL_DIR
 echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
+echo "$passwd" | sudo -S cp yavide.desktop /usr/share/applications
 echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_INSTALL_DIR
 
 # Try to setup the 'libclang' path automatically by searching for it in '/usr/lib*' system paths.
