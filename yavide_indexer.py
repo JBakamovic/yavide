@@ -312,8 +312,9 @@ class YavideSourceCodeIndexer():
         for prog_language in programming_languages:
             logging.info("For [{0}] programming language:".format(prog_language))
             indexers = self.indexers[prog_language]
-            for indexer in indexers:
-                logging.info("\t\t {0}".format(indexer))
+            if indexers:
+                for indexer in indexers:
+                    logging.info("\t\t {0}".format(indexer))
 
     def run(self):
         self.observer.start()
