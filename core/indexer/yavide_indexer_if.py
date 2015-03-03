@@ -2,7 +2,7 @@ import vim
 import subprocess
 import shlex
 from multiprocessing.connection import Client
-from yavide_utils import YavideUtils
+from common.yavide_utils import YavideUtils
 
 def do_init():
     # Find first available port number
@@ -16,13 +16,15 @@ def do_init():
     vim.command(var)
 
     # Build a command string
-    cmd = 'python '
+    cmd  = 'python '
     cmd += vim.eval('g:YAVIDE_SOURCE_CODE_INDEXER')
     cmd += ' '
     cmd += str(port)
 
     # Run the indexer server listening on a given port
-    subprocess.Popen(shlex.split(cmd), shell=False)
+    new_env = os.environ.copy()
+    new_env['PYTHONPATH'] = vim.eval('g:YAVIDE_CORE_DIRECTORY')
+    subprocess.Popen(shlex.split(cmd), shell=False, env=new_env)
 
 def do_start():
     # Issue a command to start the indexing service with given params

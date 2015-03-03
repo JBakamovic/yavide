@@ -8,7 +8,7 @@ from subprocess import call
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from multiprocessing.connection import Listener
-from yavide_utils import YavideUtils
+from common.yavide_utils import YavideUtils
 
 class YavideIndexerBase():
     def __init__(self, root_directory, tags_filename):

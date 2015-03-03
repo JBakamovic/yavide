@@ -11,23 +11,23 @@ YAVIDE_INSTALL_DIR_DEFAULT="/opt"
 # Helper functions
 #####################################################################################################
 guess_system_package_manager(){
-    if [ `which apt-get` != "" ]; then
+    if [ "`which apt-get`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="apt-get"
         SYSTEM_PACKAGE_MANAGER_INSTALL="apt-get -y install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="apt-get update"
-    elif [ `which zypper` != "" ]; then
+    elif [ "`which zypper`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="zypper"
         SYSTEM_PACKAGE_MANAGER_INSTALL="zypper --non-interactive install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="zypper update"
-    elif [ `which yum` != "" ]; then
+    elif [ "`which yum`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="yum"
         SYSTEM_PACKAGE_MANAGER_INSTALL="yum -y install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="yum update"
-    elif [ `which pacman` != "" ]; then
+    elif [ "`which pacman`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="pacman"
         SYSTEM_PACKAGE_MANAGER_INSTALL="pacman --noconfirm -S"
         SYSTEM_PACKAGE_MANAGER_UPDATE="pacman -Syu"
-    elif [ `which emerge` != "" ]; then
+    elif [ "`which emerge`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="emerge"
         SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
         SYSTEM_PACKAGE_MANAGER_UPDATE="emerge -uv world"
@@ -140,25 +140,15 @@ stty $stty_orig     # restore terminal setting.
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip
 echo "$passwd" | sudo -S pip install watchdog
-[ -d /home/$USER/.fonts ] || echo "$passwd" | sudo -S mkdir /home/$USER/.fonts
-echo "$passwd" | sudo -S git clone https://github.com/Lokaltog/powerline-fonts.git /home/$USER/.fonts
-fc-cache -vf /home/$USER/.fonts
+mkdir -p $HOME/.fonts && git clone https://github.com/Lokaltog/powerline-fonts.git $HOME/.fonts
+fc-cache -vf $HOME/.fonts
 
 #####################################################################################################
 # Start the installation
 #####################################################################################################
 
-# Build the directory structure
-[ -d $YAVIDE_INSTALL_DIR ] || echo "$passwd" | sudo -S mkdir $YAVIDE_INSTALL_DIR
-[ -d $YAVIDE_INSTALL_DIR/bundle ] || echo "$passwd" | sudo -S mkdir $YAVIDE_INSTALL_DIR/bundle
-[ -d $YAVIDE_INSTALL_DIR/colors ] || echo "$passwd" | sudo -S mkdir $YAVIDE_INSTALL_DIR/colors
-
-# Copy the pre-configured stuff
-echo "$passwd" | sudo -S sed -i '/^Exec=/ s\$\ -u '"$YAVIDE_INSTALL_DIR"'/.vimrc\' yavide.desktop
-echo "$passwd" | sudo -S cp yavide.desktop $YAVIDE_INSTALL_DIR
-echo "$passwd" | sudo -S cp yavide.desktop /home/$USER/Desktop
-echo "$passwd" | sudo -S cp yavide.desktop /usr/share/applications
-echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_INSTALL_DIR
+# Yavide launcher file needs to be modified to reflect the destination directory selected in install process
+sed -i '/^Exec=/ s\$\ -u '"$YAVIDE_INSTALL_DIR"'/.vimrc\' yavide.desktop
 
 # Try to setup the 'libclang' path automatically by searching for it in '/usr/lib*' system paths.
 # In case multiple paths were found, the last one will be selected. Reasoning lays behind the fact
@@ -167,7 +157,7 @@ echo "$passwd" | sudo -S cp .*.vimrc .vimrc common.plugin *.py $YAVIDE_INSTALL_D
 # in configuration files. This is only to get the things going.
 echo "Searching for 'libclang' paths ..."
 declare -a libclang_paths
-paths=`echo "$passwd" | sudo -S find /usr -path "/usr/lib*/libclang.so"`
+paths=`find /usr -path "/usr/lib*/libclang.so"`
 libclang_paths=( ${paths} )
 echo "Found" ${#libclang_paths[@]} "'libclang' paths in total."
 if [ ${#libclang_paths[@]} != 0 ]; then
@@ -177,14 +167,25 @@ if [ ${#libclang_paths[@]} != 0 ]; then
 	done
 	libclang_selected=${libclang_paths[${#libclang_paths[@]}-1]}
 	echo "Selected 'libclang' is '"$libclang_selected"'"
-	echo "$passwd" | sudo -S sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' $YAVIDE_INSTALL_DIR/.user_settings.vimrc
+	sed -i '/let g:libclang_location/c\let g:libclang_location = "'${libclang_selected}'"' config/.user_settings.vimrc
 fi
 
-echo "\n"
+# Build the destination directory and copy all of the relevant files
+echo "$passwd" | sudo -S mkdir -p $YAVIDE_INSTALL_DIR
+echo "$passwd" | sudo -S cp -R . $YAVIDE_INSTALL_DIR
+
+# Make Yavide accessible via desktop shortcut
+desktop=`echo $(xdg-user-dir DESKTOP)`
+cp yavide.desktop $desktop
+
+# Make Yavide accessible via 'Applications' menu and via application launcher
+echo "$passwd" | sudo -S cp yavide.desktop /usr/share/applications
+
+echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing plugins ..."
 echo "----------------------------------------------------------------------------"
-cd $YAVIDE_INSTALL_DIR/bundle
+echo "$passwd" | sudo -S mkdir -p $YAVIDE_INSTALL_DIR/core/external && cd $YAVIDE_INSTALL_DIR/core/external
 
 # Fetch/update the plugins
 for URL in $PLUGINS; do
@@ -202,30 +203,31 @@ for URL in $PLUGINS; do
     fi
 done
 
-echo "\n"
+echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing clang_complete ..."
 echo "----------------------------------------------------------------------------"
-cd $YAVIDE_INSTALL_DIR/bundle/clang_complete
+cd $YAVIDE_INSTALL_DIR/core/external/clang_complete
 make install
 
-echo "\n"
+echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing cppcheck ..."
 echo "----------------------------------------------------------------------------"
-cd $YAVIDE_INSTALL_DIR/bundle/
+cd $YAVIDE_INSTALL_DIR/core/external/
 echo "$passwd" | sudo -S mkdir cppcheck && cd cppcheck
 echo "$passwd" | sudo -S mkdir download && cd download
 echo "$passwd" | sudo -S wget http://sourceforge.net/projects/cppcheck/files/cppcheck/1.67/cppcheck-1.67.tar.bz2/download -O cppcheck.tar.bz2
 echo "$passwd" | sudo -S tar xf cppcheck.tar.bz2 && cd cppcheck-1.67
-echo "$passwd" | sudo -S make install SRCDIR=build CFGDIR=$YAVIDE_INSTALL_DIR/bundle/cppcheck/cfg HAVE_RULES=yes
+echo "$passwd" | sudo -S make install SRCDIR=build CFGDIR=$YAVIDE_INSTALL_DIR/core/external/cppcheck/cfg HAVE_RULES=yes
 cd ../../
 echo "$passwd" | sudo -S rm -r download
 
+echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing color schemes ..."
 echo "----------------------------------------------------------------------------"
-cd $YAVIDE_INSTALL_DIR/colors
+echo "$passwd" | sudo -S mkdir -p $YAVIDE_INSTALL_DIR/colors && cd $YAVIDE_INSTALL_DIR/colors
 
 # Fetch/update the color schemes
 for URL in $SCHEMES; do
@@ -246,9 +248,10 @@ done
 # Make symlinks to scheme files
 echo "$passwd" | sudo -S ln -s `find . -wholename '*/colors/*.vim'` .
 
+echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Setting permissions ..."
 echo "----------------------------------------------------------------------------"
-echo "$passwd" | sudo -S chown $USER /home/$USER/Desktop/yavide.desktop
+echo "$passwd" | sudo -S chown $USER $HOME/Desktop/yavide.desktop
 echo "$passwd" | sudo -S chown -R $USER $YAVIDE_INSTALL_DIR
 
