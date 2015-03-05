@@ -148,7 +148,7 @@ fc-cache -vf $HOME/.fonts
 #####################################################################################################
 
 # Yavide launcher file needs to be modified to reflect the destination directory selected in install process
-sed -i '/^Exec=/ s\$\ -u '"$YAVIDE_INSTALL_DIR"'/.vimrc\' yavide.desktop
+sed -i '/^Exec=/ s\$\ -u '"$YAVIDE_INSTALL_DIR"'/.vimrc\' res/yavide.desktop
 
 # Try to setup the 'libclang' path automatically by searching for it in '/usr/lib*' system paths.
 # In case multiple paths were found, the last one will be selected. Reasoning lays behind the fact
@@ -176,10 +176,10 @@ echo "$passwd" | sudo -S cp -R . $YAVIDE_INSTALL_DIR
 
 # Make Yavide accessible via desktop shortcut
 desktop=`echo $(xdg-user-dir DESKTOP)`
-cp yavide.desktop $desktop
+cp res/yavide.desktop $desktop
 
 # Make Yavide accessible via 'Applications' menu and via application launcher
-echo "$passwd" | sudo -S cp yavide.desktop /usr/share/applications
+echo "$passwd" | sudo -S cp res/yavide.desktop /usr/share/applications
 
 echo -e "\n"
 echo "----------------------------------------------------------------------------"
