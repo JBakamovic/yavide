@@ -30,7 +30,7 @@ guess_system_package_manager(){
     elif [ "`which emerge`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="emerge"
         SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
-        SYSTEM_PACKAGE_MANAGER_UPDATE="emerge -uv world"
+        SYSTEM_PACKAGE_MANAGER_UPDATE="emerge --sync"
     fi
 }
 
