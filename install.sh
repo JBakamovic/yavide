@@ -181,6 +181,11 @@ cp res/yavide.desktop $desktop
 # Make Yavide accessible via 'Applications' menu and via application launcher
 echo "$passwd" | sudo -S cp res/yavide.desktop /usr/share/applications
 
+# Make Yavide accessible in terminal
+yavide_alias=`grep -w "Exec" res/yavide.desktop | sed s/Exec=//`
+echo "# Yavide alias" >> $HOME/.bashrc
+echo "alias yavide=\""$yavide_alias"\"" >> $HOME/.bashrc
+
 echo -e "\n"
 echo "----------------------------------------------------------------------------"
 echo "Installing plugins ..."
