@@ -29,6 +29,11 @@ class YavideUtils():
         call(shlex.split(cmd))
 
     @staticmethod
+    def call_vim_remote_function(vim_instance, function):
+        cmd = 'gvim --servername ' + vim_instance + ' --remote-expr "' + function + '"'
+        call(shlex.split(cmd))
+
+    @staticmethod
     def is_port_available(port):
         s = socket.socket()
         try:

@@ -154,8 +154,8 @@ class YavideCScopeIndexer(YavideIndexerBase):
         logging.info("Adding a new db connection: '{0}'".format(cmd))
 
     def db_reset(self):
-        cmd = ':cscope reset'
-        YavideUtils.send_vim_remote_command(self.yavide_instance, cmd)
+        function = 'Y_SrcNav_ReInit()'
+        YavideUtils.call_vim_remote_function(self.yavide_instance, function)
         logging.info("Resetting the db connection: '{0}'".format(cmd))
 
     def update(self, filename, event_type):
