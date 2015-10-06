@@ -15,7 +15,6 @@ let g:yavide_configuration_files = [
 \                   'core/.api.vimrc',
 \                   'core/.autocommands.vimrc',
 \                   'core/.commands.vimrc',
-\                   'config/.keyboard.vimrc'
 \]
 
 for file in g:yavide_configuration_files
