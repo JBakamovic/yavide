@@ -138,7 +138,7 @@ stty $stty_orig     # restore terminal setting.
 # Install dependencies
 #####################################################################################################
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
-echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip
+echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip python-dev
 echo "$passwd" | sudo -S pip install watchdog
 mkdir -p $HOME/.fonts && git clone https://github.com/Lokaltog/powerline-fonts.git $HOME/.fonts
 fc-cache -vf $HOME/.fonts
