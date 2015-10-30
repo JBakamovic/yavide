@@ -33,6 +33,28 @@ let g:project_supported_types           = {
 \}
 
 
+function! Y_CodeHighlight_Run()
+    let l:currentBuffer = expand('%:p"')
+    python import sys
+    python import vim 
+    python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]
+    execute('pyfile /opt/yavide/core/syntax/syntax_highlighter/syntax_highlighter.py')
+    execute('source /tmp/yavideCppNamespace.vim')
+    execute('source /tmp/yavideCppClass.vim')
+    execute('source /tmp/yavideCppStructure.vim')
+    execute('source /tmp/yavideCppEnum.vim')
+    execute('source /tmp/yavideCppEnumValue.vim')
+    execute('source /tmp/yavideCppUnion.vim')
+    execute('source /tmp/yavideCppClassStructUnionMember.vim')
+    execute('source /tmp/yavideCppLocalVariable.vim')
+    execute('source /tmp/yavideCppVariableDefinition.vim')
+    execute('source /tmp/yavideCppFunctionPrototype.vim')
+    execute('source /tmp/yavideCppFunctionDefinition.vim')
+    execute('source /tmp/yavideCppMacro.vim')
+    execute('source /tmp/yavideCppTypedef.vim')
+    execute('source /tmp/yavideCppExternForwardDeclaration.vim')
+endfunction
+
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "	ENVIRONMENT INIT/DEINIT API

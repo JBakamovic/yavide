@@ -23,6 +23,7 @@ execute pathogen#infect(
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'common'   . '/' . '{}',
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'external' . '/' . '{}',
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'indexer'  . '/' . '{}',
+\    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'syntax'   . '/' . '{}',
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'ui'       . '/' . '{}'
 \)
 
