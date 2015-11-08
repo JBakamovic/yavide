@@ -30,7 +30,7 @@ set backspace=indent,eol,start
 set smarttab
 if has("gui_running")                                                       " GUI Vim settings
     set guioptions=agimtTr                                                  " Show 'Menu' + 'Toolbar' + 'Right Scrollbar'
-    colorscheme gruvbox                                                     " Set the color scheme
+    colorscheme yaflandia                                                   " Set the color scheme
     set background=dark
     set guifont=DejaVu\ Sans\ Mono\ for\ Powerline\ 9                       " Set the nice Powerline font so Airline could make use of it
     set lines=999 columns=999                                               " Run maximized

@@ -82,6 +82,7 @@ PLUGINS="$PLUGINS https://github.com/airblade/vim-gitgutter.git"
 PLUGINS="$PLUGINS https://github.com/tpope/vim-pathogen"
 
 # Color schemes
+SCHEMES="$SCHEMES https://github.com/JBakamovic/yaflandia.git"
 SCHEMES="$SCHEMES https://github.com/jeffreyiacono/vim-colors-wombat"
 SCHEMES="$SCHEMES https://github.com/morhetz/gruvbox.git"
 
