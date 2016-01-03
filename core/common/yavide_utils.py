@@ -13,6 +13,7 @@ class YavideUtils():
         for lang, file_types in file_type_dict.iteritems():
             if file_type in file_types:
                 return lang
+        return ''
 
     @staticmethod
     def programming_language_to_extension(programming_language):
