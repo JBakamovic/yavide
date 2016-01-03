@@ -3,25 +3,20 @@ import subprocess
 from subprocess import call
 import shlex
 
+file_type_dict = {
+    'Cxx': ['.c', '.cpp', '.cc', '.h', '.hpp'],
+    'Java': ['.java'] }
+
 class YavideUtils():
     @staticmethod
     def file_type_to_programming_language(file_type):
-        if (file_type == '.c' or file_type == '.cpp' or file_type == '.cc' or
-            file_type == '.h' or file_type == '.hpp'):
-            return 'Cxx'
-        elif (file_type == '.java'):
-            return 'Java'
-        else:
-            return ''
+        for lang, file_types in file_type_dict.iteritems():
+            if file_type in file_types:
+                return lang
 
     @staticmethod
     def programming_language_to_extension(programming_language):
-        if (programming_language == 'Cxx'):
-            return ['.c', '.cpp', '.cc', '.h', '.hpp']
-        elif (programming_language == 'Java'):
-            return ['.java']
-        else:
-            return ''
+        return file_type_dict.get(programming_language, '')
 
     @staticmethod
     def send_vim_remote_command(vim_instance, command):
@@ -50,4 +45,3 @@ class YavideUtils():
             if YavideUtils.is_port_available(port) == True:
                 return port
         return -1
-
