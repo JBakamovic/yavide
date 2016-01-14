@@ -111,6 +111,9 @@ in nowadays technology advances, this list will only get bigger and better.
 * `libclang.so`
 * Internet connection
 
+In `fedora`-based distributions, one may install the requirements by running:
+* `sudo dnf --refresh install @development-tools gvim python2 git clang-devel`
+
 In `debian`-based distributions, one may install the requirements by running:
 * `sudo apt-get update`
 * `sudo apt-get install build-essential vim-gnome python2.7 git libclang-dev`
