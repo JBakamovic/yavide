@@ -15,42 +15,42 @@ YAVIDE_INSTALL_DIR_DEFAULT="/opt"
 guess_system_package_manager(){
     if [ "`which dnf`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="dnf"
-	SYSTEM_PACKAGE_TYPE="rpm"
+        SYSTEM_PACKAGE_TYPE="rpm"
         SYSTEM_PACKAGE_MANAGER_INSTALL="dnf -y install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="dnf --refresh check-update"
     elif [ "`which apt-get`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="apt-get"
-	SYSTEM_PACKAGE_TYPE="deb"
+        SYSTEM_PACKAGE_TYPE="deb"
         SYSTEM_PACKAGE_MANAGER_INSTALL="apt-get -y install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="apt-get update"
     elif [ "`which zypper`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="zypper"
-	SYSTEM_PACKAGE_TYPE="rpm"
+        SYSTEM_PACKAGE_TYPE="rpm"
         SYSTEM_PACKAGE_MANAGER_INSTALL="zypper --non-interactive install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="zypper refresh"
     elif [ "`which yum`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="yum"
-	SYSTEM_PACKAGE_TYPE="rpm"
+        SYSTEM_PACKAGE_TYPE="rpm"
         SYSTEM_PACKAGE_MANAGER_INSTALL="yum -y install"
         SYSTEM_PACKAGE_MANAGER_UPDATE="yum check-update"
     elif [ "`which pacman`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="pacman"
-	SYSTEM_PACKAGE_TYPE="archpkg"
+        SYSTEM_PACKAGE_TYPE="archpkg"
         SYSTEM_PACKAGE_MANAGER_INSTALL="pacman --noconfirm -S"
         SYSTEM_PACKAGE_MANAGER_UPDATE="pacman -Syu"
     elif [ "`which emerge`" != "" ]; then
         SYSTEM_PACKAGE_MANAGER="emerge"
-	SYSTEM_PACKAGE_TYPE="ebuild"
+        SYSTEM_PACKAGE_TYPE="ebuild"
         SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
         SYSTEM_PACKAGE_MANAGER_UPDATE="emerge --sync"
     fi
 
     if [ $SYSTEM_PACKAGE_TYPE == "rpm" ]; then
-	SYSTEM_PACKAGE_SET="gvim ctags cscope git wget pcre-devel libyaml-devel python-pip python-devel python-watchdog clang-devel"
+        SYSTEM_PACKAGE_SET="gvim ctags cscope git wget pcre-devel libyaml-devel python-pip python-devel python-watchdog clang-devel"
     elif [ $SYSTEM_PACKAGE_TYPE == "deb" ]; then
-	SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip python-dev libclang-dev"
+        SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip python-dev libclang-dev"
     elif [ $SYSTEM_PACKAGE_TYPE == "archpkg" || $SYSTEM_PACKAGE_TYPE == "ebuild" ]; then
-	SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget pcre libyaml python-pip python python-watchdog clang"
+        SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget pcre libyaml python-pip python python-watchdog clang"
     fi
 }
 
