@@ -47,7 +47,7 @@ class YavideCtagsIndexer(YavideIndexerBase):
         self.db_generate_impl(0, self.root_directory)
 
     def db_delete_entry(self, filename):
-        cmd = 'sed -i ' + '"' + '\:' + os.path.basename(filename) + ':d' + '" ' + os.path.join(self.root_directory, self.tags_filename)
+        cmd = 'sed -i "\:{}:d" {}'.format(os.path.basename(filename), os.path.join(self.root_directory, self.tags_filename))
         logging.info("Deleting an entry from db: '{0}'".format(cmd))
         call(shlex.split(cmd))
 
@@ -199,7 +199,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
         if not self.__file_db_exists():
             self.db_generate_file_list()
         else:
-            cmd = 'sed -i ' + '"' + '\$a' + './' + os.path.relpath(filename, self.root_directory) + '" ' + os.path.join(self.root_directory, self.source_file_list_db)
+            cmd = 'sed -i "\$a./{}" {}'.format(os.path.relpath(filename, self.root_directory), os.path.join(self.root_directory, self.source_file_list_db))
             logging.info("Adding an entry to source file list db: '{0}'".format(cmd))
             call(shlex.split(cmd))
 
@@ -207,7 +207,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
         if not self.__file_db_exists():
             self.db_generate_file_list()
         else:
-            cmd = 'sed -i ' + '"' + '\:' + os.path.relpath(filename, self.root_directory) + ':d' + '" ' + os.path.join(self.root_directory, self.source_file_list_db)
+            cmd = 'sed -i "\:{}:d" {}'.format(os.path.relpath(filename, self.root_directory), os.path.join(self.root_directory, self.source_file_list_db))
             logging.info("Deleting an entry from source file list db: '{0}'".format(cmd))
             call(shlex.split(cmd))
 
@@ -240,7 +240,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
         if not self.__file_db_exists():
             self.db_generate_file_list()
         cmd  = 'cscope -q -R -b'
-        cmd += ' -U' if (doDbUpdate == 1) else ''
+        cmd += ' -U' if doDbUpdate == 1 else ''
         logging.info("Generating the db: '{0}'".format(cmd))
         p = subprocess.Popen(shlex.split(cmd), shell=False, cwd=self.root_directory)
         p.wait()
