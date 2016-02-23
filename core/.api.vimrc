@@ -263,7 +263,9 @@ function! Y_Project_Open()
         execute('cd ' . l:project_root_directory)
         call s:Y_Project_Load()
         call Y_Layout_Refresh()
+        
         " TODO lock the session
+        
         if g:project_loaded == 0
             execute('cd -')
             redraw | echomsg "No project found at '" . l:project_root_directory . "'"
