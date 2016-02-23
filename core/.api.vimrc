@@ -264,6 +264,10 @@ function! Y_Project_Open()
         call s:Y_Project_Load()
         call Y_Layout_Refresh()
         " TODO lock the session
+        if g:project_loaded == 0
+            execute('cd -')
+            redraw | echomsg "No project found at '" . l:project_root_directory . "'"
+        endif
     endif
 endfunction
 
@@ -810,9 +814,11 @@ endfunction
 " Dependency:	NERDTree, Tagbar
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Layout_Refresh()
-	execute('NERDTree ' . g:project_root_directory)
-	execute('TagbarOpen')
-	call setqflist([])
-	execute('copen')
+    if g:project_loaded == 1
+        execute('NERDTree ' . g:project_root_directory)
+        execute('TagbarOpen')
+        call setqflist([])
+        execute('copen')
+    endif
 endfunction
 
