@@ -67,12 +67,52 @@ endfunction
 "	PROJECT MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
+function! s:Y_Project_Create(bEmptyProject)
+    " TODO implement this as well
+    if a:bEmptyProject == 0
+        return
+    endif
+
+    if 1
+    set nomousehide
+    python import sys
+    execute('pyfile /opt/yavide_dev/core/ui/new_project.py')
+    set mousehide
+    endif
+
+    if 0
+python << EOF
+import pygtk
+import gtk
+
+class Base:
+    def __init__(self, parent):
+        self.dialog = gtk.Dialog(title="My Gtk Dialog", parent=parent)
+        self.dialog.set_modal(True)
+        self.dialog.set_default_size(320, 160)
+        self.combobox = gtk.ComboBox()
+        self.dialog.get_child().add(self.combobox)
+        self.dialog.run()
+
+    def main(self):
+        gtk.main()
+
+window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+window.set_modal(True)
+base = Base(window)
+base.main()
+#gtk.quit()
+EOF
+    endif
+
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! s:Y_Project_Create(bEmptyProject)
+function! s:Y_Project_Create_old(bEmptyProject)
     " Ask user to provide a project name
     call inputsave()
     let l:project_name = input('Project name: ')
@@ -218,12 +258,16 @@ function! s:Y_Project_Load()
     endif
 endfunction
 
+function! Y_Project_New(bCreateEmpty)
+    let l:ret = s:Y_Project_Create(a:bCreateEmpty)
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:
 " Description:
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Project_New(bCreateEmpty)
+function! Y_Project_New_old(bCreateEmpty)
     " Close any previously opened projects if any
     call Y_Project_Close()
 

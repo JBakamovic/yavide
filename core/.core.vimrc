@@ -29,4 +29,3 @@ execute pathogen#infect(
 " Setup the runtime path for Python modules
 python import sys, vim
 python sys.path.append(vim.eval('g:YAVIDE_CORE_DIRECTORY'))
-
