@@ -240,13 +240,34 @@ This is an alphabetically ordered list of third-party Vim plugins currently util
 1. Installation process does not complete all the steps successfully.
   * Issues can arise when some required packages, like `libpcre3`, are named differently or 
     not even present in your distribution repository. Identify these packages and 
-    install them manually.
+    install them manually. In near future, this should be handled by installation script,
+    at least for the most popular distributions.
 
 2. Class browser does not show any symbols.
   * Check if `exuberant-ctags` have been correctly installed on the system.
+    I.e. run `ctags --help | grep -i exuberant` and see if you get some output.
 
 3. Source code auto-complete does not work.
   * Check if `libclang` has been installed on the system.
-  * Check if path to the `libclang.so` has been set properly in `.user_settings.vimrc`.
-  * Check if `.clang_complete` contains valid entries (include directories) for your project.
+  * Check if path to the `libclang.so` has been set properly in `yavide_install_dir/config/.user_settings.vimrc`.
+  * Check if `your_project_root_dir/.clang_complete` contains valid entries (include directories) for your project.
 
+4. It takes ages for `Yavide` to startup/shutdown.
+  * This is not normal and startup/shutdown sequence should literally occur momentarily. Please report this issue if you ever experience it.
+    Generally, this means that `Yavide` couldn't establish the communication with the source code indexing component running in a background process.
+    Reasons can vary, from bug in a `Yavide` code to some more system specific issues. This misbehavior will stop the source code navigation from being functional.
+
+5. This looks exactly like my Vim setup!
+  * Indeed, looking from the surface this may look like an ordinary Vim setup with bunch of plugins. But it isn't.
+    `Yavide` tries to go one step further and integrate all of these plugins together in a single and fully
+    automated development environment. Not only that it integrates the plugins, but it also tries to overcome
+    all of the Vim quirks by providing bullet-proof interfaces, especially when it comes to window and/or buffer handling.
+    What else you say? It provides an indexer service which will make you forget about those days when you had to manually update
+    your `cscope`, `ctags` or whichever symbol database all over and over again in order to have the code navigation working.
+    `Yavide` does this for you automatically and fully transparently requiring no user intervention! Hopefully, code autocompletion
+    will also get to the state where no user intervention will be needed.
+    Moreover, `Yavide` can create/delete/work with different project workspaces, remember sessions between them, tweak the existing
+    plugins configuration accordingly so it fits your project settings, etc. It also provides some extras such as various static
+    code analysis tools. So, a bit more than an ordinary Vim setup :)
+
+6.
