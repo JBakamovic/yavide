@@ -27,7 +27,9 @@ cnoremap    <C-f>               <C-C>:YavidePromptFindAndReplace<CR>
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 nmap        <C-s>               <ESC>:YavideBufferSave<CR>|"                                    Save current buffer (normal mode)
 imap        <C-s>               <ESC>:YavideBufferSave<CR>i|"                                   Save current buffer (insert mode)
-nnoremap    <C-c>               :YavideBufferClose<CR>|"                                        Close current buffer (without killing the window!)
+nnoremap    <C-c>               :YavideBufferClose<CR>|"                                        Close current buffer
+nnoremap    <C-M-c>             :YavideBufferCloseAllButCurrentOne<CR>|"                        Close all buffers but the current one
+nnoremap    <C-c>a              :YavideBufferCloseAll<CR>|"                                     Close all buffers
 map         <C-s-Tab>           :YavideBufferPrev<CR>|"                                         Go to previous buffer
 map         <C-Tab>             :YavideBufferNext<CR>|"                                         Go to next buffer
 nnoremap    <C-Down>            :YavideBufferScrollDown<CR>|"                                   Scroll buffer by one line (down)

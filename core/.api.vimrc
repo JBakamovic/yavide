@@ -419,28 +419,33 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_Close(buf_nr, override_buf_modified)
-    let l:listed_buf_nr = len(filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&buftype") == ""'))
-    let l:curr_buf = bufnr(a:buf_nr)
-    if l:listed_buf_nr == 1
+    let l:nr_of_listed_buffers = len(filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&buftype") == ""'))
+    if l:nr_of_listed_buffers == 1
         let l:close_cmd = 'new | bwipeout'
     else
         let l:close_cmd = 'call Y_Buffer_GoTo(0) | sp | call Y_Buffer_GoTo(1) | bwipeout'
     endif
-    let l:buf_modified = getbufvar(l:curr_buf, "&modified")
-    if l:buf_modified == 1
-        if a:override_buf_modified == 1
-            let l:close_cmd .= '!'
-        else
-            let l:save_changes = confirm('Save changes to "' . bufname(l:curr_buf) . '"?', "&Yes\n&No", 1)
-            if l:save_changes == 1
-                call Y_Buffer_Save(l:curr_buf)
-            else
-                let l:close_cmd .= '!'
-            endif
-        endif
+
+    let l:curr_buf = bufnr(a:buf_nr)
+    let l:buf_type = getbufvar(l:curr_buf, "&buftype")
+    if l:buf_type != 'nofile' && l:buf_type != 'quickfix' && l:buf_type != 'help'
+       let l:buf_modified = getbufvar(l:curr_buf, "&modified")
+       if l:buf_modified == 1
+           if a:override_buf_modified == 1
+               let l:close_cmd .= '!'
+           else
+               let l:save_changes = confirm('Save changes to "' . bufname(l:curr_buf) . '"?', "&Yes\n&No", 1)
+               if l:save_changes == 1
+                   call Y_Buffer_Save(l:curr_buf)
+               else
+                   let l:close_cmd .= '!'
+               endif
+           endif
+       endif
+
+       let l:close_cmd .= ' ' . l:curr_buf
+       execute(l:close_cmd)
     endif
-    let l:close_cmd .= ' ' . l:curr_buf
-    execute(l:close_cmd)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -453,6 +458,22 @@ function! Y_Buffer_CloseAll(override_buf_modified)
     while i <= n
         if bufexists(i)
             call Y_Buffer_Close(i, a:override_buf_modified)
+        endif
+        let i += 1
+    endwhile
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Buffer_CloseAllButCurrentOne(override_buf_modified)
+    let [i, n; buf] = [1, bufnr('$')]
+    let l:curr_buff = bufnr('%')
+    while i <= n
+        if bufexists(i) && i != l:curr_buff
+           call Y_Buffer_Close(i, a:override_buf_modified)
         endif
         let i += 1
     endwhile
