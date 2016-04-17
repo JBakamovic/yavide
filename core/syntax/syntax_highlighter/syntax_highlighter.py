@@ -17,13 +17,13 @@ class VimSyntaxTag:
 
 
 class VimSyntaxHighlighter:
-    def __init__(self, tag_id_list, file_to_be_highlighted, output_directory):
-        self.file_to_be_highlighted = file_to_be_highlighted
+    def __init__(self, tag_id_list, output_directory):
         self.output_directory = output_directory
+        self.tag_id_list = tag_id_list
         self.tag_manager_list = list()
-        self.__instantiate_syntax_tag_manager_list(tag_id_list)
 
-    def generate_vim_syntax_file(self):
+    def generate_vim_syntax_file(self, filename):
+        self.__instantiate_syntax_tag_manager_list(self.tag_id_list, filename)
         for tag_manager in self.tag_manager_list:
             tag_manager.get_instance().run()
             with open(tag_manager.get_instance().get_sanitized_tag_db_path()) as tag_db:
@@ -35,12 +35,13 @@ class VimSyntaxHighlighter:
                 vim_syntax_file = open(generated_vim_syntax_file, "w")
                 vim_syntax_file.writelines(vim_highlight_rules)
    
-    def __instantiate_syntax_tag_manager_list(self, tag_id_list):
+    def __instantiate_syntax_tag_manager_list(self, tag_id_list, filename):
+        self.tag_manager_list[:] = []
         for tag_id in tag_id_list:
             self.tag_manager_list.append(
                     VimSyntaxTag(
                         tag_id, 
-                        TagManagerFactory.getTagManager("Cxx", tag_id, self.file_to_be_highlighted)
+                        TagManagerFactory.getTagManager("Cxx", tag_id, filename)
                     )
             )
 
@@ -100,8 +101,8 @@ def main():
         if value == True:
             tag_id_list.append(key)
 
-    vimHighlighter = VimSyntaxHighlighter(tag_id_list, args.filename, args.output_directory)
-    vimHighlighter.generate_vim_syntax_file()
+    vimHighlighter = VimSyntaxHighlighter(tag_id_list, args.output_directory)
+    vimHighlighter.generate_vim_syntax_file(args.filename)
  
 if __name__ == "__main__":
     main()
