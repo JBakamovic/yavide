@@ -3,7 +3,7 @@
 * [Features](#features)
 * [Requirements](#requirements)
 * [Installation](#installation)
-* [Usage](#usage)
+* [Usage](#usage-overview)
 * [Screenshots](#screenshots)
 * [Credits](#credits)
 * [FAQ](#faq)
@@ -127,6 +127,11 @@ Default installation path is set to `/opt/yavide`. To use different installation
   * if `<install_directory>` is empty, installation path will be set to `/opt/yavide`
   * if `<install_directory>` is not empty, installation path will be set to `<install_directory>/yavide`
 3. `sudo rm -R ~/yavide`
+4. You can run `Yavide` by:
+  * Double-clicking `yavide` icon from your `Desktop`
+  * Typing in `yavide` in Unity/Gnome launcher
+  * Picking `yavide` from classic start menu (`Programming` section)
+  * Running it from the terminal by typing in `yavide`
 
 If you experience any installation issues be sure to consult the [FAQ](#faq) section first.
 
