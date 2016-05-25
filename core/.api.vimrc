@@ -1,17 +1,19 @@
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	Global (vim) variables
+"   Global (vim) variables
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
-let g:project_configuration_filename	= '.yavide_proj'
-let g:project_autocomplete_filename     = '.clang_complete'
-let g:project_session_filename          = '.yavide_session'
-let g:project_loaded                    = 0
-let g:project_java_tags 				= ''
-let g:project_java_tags_filename		= '.java_tags'
-let g:project_cxx_tags 					= ''
-let g:project_cxx_tags_filename			= '.cxx_tags'
-let g:project_cscope_db_filename		= 'cscope.out'
+let g:project_configuration_filename      = '.yavide_proj'
+let g:project_autocomplete_filename       = '.clang_complete'
+let g:project_session_filename            = '.yavide_session'
+let g:project_loaded                      = 0
+let g:project_java_tags                   = ''
+let g:project_java_tags_filename          = '.java_tags'
+let g:project_cxx_tags                    = ''
+let g:project_cxx_tags_filename           = '.cxx_tags'
+let g:project_cscope_db_filename          = 'cscope.out'
+let g:project_env_build_preproces_command = ''
+let g:project_env_build_command           = ''
 
 let g:project_category_generic          = { 'id' : 1 }
 let g:project_category_makefile         = { 'id' : 2 }
@@ -34,7 +36,7 @@ let g:project_supported_types           = {
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	Global (python) variables
+"   Global (python) variables
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 python << EOF
@@ -44,12 +46,21 @@ EOF
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	ENVIRONMENT INIT/DEINIT API
+"   YAVIDE VIMSCRIPT UTILS
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+function! s:Y_Utils_AppendToFile(file, lines)
+    call writefile(readfile(a:file) + a:lines, a:file)
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   ENVIRONMENT INIT/DEINIT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Env_Init()
-" Description:	Initializes the environment.
+" Function:     Y_Env_Init()
+" Description:  Initializes the environment.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Init()
@@ -60,14 +71,11 @@ function! Y_Env_Init()
 
     " Start Yavide server background service
     call Y_ServerStart()
-
-    " Start all Yavide server background services
-    call Y_ServerStartAllServices()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Env_Deinit()
-" Description:	Deinitializes the environment.
+" Function:     Y_Env_Deinit()
+" Description:  Deinitializes the environment.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Deinit()
@@ -82,7 +90,7 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	PROJECT MANAGEMENT API
+"   PROJECT MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -221,7 +229,7 @@ function! s:Y_Project_Load()
     if filereadable(g:project_configuration_filename)
         execute('source ' . g:project_configuration_filename)
         let g:project_java_tags = g:project_root_directory . '/' . g:project_java_tags_filename
-        let g:project_cxx_tags 	= g:project_root_directory . '/' . g:project_cxx_tags_filename
+        let g:project_cxx_tags  = g:project_root_directory . '/' . g:project_cxx_tags_filename
 
         " Load project session information
         if filereadable(g:project_session_filename)
@@ -234,6 +242,32 @@ function! s:Y_Project_Load()
 
         let g:project_loaded = 1
     endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! s:Y_Project_RemoveEnv()
+    let cmd = 'sed -i "/^let g:project_env/d" ' . g:project_configuration_filename
+    let resp = system(cmd) 
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:
+" Description:
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! s:Y_Project_SaveEnv()
+    " Remove the existing env section
+    call s:Y_Project_RemoveEnv()
+    
+    " And replace it with most current env config
+    let l:project_env = []
+    call add(l:project_env, 'let g:' . 'project_env_build_preproces_command = ' . "\'" . g:project_env_build_preproces_command . "\'")
+    call add(l:project_env, 'let g:' . 'project_env_build_command = ' . "\'" . g:project_env_build_command . "\'")
+    call s:Y_Utils_AppendToFile(g:project_configuration_filename, l:project_env)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -287,6 +321,10 @@ function! Y_Project_Open()
         if g:project_loaded == 0
             execute('cd -')
             redraw | echomsg "No project found at '" . l:project_root_directory . "'"
+        else
+            " Trigger starting specific background services
+            call Y_CodeHighlight_Start()
+            call Y_ProjectBuilder_Start()
         endif
     endif
 endfunction
@@ -309,6 +347,10 @@ function! Y_Project_Close()
 
     " Stop the source code indexer
     call Y_SrcIndexer_Deinit()
+
+    " Trigger starting specific background services
+    call Y_CodeHighlight_Stop()
+    call Y_ProjectBuilder_Stop()
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -343,6 +385,9 @@ function! Y_Project_Save()
         return 1
     endif
 
+    " Save project-specific variables
+    call s:Y_Project_SaveEnv()
+
     " Save all modified files
     call Y_Buffer_SaveAll()
 
@@ -370,7 +415,7 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SEARCH API
+"   SEARCH API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -379,7 +424,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Prompt_Find()
-	:promptfind
+    :promptfind
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -388,13 +433,13 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Prompt_FindAndReplace()
-	:promptrepl
+    :promptrepl
 endfunction
 
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	BUFFER MANAGEMENT API
+"   BUFFER MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -410,7 +455,7 @@ function! Y_Buffer_Save(buf_nr)
         if bufname(a:buf_nr) == ''
             :browse w
         else
-	        :w
+            :w
         endif
         execute('buffer ' . l:curr_buffer)
     endif
@@ -522,10 +567,10 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_GoTo(bGoToNext)
     if &buftype != 'nofile' && &buftype != 'quickfix' && &buftype != 'help'
-	    let cmd = a:bGoToNext == 1 ? ":bnext" : ":bprevious"
-	    exec cmd
-	    if &buftype ==# 'quickfix'
-		    exec cmd
+        let cmd = a:bGoToNext == 1 ? ":bnext" : ":bprevious"
+        exec cmd
+        if &buftype ==# 'quickfix'
+            exec cmd
         endif
     endif
 endfunction
@@ -536,17 +581,17 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_Scroll(bScrollDown)
-	if (a:bScrollDown == 1)
-		execute("normal \<C-e>")
-	else
-		execute("normal \<C-y>")
-	endif
+    if (a:bScrollDown == 1)
+        execute("normal \<C-e>")
+    else
+        execute("normal \<C-y>")
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Buffer_StripTrailingWhitespaces()
-" Description:	Strips trailing whitespaces from current buffer
-" Dependency:	None
+" Function:     Y_Buffer_StripTrailingWhitespaces()
+" Description:  Strips trailing whitespaces from current buffer
+" Dependency:   None
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Buffer_StripTrailingWhitespaces()
     " Preparation: save last search, and cursor position.
@@ -563,7 +608,7 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	TEXT MANAGEMENT API
+"   TEXT MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -572,7 +617,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Text_SelectAll()
-	execute('normal ggVG')
+    execute('normal ggVG')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -581,7 +626,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Text_Cut()
-	execute('normal \"+x')
+    execute('normal \"+x')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -590,7 +635,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Text_Copy()
-	execute('normal \"+y')
+    execute('normal \"+y')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -599,7 +644,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Text_Paste()
-	execute('normal +gP')
+    execute('normal +gP')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -608,7 +653,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Text_Undo()
-	execute('normal u')
+    execute('normal u')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -622,120 +667,120 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SOURCE CODE NAVIGATION API
+"   SOURCE CODE NAVIGATION API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_OpenFile()
-" Description:	Opens the file under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_OpenFile()
+" Description:  Opens the file under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_OpenFile()
-	execute('cs find f '.expand("<cfile>"))
+    execute('cs find f '.expand("<cfile>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_SwitchBetweenHeaderImpl()
-" Description:	Switches between header and implementation files
-" Dependency:	'A' plugin
+" Function:     Y_SrcNav_SwitchBetweenHeaderImpl()
+" Description:  Switches between header and implementation files
+" Dependency:   'A' plugin
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_SwitchBetweenHeaderImpl(bShowInVerticalSplit)
-	if (a:bShowInVerticalSplit == 1)
-		:AV
-	else
-		:A
-	endif
+    if (a:bShowInVerticalSplit == 1)
+        :AV
+    else
+        :A
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_GoToDefinition()
-" Description:	Go to definition of token under the cursor
-" Dependency:	ctags exuberant
+" Function:     Y_SrcNav_GoToDefinition()
+" Description:  Go to definition of token under the cursor
+" Dependency:   ctags exuberant
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_GoToDefinition()
-	execute('tjump '.expand("<cword>"))
+    execute('tjump '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindAllReferences()
-" Description:	Find all references to the token under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindAllReferences()
+" Description:  Find all references to the token under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindAllReferences()
-	execute('cs find s '.expand("<cword>"))
+    execute('cs find s '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindGlobalDefinitions()
-" Description:	Find global definitions of token under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindGlobalDefinitions()
+" Description:  Find global definitions of token under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindGlobalDefinitions()
-	execute('cs find g '.expand("<cword>"))
+    execute('cs find g '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindAllCallers()
-" Description:	Find all functions calling the function under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindAllCallers()
+" Description:  Find all functions calling the function under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindAllCallers()
-	execute('cs find c '.expand("<cword>"))
+    execute('cs find c '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindAllCallees()
-" Description:	Find all functions called by the function under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindAllCallees()
+" Description:  Find all functions called by the function under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindAllCallees()
-	execute('cs find d '.expand("<cword>"))
+    execute('cs find d '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindAllIncludes()
-" Description:	Find all files that include the filename under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindAllIncludes()
+" Description:  Find all files that include the filename under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindAllIncludes()
-	execute('cs find i '.expand("<cfile>"))
+    execute('cs find i '.expand("<cfile>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_FindAllInstancesOfText()
-" Description:	Run 'egrep'of token under the cursor
-" Dependency:	cscope
+" Function:     Y_SrcNav_FindAllInstancesOfText()
+" Description:  Run 'egrep'of token under the cursor
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_FindAllInstancesOfText()
-	execute('cs find t '.expand("<cword>"))
+    execute('cs find t '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_EGrepSearch()
-" Description:	Search for the word under the cursor using 'egrep'
-" Dependency:	cscope, egrep
+" Function:     Y_SrcNav_EGrepSearch()
+" Description:  Search for the word under the cursor using 'egrep'
+" Dependency:   cscope, egrep
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_EGrepSearch()
-	execute('cs find e '.expand("<cword>"))
+    execute('cs find e '.expand("<cword>"))
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcNav_ReInit()
-" Description:	Reinit the cscope database
-" Dependency:	cscope
+" Function:     Y_SrcNav_ReInit()
+" Description:  Reinit the cscope database
+" Dependency:   cscope
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcNav_ReInit()
-	execute('cs reset')
+    execute('cs reset')
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SOURCE CODE INDEXER API
+"   SOURCE CODE INDEXER API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcIndexer_Init()
-" Description:	Initialization of source code indexer
+" Function:     Y_SrcIndexer_Init()
+" Description:  Initialization of source code indexer
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcIndexer_Init()
@@ -762,8 +807,8 @@ function! Y_SrcIndexer_Init()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_SrcIndexer_Deinit()
-" Description:	Deinitialization of source code indexer
+" Function:     Y_SrcIndexer_Deinit()
+" Description:  Deinitialization of source code indexer
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcIndexer_Deinit()
@@ -775,12 +820,12 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	YAVIDE SERVER API
+"   YAVIDE SERVER API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStart()
-" Description:	Starts Yavide server background service.
+" Function:     Y_ServerStart()
+" Description:  Starts Yavide server background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStart()
@@ -795,106 +840,109 @@ EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStartAllServices()
-" Description:	Starts all Yavide server background services.
+" Function:     Y_ServerStartAllServices()
+" Description:  Starts all Yavide server background services.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartAllServices()
 python << EOF
 from multiprocessing import Queue
 
-server_queue.put([0xF0, "start_all_services"])
+server_queue.put([0xF0, 0xFF, "start_all_services"])
 
 EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStartService()
-" Description:	Starts sepcific Yavide server background services.
+" Function:     Y_ServerStartService()
+" Description:  Starts specific Yavide server background services.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStartService(id)
+function! Y_ServerStartService(id, payload)
 python << EOF
 from multiprocessing import Queue
 
-server_queue.put([0xF1, vim.eval('a:id')])
+server_queue.put([0xF1, vim.eval('a:id'), vim.eval('a:payload')])
 
 EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStopAllServices()
-" Description:	Stops all Yavide server background services.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopAllServices()
-python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xF2, "stop_all_services"])
-
-EOF
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStopService()
-" Description:	Stops specific Yavide server backround service.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopService(id)
-python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xF3, vim.eval('a:id')])
-
-EOF
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerStop()
-" Description:	Stops Yavide server background service.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStop()
-python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xFF, "shutdown_and_exit"])
-
-EOF
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_ServerSendMsg()
-" Description:	Sends message to particular Yavide server background service.
+" Function:     Y_ServerSendMsg()
+" Description:  Sends message to particular Yavide server background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerSendMsg(id, payload)
 python << EOF
 from multiprocessing import Queue
 
-server_queue.put([int(vim.eval('a:id')), vim.eval('a:payload')])
+server_queue.put([0xF2, int(vim.eval('a:id')), vim.eval('a:payload')])
+
+EOF
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ServerStopAllServices()
+" Description:  Stops all Yavide server background services.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ServerStopAllServices()
+python << EOF
+from multiprocessing import Queue
+
+server_queue.put([0xFD, 0xFF, "stop_all_services"])
+
+EOF
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ServerStopService()
+" Description:  Stops specific Yavide server backround service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ServerStopService(id)
+python << EOF
+from multiprocessing import Queue
+
+server_queue.put([0xFE, 0xFF, vim.eval('a:id')])
+
+EOF
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ServerStop()
+" Description:  Stops Yavide server background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ServerStop()
+python << EOF
+from multiprocessing import Queue
+
+server_queue.put([0xFF, 0xFF, "shutdown_and_exit"])
 
 EOF
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	SOURCE CODE HIGHLIGHT API
+"   SOURCE CODE HIGHLIGHT API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_CodeHighlight_Start()
-" Description:	Starts the code highlight background service.
+" Function:     Y_CodeHighlight_Start()
+" Description:  Starts the code highlight background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_CodeHighlight_Start()
-    call Y_ServerStartService(0)
+"python import sys
+"python import vim
+"python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]  
+    call Y_ServerStartService(0, 'some param')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_CodeHighlight_Stop()
-" Description:	Stops the code highlight background service.
+" Function:     Y_CodeHighlight_Stop()
+" Description:  Stops the code highlight background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_CodeHighlight_Stop()
@@ -902,22 +950,18 @@ function! Y_CodeHighlight_Stop()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_CodeHighlight_Run()
-" Description:	Triggers the source code highlighting for current buffer.
+" Function:     Y_CodeHighlight_Run()
+" Description:  Triggers the source code highlighting for current buffer.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_CodeHighlight_Run()
     let l:currentBuffer = expand('%:p"')
     call Y_ServerSendMsg(0, l:currentBuffer)
-
-"python import sys
-"python import vim
-"python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_CodeHighlight_Apply()
-" Description:	Apply the results of source code highlighting for given filename.
+" Function:     Y_CodeHighlight_Apply()
+" Description:  Apply the results of source code highlighting for given filename.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_CodeHighlight_Apply(filename)
@@ -947,84 +991,130 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	STATIC ANALYSIS API
+"   STATIC ANALYSIS API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Analyzer_RunCppCheck()
-" Description:	Runs the 'cppcheck' on given path
-" Dependency:	cppcheck
+" Function:     Y_Analyzer_RunCppCheck()
+" Description:  Runs the 'cppcheck' on given path
+" Dependency:   cppcheck
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Analyzer_RunCppCheck(path, ...)
-	let additional_args = ''
-	if a:0 != 0
-		let additional_args = a:1
-		let i = 2
-		while i <= a:0
-		    execute "let additional_args = additional_args . \" \" . a:" . i
-		    let i = i + 1
-		endwhile
+    let additional_args = ''
+    if a:0 != 0
+        let additional_args = a:1
+        let i = 2
+        while i <= a:0
+            execute "let additional_args = additional_args . \" \" . a:" . i
+            let i = i + 1
+        endwhile
     endif
 
     let mp = &makeprg
     let &makeprg = 'cppcheck --enable=all --force --quiet --template=gcc ' . additional_args . ' ' . a:path
-	exec "make!"
+    exec "make!"
     let &makeprg = mp
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Analyzer_RunClangChecker()
-" Description:	Runs the 'clang' static analysis on given path
-" Dependency:	clang
+" Function:     Y_Analyzer_RunClangChecker()
+" Description:  Runs the 'clang' static analysis on given path
+" Dependency:   clang
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Analyzer_RunClangChecker(path, ...)
-	let analysis = '-analyzer-store=region -analyzer-opt-analyze-nested-blocks -analyzer-eagerly-assume -analyzer-checker=core -analyzer-checker=unix -analyzer-checker=deadcode -analyzer-checker=cplusplus -analyzer-checker=security.insecureAPI.UncheckedReturn -analyzer-checker=security.insecureAPI.getpw -analyzer-checker=security.insecureAPI.gets -analyzer-checker=security.insecureAPI.mktemp -analyzer-checker=security.insecureAPI.mkstemp -analyzer-checker=security.insecureAPI.vfork -analyzer-output plist'
-	let mp = &makeprg
-	let &makeprg = 'clang++ -cc1 -analyze -triple arm-none-linux-eabi ' . analysis
-	exec "make!"
-	let makeprg = &mp
+    let analysis = '-analyzer-store=region -analyzer-opt-analyze-nested-blocks -analyzer-eagerly-assume -analyzer-checker=core -analyzer-checker=unix -analyzer-checker=deadcode -analyzer-checker=cplusplus -analyzer-checker=security.insecureAPI.UncheckedReturn -analyzer-checker=security.insecureAPI.getpw -analyzer-checker=security.insecureAPI.gets -analyzer-checker=security.insecureAPI.mktemp -analyzer-checker=security.insecureAPI.mkstemp -analyzer-checker=security.insecureAPI.vfork -analyzer-output plist'
+    let mp = &makeprg
+    let &makeprg = 'clang++ -cc1 -analyze -triple arm-none-linux-eabi ' . analysis
+    exec "make!"
+    let makeprg = &mp
 endfunction
 
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	BUILD MANAGEMENT API
+"   BUILD MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
+" Function:     Y_ProjectBuilder_Start()
+" Description:  Starts the project builder background service.
+" Dependency:
+function! Y_ProjectBuilder_Start()
+    let args = [g:project_root_directory, g:project_env_build_command]
+    call Y_ServerStartService(1, args)
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Build_RunMake()
-" Description:	Run the build via Makefile. 
-" 				When finished, open the quickfix window and avoid jumping to the first error.
-" 				Warnings are currently treated as errors so this feature can easily start to become annoying.
-" Dependency:	GNU make
+" Function:     Y_ProjectBuilder_Stop()
+" Description:  Stops the project builder background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ProjectBuilder_Stop()
+    call Y_ServerStopService(1)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ProjectBuilder_Run()
+" Description:  Triggers the build for current project.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ProjectBuilder_Run(...)
+    let args = ''
+    if a:0 != 0
+        let args = a:1
+        let i = 2
+        while i <= a:0
+            execute "let args = args . \" \" . a:" . i
+            let i = i + 1
+        endwhile
+    endif
+    call setqflist([])
+    call Y_ServerSendMsg(1, args)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ProjectBuilder_Apply()
+" Description:  Apply the results of source code highlighting for given filename.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ProjectBuilder_Apply(filename)
+    execute('cfile '.a:filename)
+    execute('copen')
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Build_RunMake()
+" Description:  Run the build via Makefile. 
+"               When finished, open the quickfix window and avoid jumping to the first error.
+"               Warnings are currently treated as errors so this feature can easily start to become annoying.
+" Dependency:   GNU make
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Build_RunMake(...)
-	let additional_args = ''
-	if a:0 != 0
-		let additional_args = a:1
-		let i = 2
-		while i <= a:0
-		    execute "let additional_args = additional_args . \" \" . a:" . i
-		    let i = i + 1
-		endwhile
+    let additional_args = ''
+    if a:0 != 0
+        let additional_args = a:1
+        let i = 2
+        while i <= a:0
+            execute "let additional_args = additional_args . \" \" . a:" . i
+            let i = i + 1
+        endwhile
     endif
     
-	let mp = &makeprg
+    let mp = &makeprg
     let &makeprg = 'make ' . additional_args
-	exec "make! | copen"
+    exec "make! | copen"
     let &makeprg = mp
 endfunction
 
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"	LAYOUT MANAGEMENT API
+"   LAYOUT MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function: 	Y_Layout_Refresh()
-" Description:	Setups the default layout
-" Dependency:	NERDTree, Tagbar
+" Function:     Y_Layout_Refresh()
+" Description:  Setups the default layout
+" Dependency:   NERDTree, Tagbar
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Layout_Refresh()
     if g:project_loaded == 1
