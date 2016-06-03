@@ -14,6 +14,7 @@ let g:project_cxx_tags_filename           = '.cxx_tags'
 let g:project_cscope_db_filename          = 'cscope.out'
 let g:project_env_build_preproces_command = ''
 let g:project_env_build_command           = ''
+let g:project_env_src_code_format_config  = '.clang-format'
 
 let g:project_category_generic          = { 'id' : 1 }
 let g:project_category_makefile         = { 'id' : 2 }
@@ -325,6 +326,7 @@ function! Y_Project_Open()
             " Trigger starting specific background services
             call Y_CodeHighlight_Start()
             call Y_ProjectBuilder_Start()
+            call Y_SrcCodeFormatter_Start()
         endif
     endif
 endfunction
@@ -351,6 +353,7 @@ function! Y_Project_Close()
     " Trigger starting specific background services
     call Y_CodeHighlight_Stop()
     call Y_ProjectBuilder_Stop()
+    call Y_SrcCodeFormatter_Stop()
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -1122,6 +1125,51 @@ function! Y_Layout_Refresh()
         execute('TagbarOpen')
         call setqflist([])
         execute('copen')
+    endif
+endfunction
+
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE FORMATTER API
+" 
+" --------------------------------------------------------------------------------------------------------------------------------------
+" Function:     Y_SrcCodeFormatter_Start()
+" Description:  Starts the project builder background service.
+" Dependency:
+function! Y_SrcCodeFormatter_Start()
+    let l:configFile = g:project_root_directory . '/' . g:project_env_src_code_format_config
+    call Y_ServerStartService(2, l:configFile)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeFormatter_Stop()
+" Description:  Stops the project builder background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeFormatter_Stop()
+    call Y_ServerStopService(2)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeFormatter_Run()
+" Description:  Triggers the build for current project.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeFormatter_Run()
+    let l:currentBuffer = expand('%:p"')
+    call Y_ServerSendMsg(2, l:currentBuffer)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeFormatter_Apply()
+" Description:  Apply the results of source code formatting for given filename.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeFormatter_Apply(filename)
+    let l:currentBuffer = expand('%:p"')
+    if l:currentBuffer == a:filename
+        execute('e')
     endif
 endfunction
 

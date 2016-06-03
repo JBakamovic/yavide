@@ -48,6 +48,22 @@ class Service():
     def put_msg(self, payload):
         self.queue.put(payload)
 
+class ClangSourceCodeFormatter(Service):
+    def __init__(self, server_queue, yavide_instance):
+        Service.__init__(self, server_queue, yavide_instance)
+        self.config_file = ""
+
+    def startup_hook(self, config_file):
+        self.config_file = config_file
+        self.format_cmd = "clang-format -i -style=" + self.config_file
+
+    def run_impl(self, filename):
+        filename = filename
+        cmd = self.format_cmd + " " + filename
+        ret = subprocess.call(cmd, shell=True)
+        YavideUtils.send_vim_remote_command(self.yavide_instance, ":echomsg 'format_cmd=" + str(cmd) + "'")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeFormatter_Apply('" + filename + "')")
+
 class ProjectBuilder(Service):
     def __init__(self, server_queue, yavide_instance):
         Service.__init__(self, server_queue, yavide_instance)
@@ -101,7 +117,8 @@ class YavideServer():
         self.yavide_instance = yavide_instance
         self.service = {
             0x0 : SourceCodeHighlighter(self.msg_queue, self.yavide_instance),
-            0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance)
+            0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
+            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance)
         }
         self.service_processes = {}
         self.action_id = {
@@ -183,8 +200,9 @@ def main():
     #q.put([0xF0, "start_all_services"])
     q.put([0xF1, 0, "--class --struct --func"])
     q.put([0xF1, 1, ["/home/vagrant/repositories/navi_development/nav_business_ctrl", "./build.sh"]])
+    q.put([0xF1, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/.clang_format"])
     q.put([0xF2, 0, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
-    q.put([0xF2, 1, "dummy"])
+    q.put([0xF2, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xFF, 0, "shutdown_and_exit"])
     yavide_server_run(q, "YAVIDE1")
 
