@@ -3,6 +3,7 @@ import tempfile
 from multiprocessing import Process, Queue
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
+from services.indexer_service import SourceCodeIndexer
 from services.syntax_highlighter_service import SyntaxHighlighter
 
 class YavideServer():
@@ -12,7 +13,8 @@ class YavideServer():
         self.service = {
             0x0 : SyntaxHighlighter(self.msg_queue, self.yavide_instance),
             0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance)
+            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance),
+            0x3 : SourceCodeIndexer(self.msg_queue, self.yavide_instance)
         }
         self.service_processes = {}
         self.action = {
@@ -103,6 +105,7 @@ def main():
     q.put([0xF1, 0, "--class --struct --func"])
     q.put([0xF1, 1, ["/home/vagrant/repositories/navi_development/nav_business_ctrl", "./build.sh"]])
     q.put([0xF1, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/.clang_format"])
+    q.put([0xF1, 3, ['4', '.cpp', '.cc', '.h', '.hpp', '/home/vagrant/repositories/navi_development/nav_business_ctrl', '.cxx_tags', '.java_tags', 'cscope.out']])
     q.put([0xF2, 0, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xF2, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xFF, 0, "shutdown_and_exit"])

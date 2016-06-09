@@ -65,11 +65,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Init()
-    " Initialize the source code indexer
-    python import sys
-    python sys.argv = ['init']
-    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
-
     " Start Yavide server background service
     call Y_ServerStart()
 endfunction
@@ -80,11 +75,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Deinit()
-    " Deinitialize (shutdown) the source code indexer
-    python import sys
-    python sys.argv = ['deinit']
-    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
-
     " Shutdown Yavide server background service
     call Y_ServerStop()
 endfunction
@@ -237,10 +227,6 @@ function! s:Y_Project_Load()
             execute('source ' . g:project_session_filename)
         endif
         call Y_Buffer_CloseEmpty()
-
-        " Initialize the source code indexer
-        call Y_SrcIndexer_Init()
-
         let g:project_loaded = 1
     endif
 endfunction
@@ -325,6 +311,7 @@ function! Y_Project_Open()
         else
             " Trigger starting specific background services
             call Y_ProjectBuilder_Start()
+            call Y_SrcCodeIndexer_Start()
             call Y_SrcCodeHighlighter_Start()
             call Y_SrcCodeFormatter_Start()
         endif
@@ -347,12 +334,10 @@ function! Y_Project_Close()
         call Y_Project_Save()
     endif
 
-    " Stop the source code indexer
-    call Y_SrcIndexer_Deinit()
-
     " Trigger starting specific background services
-    call Y_SrcCodeHighlighter_Stop()
     call Y_ProjectBuilder_Stop()
+    call Y_SrcCodeIndexer_Stop()
+    call Y_SrcCodeHighlighter_Stop()
     call Y_SrcCodeFormatter_Stop()
 
     " Close all buffers
@@ -778,51 +763,6 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"   SOURCE CODE INDEXER API
-" 
-" --------------------------------------------------------------------------------------------------------------------------------------
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcIndexer_Init()
-" Description:  Initialization of source code indexer
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcIndexer_Init()
-    " Serialize parameters for the source code indexer
-    let l:indexer_params  = v:servername . ' '
-    for proj_type in values(g:project_supported_types)
-        if proj_type.id == g:project_type
-            let l:indexer_params .= len(proj_type.extensions) . ' '
-            for extension in proj_type.extensions
-                let l:indexer_params .= extension . ' '
-            endfor
-            break
-        endif
-    endfor
-    let l:indexer_params .= g:project_root_directory     . ' '
-    let l:indexer_params .= g:project_cxx_tags_filename  . ' '
-    let l:indexer_params .= g:project_java_tags_filename . ' '
-    let l:indexer_params .= g:project_cscope_db_filename . ' '
-
-    " Run the source code indexer
-    python import sys
-    python sys.argv = ['start']
-    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcIndexer_Deinit()
-" Description:  Deinitialization of source code indexer
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcIndexer_Deinit()
-    " Stop the source code indexer
-    python import sys
-    python sys.argv = ['stop']
-    execute('pyfile ' . g:YAVIDE_SOURCE_CODE_INDEXER_IF)
-endfunction
-
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
 "   YAVIDE SERVER API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1175,5 +1115,44 @@ function! Y_SrcCodeFormatter_Apply(filename)
     if l:currentBuffer == a:filename
         execute('e')
     endif
+endfunction
+
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE INDEXER API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_Start()
+" Description:  Starts the source code indexer background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_Start()
+    " Serialize parameters for the source code indexer
+    let l:args = []
+    for proj_type in values(g:project_supported_types)
+        if proj_type.id == g:project_type
+            call add(l:args, len(proj_type.extensions))
+            for extension in proj_type.extensions
+                call add(l:args, extension)
+            endfor
+            break
+        endif
+    endfor
+    call add(l:args, g:project_root_directory)
+    call add(l:args, g:project_cxx_tags_filename)
+    call add(l:args, g:project_java_tags_filename)
+    call add(l:args, g:project_cscope_db_filename)
+    call Y_ServerStartService(3, l:args)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_Stop()
+" Description:  Stops the source code indexer background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_Stop()
+    call Y_ServerStopService(3)
 endfunction
 
