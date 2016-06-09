@@ -25,8 +25,8 @@ class YavideService():
 
     def shutdown_impl(self, payload):
         logging.info("Service shutdown ... Payload = {0}".format(payload))
-        self.exit_main_loop = True
         self.shutdown_hook(payload)
+        self.exit_main_loop = True
 
     def shutdown_hook(self, payload):
         logging.info("Default service shutdown hook. Payload = {0}".format(payload))

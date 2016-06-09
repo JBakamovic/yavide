@@ -157,7 +157,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
     def db_reset(self):
         function = 'Y_SrcNav_ReInit()'
         YavideUtils.call_vim_remote_function(self.yavide_instance, function)
-        logging.info("Resetting the db connection: '{0}'".format(cmd))
+        logging.info("Resetting the db connection")
 
     def update(self, filename, event_type):
         YavideIndexerBase.update(self, filename, event_type)
@@ -219,7 +219,7 @@ class YavideCScopeIndexer(YavideIndexerBase):
             self.db_generate_file_list()
         else:
             # TODO  This can be optimized by using sed replace expression but we are missing an information about the destination filename.
-            #       Destination filename information is provided by the handled event objects but it was not anticipated that this kind 
+            #       Destination filename information is provided by the handled event objects but it was not anticipated that this kind
             #       of information will be required.
             self.db_generate_file_list()
             #cmd = 'sed -i ' + '"' + '\:' + os.path.relpath(src_filename, self.root_directory) + ':c' + dest_filename + " ' + os.path.join(self.root_directory, self.source_file_list_db)
@@ -306,7 +306,7 @@ class YavideSourceCodeIndexer():
         # Setup the filesystem event monitoring
         self.event_handler = YavideFileSystemEventHandler(self)
         self.observer = Observer()
-        self.observer.deamon = True
+        self.observer.daemon = True
         self.observer.schedule(self.event_handler, params.proj_root_directory, recursive=True)
 
         # Print some debug information
@@ -319,13 +319,11 @@ class YavideSourceCodeIndexer():
                 for indexer in indexers:
                     logging.info("\t\t {0}".format(indexer))
 
-    def run(self):
+    def start(self):
         self.observer.start()
 
     def stop(self):
         self.observer.stop()
-
-    def finalize(self):
         self.observer.join()
 
     def update(self, filename, event_type):
@@ -339,96 +337,4 @@ class YavideSourceCodeIndexer():
                 indexers = self.indexers[programming_language]
                 for indexer in indexers:
                     indexer.update(filename, event_type)
-
-
-class YavideCommandHandler():
-    def __init__(self, port):
-        self.host = 'localhost'
-        self.port = port
-        self.indexer_running = False
-        self.indexer = None
-
-    def run(self):
-        while True:
-            # Start the server
-            server_shutdown = False
-            logging.info("Listening on {0} port".format(self.port))
-            listener = Listener((self.host, self.port))
-            conn = listener.accept()
-            logging.info("Connection accepted from {0}".format(listener.last_accepted))
-
-            # Handle client requests
-            while True:
-                try:
-                    msg = conn.recv()
-                    if not msg: continue
-                    logging.info('Client request: {0}'.format(msg))
-                    if msg[0] == 'start' and self.indexer_running == False:
-                        self.__start_indexer(msg)
-                    elif msg[0] == 'stop' and self.indexer_running == True:
-                        self.__stop_indexer()
-                    elif msg[0] == 'shutdown':
-                        server_shutdown = True
-                        break
-                    else:
-                        logging.warning('Unknown client request.')
-                except (EOFError):
-                    logging.info('Connection closed.')
-                    conn.close()
-                    listener.close()
-                    break
-
-            # Handle shutdown request
-            if server_shutdown == True:
-                logging.info('Shutting the indexer down ...')
-                break
-
-        # Clean-up and exit
-        conn.close()
-        listener.close()
-        if self.indexer != None:
-            if self.indexer_running == True:
-                self.__stop_indexer()
-            self.indexer.finalize()
-        logging.info('Exiting ...')
-
-    def __start_indexer(self, msg):
-        logging.info('Starting the indexer ...')
-        yavide_instance = msg[1]
-        offset = int(msg[2])
-        file_types = []
-        for idx, param in enumerate(msg):
-            if idx > 2 and idx < 3 + offset:
-                file_types.append(param)
-        proj_root_directory = msg[3 + offset]
-        proj_cxx_tags_filename = msg[4 + offset]
-        proj_java_tags_filename = msg[5 + offset]
-        proj_cscope_db_filename = msg[6 + offset]
-
-        self.indexer = YavideSourceCodeIndexer(
-                        YavideSourceCodeIndexerParams(
-                            yavide_instance, file_types,
-                            proj_root_directory, proj_cxx_tags_filename,
-                            proj_java_tags_filename, proj_cscope_db_filename)
-        )
-        self.indexer.run()
-        self.indexer_running = True
-
-    def __stop_indexer(self):
-        logging.info('Stopping the indexer ...')
-        self.indexer.stop()
-        self.indexer_running = False
-
-def main():
-    FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
-    logging.basicConfig(filename='.yavide_indexer.log', filemode='w', format=FORMAT, level=logging.INFO)
-    if len(sys.argv) > 1:
-        logging.info('Starting a Yavide indexer server ...')
-        cmd_handler = YavideCommandHandler(int(sys.argv[1]))
-        cmd_handler.run()
-    else:
-        logging.error('Insufficient number of arguments.')
-
-if __name__ == "__main__":
-    main()
 

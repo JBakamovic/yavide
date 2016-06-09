@@ -3,9 +3,6 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:YAVIDE_CONFIG_DIRECTORY         = g:YAVIDE_ROOT_DIRECTORY . '/' . 'config'
 let g:YAVIDE_CORE_DIRECTORY           = g:YAVIDE_ROOT_DIRECTORY . '/' . 'core'
-let g:YAVIDE_SOURCE_CODE_INDEXER      = g:YAVIDE_ROOT_DIRECTORY . '/' . 'core/indexer' . '/' . 'yavide_indexer.py'
-let g:YAVIDE_SOURCE_CODE_INDEXER_IF   = g:YAVIDE_ROOT_DIRECTORY . '/' . 'core/indexer' . '/' . 'yavide_indexer_if.py'
-let g:YAVIDE_SOURCE_CODE_INDEXER_PORT = 6000
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Runtimepath customization
