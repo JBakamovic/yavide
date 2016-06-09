@@ -5,7 +5,7 @@ import logging
 import os.path
 from sets import Set
 from subprocess import call
-from syntax.syntax_highlighter.tag_identifier import TagIdentifier
+from services.syntax_highlighter.tag_identifier import TagIdentifier
 
 # TODO class TagSanitizer:
 #           def extract(self):

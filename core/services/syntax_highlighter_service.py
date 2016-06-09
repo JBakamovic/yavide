@@ -1,8 +1,8 @@
 import logging
 import time
 from yavide_service import YavideService
-from syntax.syntax_highlighter.syntax_highlighter import VimSyntaxHighlighter
-from syntax.syntax_highlighter.tag_identifier import TagIdentifier
+from services.syntax_highlighter.syntax_highlighter import VimSyntaxHighlighter
+from services.syntax_highlighter.tag_identifier import TagIdentifier
 from common.yavide_utils import YavideUtils
 
 class SyntaxHighlighter(YavideService):
@@ -33,5 +33,5 @@ class SyntaxHighlighter(YavideService):
         self.syntax_highlighter.generate_vim_syntax_file(filename)
         end = time.clock()
         logging.info("Generating vim syntax for '{0}' took {1}.".format(filename, end-start))
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_CodeHighlight_Apply('" + filename + "')")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + filename + "')")
 

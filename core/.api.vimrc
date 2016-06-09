@@ -324,8 +324,8 @@ function! Y_Project_Open()
             redraw | echomsg "No project found at '" . l:project_root_directory . "'"
         else
             " Trigger starting specific background services
-            call Y_CodeHighlight_Start()
             call Y_ProjectBuilder_Start()
+            call Y_SrcCodeHighlighter_Start()
             call Y_SrcCodeFormatter_Start()
         endif
     endif
@@ -351,7 +351,7 @@ function! Y_Project_Close()
     call Y_SrcIndexer_Deinit()
 
     " Trigger starting specific background services
-    call Y_CodeHighlight_Stop()
+    call Y_SrcCodeHighlighter_Stop()
     call Y_ProjectBuilder_Stop()
     call Y_SrcCodeFormatter_Stop()
 
@@ -932,11 +932,11 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_CodeHighlight_Start()
+" Function:     Y_SrcCodeHighlighter_Start()
 " Description:  Starts the code highlight background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_CodeHighlight_Start()
+function! Y_SrcCodeHighlighter_Start()
 "python import sys
 "python import vim
 "python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]  
@@ -944,30 +944,30 @@ function! Y_CodeHighlight_Start()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_CodeHighlight_Stop()
+" Function:     Y_SrcCodeHighlighter_Stop()
 " Description:  Stops the code highlight background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_CodeHighlight_Stop()
+function! Y_SrcCodeHighlighter_Stop()
     call Y_ServerStopService(0)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_CodeHighlight_Run()
+" Function:     Y_SrcCodeHighlighter_Run()
 " Description:  Triggers the source code highlighting for current buffer.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_CodeHighlight_Run()
+function! Y_SrcCodeHighlighter_Run()
     let l:currentBuffer = expand('%:p"')
     call Y_ServerSendMsg(0, l:currentBuffer)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_CodeHighlight_Apply()
+" Function:     Y_SrcCodeHighlighter_Apply()
 " Description:  Apply the results of source code highlighting for given filename.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_CodeHighlight_Apply(filename)
+function! Y_SrcCodeHighlighter_Apply(filename)
     let l:currentBuffer = expand('%:p"')
     if l:currentBuffer == a:filename
         execute('source /tmp/yavideCppNamespace.vim')
@@ -1038,9 +1038,11 @@ endfunction
 "   BUILD MANAGEMENT API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_ProjectBuilder_Start()
 " Description:  Starts the project builder background service.
 " Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Start()
     let args = [g:project_root_directory, g:project_env_build_command]
     call Y_ServerStartService(1, args)
@@ -1134,9 +1136,11 @@ endfunction
 "   SOURCE CODE FORMATTER API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Start()
 " Description:  Starts the project builder background service.
 " Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Start()
     let l:configFile = g:project_root_directory . '/' . g:project_env_src_code_format_config
     call Y_ServerStartService(2, l:configFile)

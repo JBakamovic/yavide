@@ -18,8 +18,8 @@ augroup yavide_src_code_formatting_group
 augroup END
 
 augroup yavide_src_code_highlight_group
-    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hpp    call Y_CodeHighlight_Run()
-    autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hpp    call Y_CodeHighlight_Run()
+    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hpp    call Y_SrcCodeHighlighter_Run()
+    autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hpp    call Y_SrcCodeHighlighter_Run()
 augroup END
 
 augroup yavide_layout_mgmt_group

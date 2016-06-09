@@ -1,8 +1,8 @@
 import sys
 import argparse
 import os.path
-from syntax.syntax_highlighter.tag_identifier import TagIdentifier
-from syntax.syntax_highlighter.tag_generator import TagManagerFactory
+from services.syntax_highlighter.tag_identifier import TagIdentifier
+from services.syntax_highlighter.tag_generator import TagManagerFactory
 
 class VimSyntaxTag:
     def __init__(self, tag_id, tag_manager_instance):
