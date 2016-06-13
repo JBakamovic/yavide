@@ -1022,7 +1022,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Apply(filename)
-    execute('cfile '.a:filename)
+    execute('cgetfile '.a:filename)
     execute('copen')
 endfunction
 
