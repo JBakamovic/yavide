@@ -82,9 +82,5 @@ nmap        <C-\>e              :YavideSrcNavEGrepSearch<CR>|"                  
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build process
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap        <F7>                :YavideBuildRunMake release<CR>|"                               Build project in 'release' mode
-imap        <F7>                <ESC>:w<CR>:YavideBuildRunMake release<CR>|"
-nmap        <S-F7>              :YavideBuildRunMake debug<CR>|"                                 Build project in 'debug' mode
-imap        <S-F7>              <ESC>:w<CR>:YavideBuildRunMake debug<CR>|"
-nmap        <F8>                :YavideBuildRunMake clean<CR>|"                                 Clean build
-imap        <F8>                <ESC>:w<CR>:YavideBuildRunMake clean<CR>|"
+nmap        <F7>                :YavideBuildRun<CR>|"                                           Build project
+imap        <F7>                <ESC>:w<CR>:YavideBuildRun<CR>|"

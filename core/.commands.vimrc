@@ -66,5 +66,5 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=* -complete=file YavideBuildRunMake                 :call Y_Build_RunMake(<f-args>)
+:command! -nargs=* -complete=file YavideBuildRun                     :call Y_ProjectBuilder_Run(<f-args>)
 

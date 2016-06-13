@@ -1026,51 +1026,6 @@ function! Y_ProjectBuilder_Apply(filename)
     execute('copen')
 endfunction
 
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_Build_RunMake()
-" Description:  Run the build via Makefile. 
-"               When finished, open the quickfix window and avoid jumping to the first error.
-"               Warnings are currently treated as errors so this feature can easily start to become annoying.
-" Dependency:   GNU make
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Build_RunMake(...)
-    let additional_args = ''
-    if a:0 != 0
-        let additional_args = a:1
-        let i = 2
-        while i <= a:0
-            execute "let additional_args = additional_args . \" \" . a:" . i
-            let i = i + 1
-        endwhile
-    endif
-    
-    let mp = &makeprg
-    let &makeprg = 'make ' . additional_args
-    exec "make! | copen"
-    let &makeprg = mp
-endfunction
-
-
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
-"   LAYOUT MANAGEMENT API
-" 
-" --------------------------------------------------------------------------------------------------------------------------------------
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_Layout_Refresh()
-" Description:  Setups the default layout
-" Dependency:   NERDTree, Tagbar
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_Layout_Refresh()
-    if g:project_loaded == 1
-        execute('NERDTree ' . g:project_root_directory)
-        execute('TagbarOpen')
-        call setqflist([])
-        execute('copen')
-    endif
-endfunction
-
-
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "   SOURCE CODE FORMATTER API
@@ -1154,5 +1109,25 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_Stop()
     call Y_ServerStopService(3)
+endfunction
+
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   LAYOUT MANAGEMENT API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Layout_Refresh()
+" Description:  Setups the default layout
+" Dependency:   NERDTree, Tagbar
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Layout_Refresh()
+    if g:project_loaded == 1
+        execute('NERDTree ' . g:project_root_directory)
+        execute('TagbarOpen')
+        call setqflist([])
+        execute('copen')
+    endif
 endfunction
 
