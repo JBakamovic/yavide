@@ -13,6 +13,7 @@ let g:yavide_configuration_files = [
 \                   'core/.editor.vimrc',
 \                   'core/.plugins.vimrc',
 \                   'core/.api.vimrc',
+\                   'core/.globals.vimrc',
 \                   'core/.autocommands.vimrc',
 \                   'core/.commands.vimrc',
 \]

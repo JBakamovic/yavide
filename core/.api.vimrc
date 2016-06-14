@@ -1,52 +1,5 @@
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"   Global (vim) variables
-" 
-" --------------------------------------------------------------------------------------------------------------------------------------
-let g:project_configuration_filename      = '.yavide_proj'
-let g:project_autocomplete_filename       = '.clang_complete'
-let g:project_session_filename            = '.yavide_session'
-let g:project_loaded                      = 0
-let g:project_java_tags                   = ''
-let g:project_java_tags_filename          = '.java_tags'
-let g:project_cxx_tags                    = ''
-let g:project_cxx_tags_filename           = '.cxx_tags'
-let g:project_cscope_db_filename          = 'cscope.out'
-let g:project_env_build_preproces_command = ''
-let g:project_env_build_command           = ''
-let g:project_env_src_code_format_config  = '.clang-format'
-
-let g:project_category_generic          = { 'id' : 1 }
-let g:project_category_makefile         = { 'id' : 2 }
-let g:project_supported_categories      = {
-\                                           'Generic'   :   g:project_category_generic,
-\                                           'Makefile'  :   g:project_category_makefile
-\}
-
-let g:project_type_generic              = { 'id' : 1, 'extensions' : ['.*'] }
-let g:project_type_c                    = { 'id' : 2, 'extensions' : ['.c', '.h'] }
-let g:project_type_cpp                  = { 'id' : 3, 'extensions' : ['.cpp', '.cc', '.h', '.hpp'] }
-let g:project_type_java                 = { 'id' : 4, 'extensions' : ['.java'] }
-let g:project_type_mixed                = { 'id' : 5, 'extensions' : [] }
-let g:project_supported_types           = {
-\                                           'Generic'   :   g:project_type_generic,
-\                                           'C'         :   g:project_type_c,
-\                                           'C++'       :   g:project_type_cpp,
-\                                           'Mixed'     :   g:project_type_mixed,
-\}
-
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
-"   Global (python) variables
-"
-" --------------------------------------------------------------------------------------------------------------------------------------
-python << EOF
-from multiprocessing import Queue
-server_queue = Queue()
-EOF
-
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
 "   YAVIDE VIMSCRIPT UTILS
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -309,11 +262,12 @@ function! Y_Project_Open()
             execute('cd -')
             redraw | echomsg "No project found at '" . l:project_root_directory . "'"
         else
-            " Trigger starting specific background services
-            call Y_ProjectBuilder_Start()
-            call Y_SrcCodeIndexer_Start()
-            call Y_SrcCodeHighlighter_Start()
-            call Y_SrcCodeFormatter_Start()
+            " Start background services
+            for service in g:project_available_services
+                if service['enabled']
+                    call service['start']()
+                endif
+            endfor
         endif
     endif
 endfunction
@@ -334,11 +288,12 @@ function! Y_Project_Close()
         call Y_Project_Save()
     endif
 
-    " Trigger starting specific background services
-    call Y_ProjectBuilder_Stop()
-    call Y_SrcCodeIndexer_Stop()
-    call Y_SrcCodeHighlighter_Stop()
-    call Y_SrcCodeFormatter_Stop()
+    " Stop background services
+    for service in g:project_available_services
+        if service['enabled']
+            call service['stop']()
+        endif
+    endfor
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -880,7 +835,7 @@ function! Y_SrcCodeHighlighter_Start()
 "python import sys
 "python import vim
 "python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]  
-    call Y_ServerStartService(0, 'some param')
+    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'some param')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -889,7 +844,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Stop()
-    call Y_ServerStopService(0)
+    call Y_ServerStopService(g:project_service_src_code_highlighter['id'])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -899,7 +854,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
     let l:currentBuffer = expand('%:p"')
-    call Y_ServerSendMsg(0, l:currentBuffer)
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], l:currentBuffer)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -985,7 +940,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Start()
     let args = [g:project_root_directory, g:project_env_build_command]
-    call Y_ServerStartService(1, args)
+    call Y_ServerStartService(g:project_service_project_builder['id'], args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -994,7 +949,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Stop()
-    call Y_ServerStopService(1)
+    call Y_ServerStopService(g:project_service_project_builder['id'])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1013,7 +968,7 @@ function! Y_ProjectBuilder_Run(...)
         endwhile
     endif
     call setqflist([])
-    call Y_ServerSendMsg(1, args)
+    call Y_ServerSendMsg(g:project_service_project_builder['id'], args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1038,7 +993,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Start()
     let l:configFile = g:project_root_directory . '/' . g:project_env_src_code_format_config
-    call Y_ServerStartService(2, l:configFile)
+    call Y_ServerStartService(g:project_service_src_code_formatter['id'], l:configFile)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1047,7 +1002,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Stop()
-    call Y_ServerStopService(2)
+    call Y_ServerStopService(g:project_service_src_code_formatter['id'])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1057,7 +1012,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
     let l:currentBuffer = expand('%:p"')
-    call Y_ServerSendMsg(2, l:currentBuffer)
+    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:currentBuffer)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1099,7 +1054,7 @@ function! Y_SrcCodeIndexer_Start()
     call add(l:args, g:project_cxx_tags_filename)
     call add(l:args, g:project_java_tags_filename)
     call add(l:args, g:project_cscope_db_filename)
-    call Y_ServerStartService(3, l:args)
+    call Y_ServerStartService(g:project_service_src_code_indexer['id'], l:args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1108,7 +1063,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_Stop()
-    call Y_ServerStopService(3)
+    call Y_ServerStopService(g:project_service_src_code_indexer['id'])
 endfunction
 
 
