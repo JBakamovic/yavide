@@ -33,7 +33,7 @@ class YavideServer():
     def start_all_services(self, dummyServiceId, dummyPayload):
         logging.info("Starting all registered services ... {0}".format(self.service))
         for id, svc in self.service.iteritems():
-            p = Process(target=svc.run)
+            p = Process(target=svc.run, name=svc.__class__.__name__)
             p.daemon = False
             p.start()
             self.service_processes[id] = p
