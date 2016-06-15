@@ -22,12 +22,12 @@ class YavideUtils():
     @staticmethod
     def send_vim_remote_command(vim_instance, command):
         cmd = 'gvim --servername ' + vim_instance + ' --remote-send "<ESC>' + command + '<CR>"'
-        call(shlex.split(cmd))
+        return call(shlex.split(cmd))
 
     @staticmethod
     def call_vim_remote_function(vim_instance, function):
         cmd = 'gvim --servername ' + vim_instance + ' --remote-expr "' + function + '"'
-        call(shlex.split(cmd))
+        return call(shlex.split(cmd))
 
     @staticmethod
     def is_port_available(port):

@@ -862,23 +862,11 @@ endfunction
 " Description:  Apply the results of source code highlighting for given filename.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Apply(filename)
+function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
     let l:currentBuffer = expand('%:p"')
     if l:currentBuffer == a:filename
-        execute('source /tmp/yavideCppNamespace.vim')
-        execute('source /tmp/yavideCppClass.vim')
-        execute('source /tmp/yavideCppStructure.vim')
-        execute('source /tmp/yavideCppEnum.vim')
-        execute('source /tmp/yavideCppEnumValue.vim')
-        execute('source /tmp/yavideCppUnion.vim')
-        execute('source /tmp/yavideCppClassStructUnionMember.vim')
-        execute('source /tmp/yavideCppLocalVariable.vim')
-        execute('source /tmp/yavideCppVariableDefinition.vim')
-        execute('source /tmp/yavideCppFunctionPrototype.vim')
-        execute('source /tmp/yavideCppFunctionDefinition.vim')
-        execute('source /tmp/yavideCppMacro.vim')
-        execute('source /tmp/yavideCppTypedef.vim')
-        execute('source /tmp/yavideCppExternForwardDeclaration.vim')
+        " Apply the syntax highlighting rules
+        execute('source '.a:syntax_file)
 
         " Following command is a quick hack to apply the new syntax for
         " the given buffer. I haven't found any other more viable way to do it 

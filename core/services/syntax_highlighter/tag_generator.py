@@ -1,148 +1,115 @@
 import sys
 import shlex
-import re
 import logging
 import os.path
-from sets import Set
 from subprocess import call
 from services.syntax_highlighter.tag_identifier import TagIdentifier
 
-# TODO class TagSanitizer:
-#           def extract(self):
-#
-#      etc.
-#
-
 class TagGenerator():
-    def __init__(self, root_directory, tag_type, tag_db_path, sanitized_tag_db_path):
-        self.root_directory = root_directory
-        self.tag_type = tag_type
+    def __init__(self, tag_id_list, tag_db_path):
+        self.tag_id_list = tag_id_list
         self.tag_db_path = tag_db_path
-        self.sanitized_tag_db_path = sanitized_tag_db_path
 
-    def run(self):
-        self.__generate_tag_db()
-        self.__extract()
+    def run(self, path):
+        self.__generate_ctags_db(path)
 
-    def get_sanitized_tag_db_path(self):
-        return self.sanitized_tag_db_path
-
-    def delete_tag_db(self):
-        # TODO
-        return
-
-    def __extract(self):
-        if os.path.exists(self.tag_db_path):
-            with open(self.tag_db_path) as f:
-                lines = f.readlines()
-                symbol = Set()
-                for l in lines:
-                    if not l.startswith("!_TAG_"): # ignore the ctags tag file information
-                        #if not "access:private" in l: # only take into account tags which are not declared as private/protected
-                        #    if not "access:protected" in l:
-                        #        if not "~" in l[0][0]: # we don't want destructors to be in the list
-                        symbol.add(re.split(r'\t+', l)[0])
-                out = open(self.sanitized_tag_db_path, "w")
-                out.write("\n".join(symbol))
+    def is_header(self, tag_line):
+        if tag_line.startswith("!_TAG_"): # ctags tag file header
+            return True
         else:
-            logging.error("Non-existing filename or directory '{0}'.".format(self.tag_db_path))
+            return False
 
-    def __generate_tag_db(self):
-        if os.path.exists(self.root_directory):
-            cmd  = 'ctags --languages=C++ --fields=a --extra=-fq ' + '--c++-kinds=' + self.tag_type  + ' -f ' + self.tag_db_path + ' -R ' + self.root_directory
+    def get_tag_id(self, tag_line):
+        s = tag_line.split()
+        if s:
+            return CtagsTagGenerator.to_tag_id(s[len(s)-1])
+        else:
+            return ""
+
+    def get_tag_name(self, tag_line):
+        s = tag_line.split()
+        if s:
+            return s[0]
+        else:
+            return ""
+
+    def __generate_ctags_db(self, path):
+        if os.path.exists(path):
+            cmd = 'ctags --languages=C,C++ --fields=K --extra=-fq ' + '--c++-kinds=' + self.__tag_id_list_to_ctags_kinds_list() + ' -f ' + self.tag_db_path + ' '
+            if os.path.isdir(path):
+                cmd += '-R '
+            cmd += path
             logging.info("Generating the db: '{0}'".format(cmd))
             call(shlex.split(cmd))
         else:
-            logging.error("Non-existing directory '{0}'.".format(self.root_directory))
-   
-class NamespaceTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "n", "/tmp/tags-namespace", "/tmp/tags-namespace-processed")
+            logging.error("Non-existing path '{0}'.".format(path))
 
-class ClassTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "c", "/tmp/tags-class", "/tmp/tags-class-processed")
+    def __tag_id_list_to_ctags_kinds_list(self):
+        ctags_kind_list = ''
+        for tag_id in self.tag_id_list:
+            ctags_kind_list += CtagsTagGenerator.from_tag_id(tag_id)
+        return ctags_kind_list
 
-class StructTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "s", "/tmp/tags-struct", "/tmp/tags-struct-processed")
-
-class EnumTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "g", "/tmp/tags-enum", "/tmp/tags-enum-processed")
-
-class EnumValueTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "e", "/tmp/tags-enum-value", "/tmp/tags-enum-value-processed")
-
-class UnionTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "u", "/tmp/tags-union", "/tmp/tags-union-processed")
-
-class ClassStructUnionMemberTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "m", "/tmp/tags-class-struct-union-member", "/tmp/tags-class-struct-union-member-processed")
-
-class LocalVariableTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "l", "/tmp/tags-local-variable", "/tmp/tags-local-variable-processed")
-
-class VariableDefinitionTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "v", "/tmp/tags-variable", "/tmp/tags-variable-processed")
-
-class FunctionPrototypeTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "p", "/tmp/tags-func-proto", "/tmp/tags-func-proto-processed")
-
-class FunctionDefinitionTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "f", "/tmp/tags-func", "/tmp/tags-func-processed")
-
-class MacroTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "d", "/tmp/tags-macro", "/tmp/tags-macro-processed")
-
-class TypedefTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "t", "/tmp/tags-typedef", "/tmp/tags-typedef-processed")
-
-class ExternForwardDeclarationTagManager(TagGenerator):
-    def __init__(self, root_directory):
-        TagGenerator.__init__(self, root_directory, "x", "/tmp/tags-extern-fwd", "/tmp/tags-extern-fwd-processed")
-
-class TagManagerFactory():
+class CtagsTagGenerator():
     @staticmethod
-    def getTagManager(programming_language, tag_identifier, filename):
-        if (programming_language == 'Cxx'):
-            if tag_identifier == TagIdentifier.getNamespaceId():
-                return NamespaceTagManager(filename) 
-            if tag_identifier == TagIdentifier.getClassId():
-                return ClassTagManager(filename) 
-            if tag_identifier == TagIdentifier.getStructId():
-                return StructTagManager(filename)
-            if tag_identifier == TagIdentifier.getEnumId():
-                return EnumTagManager(filename)
-            if tag_identifier == TagIdentifier.getEnumValueId():
-                return EnumValueTagManager(filename)
-            if tag_identifier == TagIdentifier.getUnionId():
-                return UnionTagManager(filename)
-            if tag_identifier == TagIdentifier.getClassStructUnionMemberId():
-                return ClassStructUnionMemberTagManager(filename)
-            if tag_identifier == TagIdentifier.getLocalVariableId():
-                return LocalVariableTagManager(filename)
-            if tag_identifier == TagIdentifier.getVariableDefinitionId():
-                return VariableDefinitionTagManager(filename)
-            if tag_identifier == TagIdentifier.getFunctionPrototypeId():
-                return FunctionPrototypeTagManager(filename)
-            if tag_identifier == TagIdentifier.getFunctionDefinitionId():
-                return FunctionDefinitionTagManager(filename)
-            if tag_identifier == TagIdentifier.getMacroId():
-                return MacroTagManager(filename) 
-            if tag_identifier == TagIdentifier.getTypedefId():
-                return TypedefTagManager(filename)
-            if tag_identifier == TagIdentifier.getExternFwdDeclarationId():
-                return ExternForwardDeclarationTagManager(filename)
-        else:
-            return None
+    def to_tag_id(kind):
+        if (kind == "namespace"):
+            return TagIdentifier.getNamespaceId()
+        if (kind == "class"):
+            return TagIdentifier.getClassId()
+        if (kind == "struct"):
+            return TagIdentifier.getStructId()
+        if (kind == "enum"):
+            return TagIdentifier.getEnumId()
+        if (kind == "enumerator"):
+            return TagIdentifier.getEnumValueId()
+        if (kind == "union"):
+            return TagIdentifier.getUnionId()
+        if (kind == "member"):
+            return TagIdentifier.getClassStructUnionMemberId()
+        if (kind == "local"):
+            return TagIdentifier.getLocalVariableId()
+        if (kind == "variable"):
+            return TagIdentifier.getVariableDefinitionId()
+        if (kind == "prototype"):
+            return TagIdentifier.getFunctionPrototypeId()
+        if (kind == "function"):
+            return TagIdentifier.getFunctionDefinitionId()
+        if (kind == "macro"):
+            return TagIdentifier.getMacroId()
+        if (kind == "typedef"):
+            return TagIdentifier.getTypedefId()
+        if (kind == "externvar"):
+            return TagIdentifier.getExternFwdDeclarationId()
+
+    @staticmethod
+    def from_tag_id(tag_id):
+        if tag_id == TagIdentifier.getNamespaceId():
+            return "n"
+        if tag_id == TagIdentifier.getClassId():
+            return "c"
+        if tag_id == TagIdentifier.getStructId():
+            return "s"
+        if tag_id == TagIdentifier.getEnumId():
+            return "g"
+        if tag_id == TagIdentifier.getEnumValueId():
+            return "e"
+        if tag_id == TagIdentifier.getUnionId():
+            return "u"
+        if tag_id == TagIdentifier.getClassStructUnionMemberId():
+            return "m"
+        if tag_id == TagIdentifier.getLocalVariableId():
+            return "l"
+        if tag_id == TagIdentifier.getVariableDefinitionId():
+            return "v"
+        if tag_id == TagIdentifier.getFunctionPrototypeId():
+            return "p"
+        if tag_id == TagIdentifier.getFunctionDefinitionId():
+            return "f"
+        if tag_id == TagIdentifier.getMacroId():
+            return "d"
+        if tag_id == TagIdentifier.getTypedefId():
+            return "t"
+        if tag_id == TagIdentifier.getExternFwdDeclarationId():
+            return "x"
 
