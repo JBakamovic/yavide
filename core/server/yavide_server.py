@@ -1,6 +1,8 @@
+import sys
 import logging
 import tempfile
 from multiprocessing import Process, Queue
+from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
 from services.indexer_service import SourceCodeIndexer
@@ -92,12 +94,39 @@ class YavideServer():
             self.action.get(int(payload[0]), self.unknown_action)(int(payload[1]), payload[2])
         logging.info("Yavide server shut down.")
 
+def handle_exception(exc_type, exc_value, exc_traceback):
+    logging.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+def catch_unhandled_exceptions():
+    # This is what usually should be enough
+    sys.excepthook = handle_exception
+
+    # But sys.excepthook does not work anymore within multi-threaded/multi-process environment (see https://bugs.python.org/issue1230540)
+    # So what we can do is to override the YavideService.run() implementation so it includes try-catch block with exceptions
+    # being forwarded to the sys.excepthook function.
+    run_original = YavideService.run
+    def run(self):
+        try:
+            run_original(self)
+        except:
+            sys.excepthook(*sys.exc_info())
+    YavideService.run = run
+
 def yavide_server_run(msg_queue, yavide_instance):
+    # Setup catching unhandled exceptions
+    catch_unhandled_exceptions()
+
+    # Logger setup
     FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
     yavide_server_log = tempfile.gettempdir() + '/' + yavide_instance + '_server.log'
     logging.basicConfig(filename=yavide_server_log, filemode='w', format=FORMAT, level=logging.INFO)
     logging.info('Starting a Yavide server ...')
-    YavideServer(msg_queue, yavide_instance).run()
+
+    # Run
+    try:
+        YavideServer(msg_queue, yavide_instance).run()
+    except:
+        sys.excepthook(*sys.exc_info())
 
 def main():
     q = Queue()
