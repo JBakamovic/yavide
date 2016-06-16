@@ -20,11 +20,11 @@ class VimSyntaxHighlighter:
         try:
             tags_db = open(self.output_tag_file)
             # Build Vim syntax highlight rules
-            vim_highlight_rules = []
+            vim_highlight_rules = set()
             for line in tags_db:
                 if not tag_generator.is_header(line):
                     highlight_rule = "syntax keyword " + self.__tag_id_to_vim_syntax_group(tag_generator.get_tag_id(line)) + " " + tag_generator.get_tag_name(line)
-                    vim_highlight_rules.append(highlight_rule + "\n")
+                    vim_highlight_rules.add(highlight_rule + "\n")
 
             # Write syntax file
             vim_syntax_file = open(self.output_syntax_file, "w")

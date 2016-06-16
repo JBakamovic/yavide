@@ -865,7 +865,10 @@ endfunction
 function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
     let l:currentBuffer = expand('%:p"')
     if l:currentBuffer == a:filename
-        " Apply the syntax highlighting rules
+        " Clear previously generated syntax rules
+        execute('syntax clear yavideCppNamespace yavideCppClass yavideCppStructure yavideCppEnum yavideCppEnumValue yavideCppUnion yavideCppClassStructUnionMember yavideCppLocalVariable yavideCppVariableDefinition yavideCppFunctionPrototype yavideCppFunctionDefinition yavideCppMacro yavideCppTypedef yavideCppExternForwardDeclaration')
+
+        " Apply the new syntax highlighting rules
         execute('source '.a:syntax_file)
 
         " Following command is a quick hack to apply the new syntax for
