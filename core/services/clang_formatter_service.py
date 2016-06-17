@@ -7,10 +7,11 @@ class ClangSourceCodeFormatter(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
         self.config_file = ""
+        self.format_cmd = "clang-format -i -style=file -assume-filename="
 
     def startup_hook(self, config_file):
         self.config_file = config_file
-        self.format_cmd = "clang-format -i -style=file -assume-filename=" + self.config_file
+        self.format_cmd += self.config_file
         logging.info("Config_file = {0}. Format_cmd = {1}".format(self.config_file, self.format_cmd))
 
     def run_impl(self, filename):

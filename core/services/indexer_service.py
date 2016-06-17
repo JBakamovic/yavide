@@ -7,6 +7,7 @@ from common.yavide_utils import YavideUtils
 class SourceCodeIndexer(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
+        self.src_code_indexer = ""
 
     def startup_hook(self, args):
         logging.info("Args = {0}.".format(args))
