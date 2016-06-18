@@ -853,7 +853,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
-    let l:currentBuffer = expand('%:p"')
+    let l:currentBuffer = expand('%:p')
     call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], l:currentBuffer)
 endfunction
 
@@ -863,8 +863,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
-    let l:currentBuffer = expand('%:p"')
+    let l:currentBuffer = expand('%:p')
     if l:currentBuffer == a:filename
+        " Clear previously generated syntax rules
+        execute('syntax clear yavideCppNamespace yavideCppClass yavideCppStructure yavideCppEnum yavideCppEnumValue yavideCppUnion yavideCppClassStructUnionMember yavideCppLocalVariable yavideCppVariableDefinition yavideCppFunctionPrototype yavideCppFunctionDefinition yavideCppMacro yavideCppTypedef yavideCppExternForwardDeclaration')
+
         " Apply the syntax highlighting rules
         execute('source '.a:syntax_file)
 
@@ -999,7 +1002,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    let l:currentBuffer = expand('%:p"')
+    let l:currentBuffer = expand('%:p')
     call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:currentBuffer)
 endfunction
 
@@ -1009,7 +1012,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Apply(filename)
-    let l:currentBuffer = expand('%:p"')
+    let l:currentBuffer = expand('%:p')
     if l:currentBuffer == a:filename
         execute('e')
     endif
