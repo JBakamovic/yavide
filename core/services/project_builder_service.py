@@ -10,6 +10,7 @@ class ProjectBuilder(YavideService):
         YavideService.__init__(self, server_queue, yavide_instance)
         self.build_cmd_dir = ""
         self.build_cmd = ""
+        self.build_cmd_output_file = ""
 
     def startup_hook(self, args):
         self.build_cmd_dir = args[0]
