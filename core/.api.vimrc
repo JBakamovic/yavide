@@ -179,6 +179,14 @@ function! s:Y_Project_Load()
         if filereadable(g:project_session_filename)
             execute('source ' . g:project_session_filename)
         endif
+
+        " Start background services
+        for service in g:project_available_services
+            if service['enabled']
+                call service['start']()
+            endif
+        endfor
+
         call Y_Buffer_CloseEmpty()
         let g:project_loaded = 1
     endif
@@ -261,13 +269,6 @@ function! Y_Project_Open()
         if g:project_loaded == 0
             execute('cd -')
             redraw | echomsg "No project found at '" . l:project_root_directory . "'"
-        else
-            " Start background services
-            for service in g:project_available_services
-                if service['enabled']
-                    call service['start']()
-                endif
-            endfor
         endif
     endif
 endfunction
