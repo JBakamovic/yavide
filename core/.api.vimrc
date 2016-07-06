@@ -950,7 +950,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Run(...)
-    let args = ''
+    let args = [g:project_env_build_command]
     if a:0 != 0
         let args = a:1
         let i = 2
