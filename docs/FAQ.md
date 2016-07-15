@@ -15,3 +15,9 @@
   * Check if path to the `libclang.so` has been set properly in `.user_settings.vimrc`.
   * Check if `.clang_complete` contains valid entries (include directories) for your project.
 
+4. The following error occurs: `E319: Sorry, the command is not available in this version: python import sys, vim`
+  * This error can occur if your version of `vim` is not compiled with `python` support. One can easily check this by running `vim --version`.
+  * Instance of `vim` deployed on `Ubuntu 16.04` for example does not have compiled in the `python` support. To fix the issue on this Ubuntu system one can run the following commands:
+    * `sudo apt install vim-gnome-py2`
+    * `sudo update-alternatives --set vim /usr/bin/vim.gnome-py2`
+    * `sudo update-alternatives --set gvim /usr/bin/vim.gnome-py2`
