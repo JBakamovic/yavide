@@ -4,7 +4,7 @@ from subprocess import call
 import shlex
 
 file_type_dict = {
-    'Cxx': ['.c', '.cpp', '.cc', '.h', '.hpp'],
+    'Cxx': ['.c', '.cpp', '.cc', '.h', '.hh', '.hpp'],
     'Java': ['.java'] }
 
 class YavideUtils():

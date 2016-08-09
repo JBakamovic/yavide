@@ -134,7 +134,7 @@ def main():
     q.put([0xF1, 0, "--class --struct --func"])
     q.put([0xF1, 1, ["/home/vagrant/repositories/navi_development/nav_business_ctrl", "./build.sh"]])
     q.put([0xF1, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/.clang_format"])
-    q.put([0xF1, 3, ['4', '.cpp', '.cc', '.h', '.hpp', '/home/vagrant/repositories/navi_development/nav_business_ctrl', '.cxx_tags', '.java_tags', 'cscope.out']])
+    q.put([0xF1, 3, ['4', '.cpp', '.cc', '.h', '.hh', '.hpp', '/home/vagrant/repositories/navi_development/nav_business_ctrl', '.cxx_tags', '.java_tags', 'cscope.out']])
     q.put([0xF2, 0, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xF2, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xFF, 0, "shutdown_and_exit"])

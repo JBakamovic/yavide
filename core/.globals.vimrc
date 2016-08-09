@@ -25,7 +25,7 @@ let g:project_supported_categories      = {
 
 let g:project_type_generic              = { 'id' : 1, 'extensions' : ['.*'] }
 let g:project_type_c                    = { 'id' : 2, 'extensions' : ['.c', '.h'] }
-let g:project_type_cpp                  = { 'id' : 3, 'extensions' : ['.cpp', '.cc', '.h', '.hpp'] }
+let g:project_type_cpp                  = { 'id' : 3, 'extensions' : ['.cpp', '.cc', '.h', '.hh', '.hpp'] }
 let g:project_type_java                 = { 'id' : 4, 'extensions' : ['.java'] }
 let g:project_type_mixed                = { 'id' : 5, 'extensions' : [] }
 let g:project_supported_types           = {
