@@ -78,6 +78,7 @@ PLUGINS="$PLUGINS https://github.com/majutsushi/tagbar"
 
 # Airline
 PLUGINS="$PLUGINS https://github.com/bling/vim-airline"
+PLUGINS="$PLUGINS https://github.com/vim-airline/vim-airline-themes"
 
 # A
 PLUGINS="$PLUGINS https://github.com/vim-scripts/a.vim"
