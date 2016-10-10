@@ -50,7 +50,7 @@ guess_system_package_manager(){
     elif [ $SYSTEM_PACKAGE_TYPE == "deb" ]; then
         SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip python-dev libclang-dev"
     elif [ $SYSTEM_PACKAGE_TYPE == "archpkg" || $SYSTEM_PACKAGE_TYPE == "ebuild" ]; then
-        SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget pcre libyaml python-pip python python-watchdog clang"
+        SYSTEM_PACKAGE_SET="gvim ctags cscope git wget pcre libyaml python-pip python python-watchdog clang"
     fi
 }
 
