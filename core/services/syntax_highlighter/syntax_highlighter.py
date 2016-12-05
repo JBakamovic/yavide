@@ -3,6 +3,8 @@ import argparse
 import logging
 from services.syntax_highlighter.tag_identifier import TagIdentifier
 from services.syntax_highlighter.tag_generator import TagGenerator
+from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
+import clang.cindex
 
 class VimSyntaxHighlighter:
     def __init__(self, tag_id_list, output_syntax_file):
@@ -11,6 +13,39 @@ class VimSyntaxHighlighter:
         self.output_tag_file = "/tmp/yavide_tags"
 
     def generate_vim_syntax_file(self, filename):
+        # Generate the tokens
+        tokenizer = ClangTokenizer(self.tag_id_list)
+        tokenizer.run(filename)
+
+        debug_all_tokens = []
+
+        # Build Vim syntax highlight rules
+        vim_highlight_rules = set()
+        for token in tokenizer.get_token_list():
+            token_id = tokenizer.get_token_id(token)
+            if token_id != TagIdentifier.getUnsupportedId():
+                highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
+                vim_highlight_rules.add(highlight_rule)
+            else:
+                logging.info("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
+            type_ref = '%-40s' % str(token.get_definition().kind) if (token.kind.is_reference() and token.get_definition()) else ''
+            type_ref += '%-40s' % str(token.referenced.spelling) if (token.kind.is_reference()) else ''
+            debug_all_tokens.append('%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
+                    '%-40s ' % str(token.kind) + type_ref + '%-30s' % str(token.type.kind) + '%-30s' % str(token.result_type.kind) + token.spelling)
+            debug_all_tokens.append('\n')
+
+        vim_syntax_element = []
+        for rule in vim_highlight_rules:
+            vim_syntax_element.append("syntax keyword " + rule + "\n")
+
+        # Write Vim syntax file
+        vim_syntax_file = open(self.output_syntax_file, "w")
+        vim_syntax_file.writelines(vim_syntax_element)
+
+        debug_tokens_file = open('/tmp/debug_tokens', "w")
+        debug_tokens_file.writelines(debug_all_tokens)
+
+    def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
         tag_generator = TagGenerator(self.tag_id_list, self.output_tag_file)
         tag_generator.run(filename)

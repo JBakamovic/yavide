@@ -55,3 +55,7 @@ class TagIdentifier():
     def getExternFwdDeclarationId():
         return "extern_fwd_declaration"
 
+    @staticmethod
+    def getUnsupportedId():
+        return "unsupported"
+
