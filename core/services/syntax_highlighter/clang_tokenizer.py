@@ -34,47 +34,20 @@ class ClangTokenizer():
         return self.token_list
 
     def get_token_id(self, token):
-        if (token.kind.is_reference()):
-            logging.info('Token: ' + str(token.referenced.spelling))
-            logging.info('referenced.kind: ' + str(token.referenced.kind))
-            logging.info('canonical.kind: ' + str(token.canonical.kind))
-            logging.info('semantic.parent.kind: ' + str(token.semantic_parent))
-            logging.info('lexical.parent.kind: ' + str(token.lexical_parent))
+        if token.referenced:
             return self.__to_tag_id(token.referenced.kind)
-
-            if (token.referenced):
-                return self.__to_tag_id(token.referenced.kind)
-            else:
-                return TagIdentifier.getUnsupportedId()
-
-#            token_definition = token.get_definition()
-#            if token_definition:
-#                return self.__to_tag_id(token_definition.kind)
-#            else:
-#                return TagIdentifier.getUnsupportedId()
-        else:
-            logging.info('NoReferencedToken: ' + str(token.spelling))
-            logging.info('NoReferencedToken.kind: ' + str(token.kind))
-            if (token.referenced):
-                return self.__to_tag_id(token.referenced.kind)
-            return self.__to_tag_id(token.kind)
+        return self.__to_tag_id(token.kind)
 
     def get_token_name(self, token):
-        if (token.kind.is_reference()):
-#        if (token.kind in [clang.cindex.CursorKind.TYPE_REF]):
-#            , clang.cindex.CursorKind.TEMPLATE_REF,
-#            clang.cindex.CursorKind.MEMBER_REF, clang.cindex.CursorKind.VARIABLE_REF,
-#            clang.cindex.CursorKind.DECL_REF_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]):
+        if (token.referenced):
             return token.referenced.spelling
         else:
             return token.spelling
 
     def __visit_all_nodes(self, node):
-        #logging.info("Node: {0} {1}".format(node.displayname, node.kind))
         for n in node.get_children():
             if n.location.file and n.location.file.name == self.filename:
                 self.token_list.append(n)
-                #logging.info("Child node(s): {0} {1}".format(n.displayname, n.kind))
                 self.__visit_all_nodes(n)
 
     def __to_tag_id(self, kind):

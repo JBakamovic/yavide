@@ -17,22 +17,16 @@ class VimSyntaxHighlighter:
         tokenizer = ClangTokenizer(self.tag_id_list)
         tokenizer.run(filename)
 
-        debug_all_tokens = []
-
         # Build Vim syntax highlight rules
         vim_highlight_rules = set()
-        for token in tokenizer.get_token_list():
+        token_list = tokenizer.get_token_list()
+        for token in token_list:
             token_id = tokenizer.get_token_id(token)
             if token_id != TagIdentifier.getUnsupportedId():
                 highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
                 vim_highlight_rules.add(highlight_rule)
             else:
-                logging.info("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
-            type_ref = '%-40s' % str(token.get_definition().kind) if (token.kind.is_reference() and token.get_definition()) else ''
-            type_ref += '%-40s' % str(token.referenced.spelling) if (token.kind.is_reference()) else ''
-            debug_all_tokens.append('%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
-                    '%-40s ' % str(token.kind) + type_ref + '%-30s' % str(token.type.kind) + '%-30s' % str(token.result_type.kind) + token.spelling)
-            debug_all_tokens.append('\n')
+                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
 
         vim_syntax_element = []
         for rule in vim_highlight_rules:
@@ -42,8 +36,14 @@ class VimSyntaxHighlighter:
         vim_syntax_file = open(self.output_syntax_file, "w")
         vim_syntax_file.writelines(vim_syntax_element)
 
-        debug_tokens_file = open('/tmp/debug_tokens', "w")
-        debug_tokens_file.writelines(debug_all_tokens)
+        # Write some debug information
+        for idx, token in enumerate(token_list):
+            logging.debug(
+                '%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
+                '%-40s ' % str(token.spelling) +
+                '%-40s ' % str(token.kind) +
+                ('%-40s ' % str(token.referenced.spelling) if (token.kind.is_reference()) else '') +
+                ('%-40s ' % str(token.referenced.kind) if (token.kind.is_reference()) else ''))
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
