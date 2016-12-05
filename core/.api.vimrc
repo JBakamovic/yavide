@@ -1,8 +1,22 @@
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
+"   SCRIPT LOCAL VARIABLES
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+let s:y_prev_line = 0
+let s:y_prev_col  = 0
+let s:y_prev_char = ''
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
 "   YAVIDE VIMSCRIPT UTILS
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Utils_AppendToFile()
+" Description:  Writes 'lines' to 'file'
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! s:Y_Utils_AppendToFile(file, lines)
     call writefile(readfile(a:file) + a:lines, a:file)
 endfunction
@@ -132,6 +146,7 @@ function! s:Y_Project_Create(bEmptyProject)
                     call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
                     call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
                     call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
+                    call add(l:project_settings, 'let g:' . 'project_compiler_args = ' . "\'\'")
                     call writefile(l:project_settings, g:project_configuration_filename)
                     return 0
                 endif
@@ -833,10 +848,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Start()
-"python import sys
-"python import vim
-"python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]  
-    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'some param')
+    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'dummy_param')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -849,13 +861,64 @@ function! Y_SrcCodeHighlighter_Stop()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_Reset()
+" Description:  Resets variables to initial state.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeHighlighter_Reset()
+    let s:y_prev_line = 0
+    let s:y_prev_col  = 0
+    let s:y_prev_char = ''
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeHighlighter_Run()
 " Description:  Triggers the source code highlighting for current buffer.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
-    let l:currentBuffer = expand('%:p')
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], l:currentBuffer)
+    let l:current_buffer = expand('%:p')
+    let l:contents_filename = l:current_buffer
+    let l:compiler_args = g:project_compiler_args
+
+    " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+    let l:bufferModified = getbufvar(bufnr('%'), '&modified')
+    if l:bufferModified == 1
+        let l:contents_filename = '/tmp/yavideTempBufferContents'
+
+python << EOF
+import vim
+import os
+
+# Serialize the contents
+temp_file = open(vim.eval('l:contents_filename'), "w", 0)
+temp_file.writelines(line + '\n' for line in vim.current.buffer)
+
+# Append additional include path to the compiler args which points to the parent directory of current buffer.
+#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
+#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
+#     Clang parsing errors.
+#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+#     potentially would not play well with other tools (indexer, version control, etc.).
+vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
+EOF
+
+    endif
+
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_RunConditionally()
+" Description:  Conditionally runs the source code highlighter for current buffer.
+"               Tries to minimize triggering the syntax highlighter in some certain cases
+"               when it is not absolutely unnecessary (i.e. when typing letter after letter).
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeHighlighter_RunConditionally()
+    if Y_SrcCodeHighlighter_CheckTextChangedType()
+        call Y_SrcCodeHighlighter_Run()
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -864,11 +927,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
-    let l:currentBuffer = expand('%:p')
-    if l:currentBuffer == a:filename
-        " Clear previously generated syntax rules
-        execute('syntax clear yavideCppNamespace yavideCppClass yavideCppStructure yavideCppEnum yavideCppEnumValue yavideCppUnion yavideCppClassStructUnionMember yavideCppLocalVariable yavideCppVariableDefinition yavideCppFunctionPrototype yavideCppFunctionDefinition yavideCppMacro yavideCppTypedef yavideCppExternForwardDeclaration')
-
+    let l:current_buffer = expand('%:p')
+    if l:current_buffer == a:filename
         " Apply the syntax highlighting rules
         execute('source '.a:syntax_file)
 
@@ -877,6 +937,57 @@ function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
         " while keeping it fast & low on resources,
         execute(':redrawstatus')
     endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_CheckTextChangedType()
+" Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
+"               This is useful if one wants to install handler for 'TextChanged' events but not necessarily
+"               act on each of those because they are triggered rather frequently. This is by no means a perfect 
+"               implementation but it tries to give good enough approximations. It probably can be improved and specialized further.
+"               Returns 0 for a non-interesting change. Otherwise, some value != 0.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeHighlighter_CheckTextChangedType()
+
+    let l:textChangeType = 0 " no interesting change (i.e. typed in a letter after letter)
+
+python << EOF
+import vim
+
+# Uncomment to enable debugging
+#import logging
+#logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
+#logging.info("y_prev_line = '{0}' y_prev_col = '{1}' y_prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('s:y_prev_line'), vim.eval('s:y_prev_col'), vim.eval('s:y_prev_char'), curr_line, curr_col, curr_char))
+
+curr_line = int(vim.eval("line('.')"))
+curr_col = int(vim.eval("col('.')"))
+curr_char = str(vim.eval("getline('.')[col('.')-2]"))
+
+if curr_line > int(vim.eval('s:y_prev_line')):
+    vim.command("let l:textChangeType = 1") #logging.info("Switched to next line!")
+elif curr_line < int(vim.eval('s:y_prev_line')):
+    vim.command("let l:textChangeType = 2") #logging.info("Switched to previous line!")
+else:
+    if not curr_char.isalnum():
+        if str(vim.eval('s:y_prev_char')).isalnum():
+            vim.command("let l:textChangeType = 3") #logging.info("Delimiter!")
+        else:
+            if curr_col > int(vim.eval('s:y_prev_col')): #logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:textChangeType = 3")
+            elif curr_col < int(vim.eval('s:y_prev_col')): #logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:textChangeType = 3")
+
+vim.command('let s:y_prev_line = %s' % curr_line)
+vim.command('let s:y_prev_col = %s' % curr_col)
+vim.command('let s:y_prev_char = "%s"' % curr_char.replace('"', "\"").replace("\\", "\\\\"))
+
+EOF
+
+    return l:textChangeType
+
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1003,8 +1114,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    let l:currentBuffer = expand('%:p')
-    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:currentBuffer)
+    let l:current_buffer = expand('%:p')
+    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:current_buffer)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1013,8 +1124,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Apply(filename)
-    let l:currentBuffer = expand('%:p')
-    if l:currentBuffer == a:filename
+    let l:current_buffer = expand('%:p')
+    if l:current_buffer == a:filename
         execute('e')
     endif
 endfunction

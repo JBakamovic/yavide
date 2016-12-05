@@ -8,6 +8,9 @@
 * [FAQ](#faq)
 
 # Changes
+* 28th of December, 2016
+    * Implemented Clang-based source code [syntax highlighting](docs/services_framework.md#syntax-highlighting) service
+      (run `cd <yavide_install_dir>/colors/yaflandia && git pull` to get required colorscheme changes)
 * 1st of July, 2016
     * Implemented new generic client-server (async) [framework](docs/services_framework.md#framework) which enables dispatching any kind of operations to run in a separate 
       non-blocking background processes (so called [services](docs/services_framework.md#services)) and upon whose completion results can be reported back to the server ('Yavide').
@@ -44,7 +47,7 @@ See [some GIFs in action](docs/services_framework.md).
   * Backed by real C/C++ compiler back-end to ensure total correctness
 * Source code navigation
   * Featuring a fully automated tag generation system which keeps the symbol database up-to-date
-* Source code syntax highlighting
+* Source code syntax highlighting based on `libclang`
   * Providing more rich syntax highlighting support than the one provided originally by `Vim`
 * Source code auto-formatting
   * `clang-formatter` support
