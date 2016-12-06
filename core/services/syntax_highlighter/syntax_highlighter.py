@@ -4,12 +4,13 @@ import logging
 from services.syntax_highlighter.token_identifier import TokenIdentifier
 from services.syntax_highlighter.ctags_tokenizer import CtagsTokenizer
 from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
+
+# TODO remove this once 'Unsupported token id' message is removed
 import clang.cindex
 
 class VimSyntaxHighlighter:
     def __init__(self, output_syntax_file):
         self.output_syntax_file = output_syntax_file
-        self.output_tag_file = "/tmp/yavide_tags"
 
     def generate_vim_syntax_file(self, filename):
         # Generate the tokens
@@ -36,23 +37,18 @@ class VimSyntaxHighlighter:
         vim_syntax_file.writelines(vim_syntax_element)
 
         # Write some debug information
-        for idx, token in enumerate(token_list):
-            logging.debug(
-                '%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
-                '%-40s ' % str(token.spelling) +
-                '%-40s ' % str(token.kind) +
-                ('%-40s ' % str(token.referenced.spelling) if (token.kind.is_reference()) else '') +
-                ('%-40s ' % str(token.referenced.kind) if (token.kind.is_reference()) else ''))
+        tokenizer.dump_token_list()
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
-        tokenizer = CtagsTokenizer(self.output_tag_file)
+        output_tag_file = "/tmp/yavide_tags"
+        tokenizer = CtagsTokenizer(output_tag_file)
         tokenizer.run(filename)
 
         # Generate the vim syntax file
         tags_db = None
         try:
-            tags_db = open(self.output_tag_file)
+            tags_db = open(output_tag_file)
             # Build Vim syntax highlight rules
             vim_highlight_rules = set()
             for line in tags_db:

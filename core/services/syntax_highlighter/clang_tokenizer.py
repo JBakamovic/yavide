@@ -43,6 +43,15 @@ class ClangTokenizer():
         else:
             return token.spelling
 
+    def dump_token_list(self):
+        for idx, token in enumerate(self.token_list):
+            logging.debug(
+                '%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
+                '%-40s ' % str(token.spelling) +
+                '%-40s ' % str(token.kind) +
+                ('%-40s ' % str(token.referenced.spelling) if (token.kind.is_reference()) else '') +
+                ('%-40s ' % str(token.referenced.kind) if (token.kind.is_reference()) else ''))  
+
     def __visit_all_nodes(self, node):
         for n in node.get_children():
             if n.location.file and n.location.file.name == self.filename:
