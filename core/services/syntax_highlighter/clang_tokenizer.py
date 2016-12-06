@@ -1,11 +1,10 @@
 import sys
 import logging
 import clang.cindex
-from services.syntax_highlighter.tag_identifier import TagIdentifier
+from services.syntax_highlighter.token_identifier import TokenIdentifier
 
 class ClangTokenizer():
-    def __init__(self, tag_id_list):
-        self.tag_id_list = tag_id_list
+    def __init__(self):
         self.filename = ''
         self.token_list = []
         self.index = clang.cindex.Index.create()
@@ -35,8 +34,8 @@ class ClangTokenizer():
 
     def get_token_id(self, token):
         if token.referenced:
-            return self.__to_tag_id(token.referenced.kind)
-        return self.__to_tag_id(token.kind)
+            return ClangTokenizer.to_token_id(token.referenced.kind)
+        return ClangTokenizer.to_token_id(token.kind)
 
     def get_token_name(self, token):
         if (token.referenced):
@@ -50,38 +49,39 @@ class ClangTokenizer():
                 self.token_list.append(n)
                 self.__visit_all_nodes(n)
 
-    def __to_tag_id(self, kind):
+    @staticmethod
+    def to_token_id(kind):
         if (kind in [clang.cindex.CursorKind.NAMESPACE, clang.cindex.CursorKind.NAMESPACE_REF]):
-            return TagIdentifier.getNamespaceId()
+            return TokenIdentifier.getNamespaceId()
         if (kind in [clang.cindex.CursorKind.CLASS_DECL, clang.cindex.CursorKind.CLASS_TEMPLATE, clang.cindex.CursorKind.CLASS_TEMPLATE_PARTIAL_SPECIALIZATION]):
-            return TagIdentifier.getClassId()
+            return TokenIdentifier.getClassId()
         if (kind == clang.cindex.CursorKind.STRUCT_DECL):
-            return TagIdentifier.getStructId()
+            return TokenIdentifier.getStructId()
         if (kind == clang.cindex.CursorKind.ENUM_DECL):
-            return TagIdentifier.getEnumId()
+            return TokenIdentifier.getEnumId()
         if (kind == clang.cindex.CursorKind.ENUM_CONSTANT_DECL):
-            return TagIdentifier.getEnumValueId()
+            return TokenIdentifier.getEnumValueId()
         if (kind == clang.cindex.CursorKind.UNION_DECL):
-            return TagIdentifier.getUnionId()
+            return TokenIdentifier.getUnionId()
         if (kind == clang.cindex.CursorKind.FIELD_DECL):
-            return TagIdentifier.getClassStructUnionMemberId()
+            return TokenIdentifier.getClassStructUnionMemberId()
         if (kind in [clang.cindex.CursorKind.VAR_DECL, clang.cindex.CursorKind.PARM_DECL, clang.cindex.CursorKind.TEMPLATE_TYPE_PARAMETER, clang.cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER]):
-            return TagIdentifier.getLocalVariableId()
+            return TokenIdentifier.getLocalVariableId()
         #if (kind == clang.cindex.CursorKind.):
-        #    return TagIdentifier.getVariableDefinitionId()
+        #    return TokenIdentifier.getVariableDefinitionId()
         if (kind in [clang.cindex.CursorKind.FUNCTION_DECL, clang.cindex.CursorKind.FUNCTION_TEMPLATE]):
-            return TagIdentifier.getFunctionPrototypeId()
+            return TokenIdentifier.getFunctionPrototypeId()
         if (kind == clang.cindex.CursorKind.CXX_METHOD):
-            return TagIdentifier.getFunctionPrototypeId()
+            return TokenIdentifier.getFunctionPrototypeId()
         #if (kind == clang.cindex.CursorKind.):
-        #    return TagIdentifier.getFunctionDefinitionId()
+        #    return TokenIdentifier.getFunctionDefinitionId()
         #if (kind == clang.cindex.CursorKind.PREPROCESSING_DIRECTIVE):
-        #    return TagIdentifier.getMacroId()
+        #    return TokenIdentifier.getMacroId()
         if (kind == clang.cindex.CursorKind.TYPEDEF_DECL):
-            return TagIdentifier.getTypedefId()
+            return TokenIdentifier.getTypedefId()
         #if (kind == clang.cindex.CursorKind.):
-        #    return TagIdentifier.getExternFwdDeclarationId()
-        return TagIdentifier.getUnsupportedId()
+        #    return TokenIdentifier.getExternFwdDeclarationId()
+        return TokenIdentifier.getUnsupportedId()
 
 #print 'Includes: '
 #file_inclusion_list = tu.get_includes()

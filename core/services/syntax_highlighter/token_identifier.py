@@ -1,4 +1,4 @@
-class TagIdentifier():
+class TokenIdentifier():
     @staticmethod
     def getNamespaceId():
         return "namespace"

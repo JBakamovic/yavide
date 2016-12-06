@@ -1,20 +1,19 @@
 import sys
 import argparse
 import logging
-from services.syntax_highlighter.tag_identifier import TagIdentifier
-from services.syntax_highlighter.tag_generator import TagGenerator
+from services.syntax_highlighter.token_identifier import TokenIdentifier
+from services.syntax_highlighter.ctags_tokenizer import CtagsTokenizer
 from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
 import clang.cindex
 
 class VimSyntaxHighlighter:
-    def __init__(self, tag_id_list, output_syntax_file):
-        self.tag_id_list = tag_id_list
+    def __init__(self, output_syntax_file):
         self.output_syntax_file = output_syntax_file
         self.output_tag_file = "/tmp/yavide_tags"
 
     def generate_vim_syntax_file(self, filename):
         # Generate the tokens
-        tokenizer = ClangTokenizer(self.tag_id_list)
+        tokenizer = ClangTokenizer()
         tokenizer.run(filename)
 
         # Build Vim syntax highlight rules
@@ -22,7 +21,7 @@ class VimSyntaxHighlighter:
         token_list = tokenizer.get_token_list()
         for token in token_list:
             token_id = tokenizer.get_token_id(token)
-            if token_id != TagIdentifier.getUnsupportedId():
+            if token_id != TokenIdentifier.getUnsupportedId():
                 highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
                 vim_highlight_rules.add(highlight_rule)
             else:
@@ -47,8 +46,8 @@ class VimSyntaxHighlighter:
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
-        tag_generator = TagGenerator(self.tag_id_list, self.output_tag_file)
-        tag_generator.run(filename)
+        tokenizer = CtagsTokenizer(self.output_tag_file)
+        tokenizer.run(filename)
 
         # Generate the vim syntax file
         tags_db = None
@@ -57,8 +56,8 @@ class VimSyntaxHighlighter:
             # Build Vim syntax highlight rules
             vim_highlight_rules = set()
             for line in tags_db:
-                if not tag_generator.is_header(line):
-                    highlight_rule = self.__tag_id_to_vim_syntax_group(tag_generator.get_tag_id(line)) + " " + tag_generator.get_tag_name(line)
+                if not tokenizer.is_header(line):
+                    highlight_rule = self.__tag_id_to_vim_syntax_group(tokenizer.get_token_id(line)) + " " + tokenizer.get_token_name(line)
                     vim_highlight_rules.add(highlight_rule)
 
             vim_syntax_element = []
@@ -73,62 +72,43 @@ class VimSyntaxHighlighter:
                 tags_db.close()
 
     def __tag_id_to_vim_syntax_group(self, tag_identifier):
-        if tag_identifier == TagIdentifier.getNamespaceId():
+        if tag_identifier == TokenIdentifier.getNamespaceId():
             return "yavideCppNamespace"
-        if tag_identifier == TagIdentifier.getClassId():
+        if tag_identifier == TokenIdentifier.getClassId():
             return "yavideCppClass"
-        if tag_identifier == TagIdentifier.getStructId():
+        if tag_identifier == TokenIdentifier.getStructId():
             return "yavideCppStructure"
-        if tag_identifier == TagIdentifier.getEnumId():
+        if tag_identifier == TokenIdentifier.getEnumId():
             return "yavideCppEnum"
-        if tag_identifier == TagIdentifier.getEnumValueId():
+        if tag_identifier == TokenIdentifier.getEnumValueId():
             return "yavideCppEnumValue"
-        if tag_identifier == TagIdentifier.getUnionId():
+        if tag_identifier == TokenIdentifier.getUnionId():
             return "yavideCppUnion"
-        if tag_identifier == TagIdentifier.getClassStructUnionMemberId():
+        if tag_identifier == TokenIdentifier.getClassStructUnionMemberId():
             return "yavideCppClassStructUnionMember"
-        if tag_identifier == TagIdentifier.getLocalVariableId():
+        if tag_identifier == TokenIdentifier.getLocalVariableId():
             return "yavideCppLocalVariable"
-        if tag_identifier == TagIdentifier.getVariableDefinitionId():
+        if tag_identifier == TokenIdentifier.getVariableDefinitionId():
             return "yavideCppVariableDefinition"
-        if tag_identifier == TagIdentifier.getFunctionPrototypeId():
+        if tag_identifier == TokenIdentifier.getFunctionPrototypeId():
             return "yavideCppFunctionPrototype"
-        if tag_identifier == TagIdentifier.getFunctionDefinitionId():
+        if tag_identifier == TokenIdentifier.getFunctionDefinitionId():
             return "yavideCppFunctionDefinition"
-        if tag_identifier == TagIdentifier.getMacroId():
+        if tag_identifier == TokenIdentifier.getMacroId():
             return "yavideCppMacro"
-        if tag_identifier == TagIdentifier.getTypedefId():
+        if tag_identifier == TokenIdentifier.getTypedefId():
             return "yavideCppTypedef"
-        if tag_identifier == TagIdentifier.getExternFwdDeclarationId():
+        if tag_identifier == TokenIdentifier.getExternFwdDeclarationId():
             return "yavideCppExternForwardDeclaration"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n",       "--" + TagIdentifier.getNamespaceId(),                help="enable namespace highlighting",                       action="store_true")
-    parser.add_argument("-c",       "--" + TagIdentifier.getClassId(),                    help="enable class highlighting",                           action="store_true")
-    parser.add_argument("-s",       "--" + TagIdentifier.getStructId(),                   help="enable struct highlighting",                          action="store_true")
-    parser.add_argument("-e",       "--" + TagIdentifier.getEnumId(),                     help="enable enum highlighting",                            action="store_true")
-    parser.add_argument("-ev",      "--" + TagIdentifier.getEnumValueId(),                help="enable enum values highlighting",                     action="store_true")
-    parser.add_argument("-u",       "--" + TagIdentifier.getUnionId(),                    help="enable union highlighting",                           action="store_true")
-    parser.add_argument("-cusm",    "--" + TagIdentifier.getClassStructUnionMemberId(),   help="enable class/union/struct member highlighting",       action="store_true")
-    parser.add_argument("-lv",      "--" + TagIdentifier.getLocalVariableId(),            help="enable local variable highlighting",                  action="store_true")
-    parser.add_argument("-vd",      "--" + TagIdentifier.getVariableDefinitionId(),       help="enable variable definition highlighting",             action="store_true")
-    parser.add_argument("-fp",      "--" + TagIdentifier.getFunctionPrototypeId(),        help="enable function declaration highlighting",            action="store_true")
-    parser.add_argument("-fd",      "--" + TagIdentifier.getFunctionDefinitionId(),       help="enable function definition highlighting",             action="store_true")
-    parser.add_argument("-t",       "--" + TagIdentifier.getTypedefId(),                  help="enable typedef highlighting",                         action="store_true")
-    parser.add_argument("-m",       "--" + TagIdentifier.getMacroId(),                    help="enable macro highlighting",                           action="store_true")
-    parser.add_argument("-efwd",    "--" + TagIdentifier.getExternFwdDeclarationId(),     help="enable extern & forward declaration highlighting",    action="store_true")
     parser.add_argument("filename",                                                       help="source code file to generate the source code highlighting for")
     parser.add_argument("output_syntax_file",                                             help="resulting Vim syntax file")
     args = parser.parse_args()
     args_dict = vars(args)
 
-    tag_id_list = list()
-    for key, value in args_dict.iteritems():
-        if value == True:
-            tag_id_list.append(key)
-
-    vimHighlighter = VimSyntaxHighlighter(tag_id_list, args.output_syntax_file)
+    vimHighlighter = VimSyntaxHighlighter(args.output_syntax_file)
     vimHighlighter.generate_vim_syntax_file(args.filename)
  
 if __name__ == "__main__":

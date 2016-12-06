@@ -9,24 +9,7 @@ class SyntaxHighlighter(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
         self.output_syntax_file = "/tmp/yavideSyntaxFile.vim"
-        self.tag_id_list = [
-            TagIdentifier.getClassId(),
-            TagIdentifier.getClassStructUnionMemberId(),
-            TagIdentifier.getEnumId(),
-            TagIdentifier.getEnumValueId(),
-            TagIdentifier.getExternFwdDeclarationId(),
-            TagIdentifier.getFunctionDefinitionId(),
-            TagIdentifier.getFunctionPrototypeId(),
-            TagIdentifier.getLocalVariableId(),
-            TagIdentifier.getMacroId(),
-            TagIdentifier.getNamespaceId(),
-            TagIdentifier.getStructId(),
-            TagIdentifier.getTypedefId(),
-            TagIdentifier.getUnionId(),
-            TagIdentifier.getVariableDefinitionId()
-        ]
-        self.syntax_highlighter = VimSyntaxHighlighter(self.tag_id_list, self.output_syntax_file)
-        logging.info("tag_id_list = {0}.".format(self.tag_id_list))
+        self.syntax_highlighter = VimSyntaxHighlighter(self.output_syntax_file)
 
     def run_impl(self, filename):
         start = time.clock()
