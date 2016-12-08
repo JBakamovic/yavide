@@ -70,6 +70,8 @@ class VimSyntaxHighlighter:
     def __tag_id_to_vim_syntax_group(self, tag_identifier):
         if tag_identifier == TokenIdentifier.getNamespaceId():
             return "yavideCppNamespace"
+        if tag_identifier == TokenIdentifier.getNamespaceAliasId():
+            return "yavideCppNamespaceAlias"
         if tag_identifier == TokenIdentifier.getClassId():
             return "yavideCppClass"
         if tag_identifier == TokenIdentifier.getStructId():
@@ -80,22 +82,30 @@ class VimSyntaxHighlighter:
             return "yavideCppEnumValue"
         if tag_identifier == TokenIdentifier.getUnionId():
             return "yavideCppUnion"
-        if tag_identifier == TokenIdentifier.getClassStructUnionMemberId():
-            return "yavideCppClassStructUnionMember"
+        if tag_identifier == TokenIdentifier.getFieldId():
+            return "yavideCppField"
         if tag_identifier == TokenIdentifier.getLocalVariableId():
             return "yavideCppLocalVariable"
-        if tag_identifier == TokenIdentifier.getVariableDefinitionId():
-            return "yavideCppVariableDefinition"
-        if tag_identifier == TokenIdentifier.getFunctionPrototypeId():
-            return "yavideCppFunctionPrototype"
-        if tag_identifier == TokenIdentifier.getFunctionDefinitionId():
-            return "yavideCppFunctionDefinition"
+        if tag_identifier == TokenIdentifier.getFunctionId():
+            return "yavideCppFunction"
+        if tag_identifier == TokenIdentifier.getMethodId():
+            return "yavideCppMethod"
+        if tag_identifier == TokenIdentifier.getFunctionParameterId():
+            return "yavideCppFunctionParameter"
+        if tag_identifier == TokenIdentifier.getTemplateTypeParameterId():
+            return "yavideCppTemplateTypeParameter"
+        if tag_identifier == TokenIdentifier.getTemplateNonTypeParameterId():
+            return "yavideCppTemplateNonTypeParameter"
+        if tag_identifier == TokenIdentifier.getTemplateTemplateParameterId():
+            return "yavideCppTemplateTemplateParameter"
         if tag_identifier == TokenIdentifier.getMacroId():
             return "yavideCppMacro"
         if tag_identifier == TokenIdentifier.getTypedefId():
             return "yavideCppTypedef"
-        if tag_identifier == TokenIdentifier.getExternFwdDeclarationId():
-            return "yavideCppExternForwardDeclaration"
+        if tag_identifier == TokenIdentifier.getUsingDirectiveId():
+            return "yavideCppUsingDirective"
+        if tag_identifier == TokenIdentifier.getUsingDeclarationId():
+            return "yavideCppUsingDeclaration"
 
 def main():
     parser = argparse.ArgumentParser()

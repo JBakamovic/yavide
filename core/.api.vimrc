@@ -867,7 +867,7 @@ function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
     let l:currentBuffer = expand('%:p')
     if l:currentBuffer == a:filename
         " Clear previously generated syntax rules
-        execute('syntax clear yavideCppNamespace yavideCppClass yavideCppStructure yavideCppEnum yavideCppEnumValue yavideCppUnion yavideCppClassStructUnionMember yavideCppLocalVariable yavideCppVariableDefinition yavideCppFunctionPrototype yavideCppFunctionDefinition yavideCppMacro yavideCppTypedef yavideCppExternForwardDeclaration')
+        execute('syntax clear yavideCppNamespace yavideCppNamespaceAlias yavideCppClass yavideCppStructure yavideCppEnum yavideCppEnumValue yavideCppUnion yavideCppField yavideCppLocalVariable yavideCppFunction yavideCppMethod yavideCppFunctionParameter yavideCppTemplateTypeParameter yavideCppTemplateNonTypeParameter yavideCppTemplateTemplateParameter yavideCppMacroDefinition yavideCppMacroInstantiation yavideCppTypedef yavideCppUsingDirective yavideCppUsingDeclaration')
 
         " Apply the syntax highlighting rules
         execute('source '.a:syntax_file)

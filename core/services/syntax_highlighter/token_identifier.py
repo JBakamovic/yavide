@@ -4,6 +4,10 @@ class TokenIdentifier():
         return "namespace"
 
     @staticmethod
+    def getNamespaceAliasId():
+        return "namespace_alias"
+
+    @staticmethod
     def getClassId():
         return "class"
 
@@ -24,24 +28,36 @@ class TokenIdentifier():
         return "union"
 
     @staticmethod
-    def getClassStructUnionMemberId():
-        return "class_struct_union_member"
+    def getFieldId():
+        return "class_struct_union_field"
 
     @staticmethod
     def getLocalVariableId():
         return "local_variable"
 
     @staticmethod
-    def getVariableDefinitionId():
-        return "variable_definition"
+    def getFunctionId():
+        return "function"
 
     @staticmethod
-    def getFunctionPrototypeId():
-        return "function_prototype"
+    def getMethodId():
+        return "method"
 
     @staticmethod
-    def getFunctionDefinitionId():
-        return "function_definition"
+    def getFunctionParameterId():
+        return "function_or_method_parameter"
+
+    @staticmethod
+    def getTemplateTypeParameterId():
+        return "template_type_parameter"
+
+    @staticmethod
+    def getTemplateNonTypeParameterId():
+        return "template_non_type_parameter"
+
+    @staticmethod
+    def getTemplateTemplateParameterId():
+        return "template_template_parameter"
 
     @staticmethod
     def getMacroId():
@@ -52,8 +68,12 @@ class TokenIdentifier():
         return "typedef"
 
     @staticmethod
-    def getExternFwdDeclarationId():
-        return "extern_fwd_declaration"
+    def getUsingDirectiveId():
+        return "using_directive"
+
+    @staticmethod
+    def getUsingDeclarationId():
+        return "using_declaration"
 
     @staticmethod
     def getUnsupportedId():

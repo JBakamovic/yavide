@@ -13,6 +13,7 @@ class ClangTokenizer():
         self.filename = filename
         self.token_list = []
         logging.info('Filename = {0}'.format(self.filename))
+        # TODO Think about adding PARSE_PRECOMPILED_PREAMBLE
         translation_unit = self.index.parse(self.filename, ['-x', 'c++', '-std=c++14',
             '-I', '/usr/bin/../lib64/clang/3.8.0/include',
             '-I', '/usr/include',
@@ -60,7 +61,7 @@ class ClangTokenizer():
 
     @staticmethod
     def to_token_id(kind):
-        if (kind in [clang.cindex.CursorKind.NAMESPACE, clang.cindex.CursorKind.NAMESPACE_REF]):
+        if (kind == clang.cindex.CursorKind.NAMESPACE):
             return TokenIdentifier.getNamespaceId()
         if (kind in [clang.cindex.CursorKind.CLASS_DECL, clang.cindex.CursorKind.CLASS_TEMPLATE, clang.cindex.CursorKind.CLASS_TEMPLATE_PARTIAL_SPECIALIZATION]):
             return TokenIdentifier.getClassId()
@@ -73,27 +74,35 @@ class ClangTokenizer():
         if (kind == clang.cindex.CursorKind.UNION_DECL):
             return TokenIdentifier.getUnionId()
         if (kind == clang.cindex.CursorKind.FIELD_DECL):
-            return TokenIdentifier.getClassStructUnionMemberId()
-        if (kind in [clang.cindex.CursorKind.VAR_DECL, clang.cindex.CursorKind.PARM_DECL, clang.cindex.CursorKind.TEMPLATE_TYPE_PARAMETER, clang.cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER]):
+            return TokenIdentifier.getFieldId()
+        if (kind == clang.cindex.CursorKind.VAR_DECL):
             return TokenIdentifier.getLocalVariableId()
-        #if (kind == clang.cindex.CursorKind.):
-        #    return TokenIdentifier.getVariableDefinitionId()
         if (kind in [clang.cindex.CursorKind.FUNCTION_DECL, clang.cindex.CursorKind.FUNCTION_TEMPLATE]):
-            return TokenIdentifier.getFunctionPrototypeId()
+            return TokenIdentifier.getFunctionId()
         if (kind == clang.cindex.CursorKind.CXX_METHOD):
-            return TokenIdentifier.getFunctionPrototypeId()
-        #if (kind == clang.cindex.CursorKind.):
-        #    return TokenIdentifier.getFunctionDefinitionId()
-        #if (kind == clang.cindex.CursorKind.PREPROCESSING_DIRECTIVE):
-        #    return TokenIdentifier.getMacroId()
-        if (kind == clang.cindex.CursorKind.TYPEDEF_DECL):
+            return TokenIdentifier.getMethodId()
+        if (kind == clang.cindex.CursorKind.PARM_DECL):
+            return TokenIdentifier.getFunctionParameterId()
+        if (kind == clang.cindex.CursorKind.TEMPLATE_TYPE_PARAMETER):
+            return TokenIdentifier.getTemplateTypeParameterId()
+        if (kind == clang.cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER):
+            return TokenIdentifier.getTemplateNonTypeParameterId()
+        if (kind == clang.cindex.CursorKind.TEMPLATE_TEMPLATE_PARAMETER):
+            return TokenIdentifier.getTemplateTemplateParameterId()
+        if (kind in [clang.cindex.CursorKind.TYPEDEF_DECL, clang.cindex.CursorKind.TYPE_ALIAS_DECL]):
             return TokenIdentifier.getTypedefId()
-        #if (kind == clang.cindex.CursorKind.):
-        #    return TokenIdentifier.getExternFwdDeclarationId()
+        if (kind == clang.cindex.CursorKind.NAMESPACE_ALIAS):
+            return TokenIdentifier.getNamespaceAliasId()
+        if (kind == clang.cindex.CursorKind.USING_DIRECTIVE):
+            return TokenIdentifier.getUsingDirectiveId()
+        if (kind == clang.cindex.CursorKind.USING_DECLARATION):
+            return TokenIdentifier.getUsingDeclarationId()
         return TokenIdentifier.getUnsupportedId()
 
-#print 'Includes: '
-#file_inclusion_list = tu.get_includes()
-#for finc in file_inclusion_list:
-#    print "Source: ", finc.source, " Location: ", finc.location, " Include: ", finc.include
+        # TODO We need to parse() with 'PARSE_DETAILED_PROCESSING_RECORD' to get these as well
+        #if (kind == clang.cindex.CursorKind.PREPROCESSING_DIRECTIVE):
+        #    return TokenIdentifier.getMacroId()
+        #CursorKind.MACRO_DEFINITION = CursorKind(501)
+        #CursorKind.MACRO_INSTANTIATION = CursorKind(502)
+        #CursorKind.INCLUSION_DIRECTIVE = CursorKind(503)
 
