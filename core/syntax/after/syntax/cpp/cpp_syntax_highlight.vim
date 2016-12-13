@@ -16,7 +16,8 @@ hi def link yavideCppFunctionParameter          FunctionParameterTag
 hi def link yavideCppTemplateTypeParameter      TemplateTypeParameterTag
 hi def link yavideCppTemplateNonTypeParameter   TemplateNonTypeParameterTag
 hi def link yavideCppTemplateTemplateParameter  TemplateTemplateParameterTag
-hi def link yavideCppMacro                      MacroTag
+hi def link yavideCppMacroDefinition            MacroDefinitionTag
+hi def link yavideCppMacroInstantiation         MacroInstantiationTag
 hi def link yavideCppTypedef                    TypedefTag
 hi def link yavideCppUsingDirective             UsingDirectiveTag
 hi def link yavideCppUsingDeclaration           UsingDeclarationTag

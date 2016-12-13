@@ -60,8 +60,12 @@ class TokenIdentifier():
         return "template_template_parameter"
 
     @staticmethod
-    def getMacroId():
-        return "macro"
+    def getMacroDefinitionId():
+        return "macro_definition"
+
+    @staticmethod
+    def getMacroInstantiationId():
+        return "macro_instantiation"
 
     @staticmethod
     def getTypedefId():

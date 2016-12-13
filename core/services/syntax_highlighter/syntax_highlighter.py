@@ -98,8 +98,10 @@ class VimSyntaxHighlighter:
             return "yavideCppTemplateNonTypeParameter"
         if tag_identifier == TokenIdentifier.getTemplateTemplateParameterId():
             return "yavideCppTemplateTemplateParameter"
-        if tag_identifier == TokenIdentifier.getMacroId():
-            return "yavideCppMacro"
+        if tag_identifier == TokenIdentifier.getMacroDefinitionId():
+            return "yavideCppMacroDefinition"
+        if tag_identifier == TokenIdentifier.getMacroInstantiationId():
+            return "yavideCppMacroInstantiation"
         if tag_identifier == TokenIdentifier.getTypedefId():
             return "yavideCppTypedef"
         if tag_identifier == TokenIdentifier.getUsingDirectiveId():

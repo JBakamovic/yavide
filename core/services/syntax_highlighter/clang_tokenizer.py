@@ -20,7 +20,7 @@ class ClangTokenizer():
             '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1',
             '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1/x86_64-redhat-linux',
             '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1/backward',
-            '-I', '/usr/local/include'])
+            '-I', '/usr/local/include'], options=clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
 #            ])
 
         diag = translation_unit.diagnostics
@@ -89,6 +89,10 @@ class ClangTokenizer():
             return TokenIdentifier.getTemplateNonTypeParameterId()
         if (kind == clang.cindex.CursorKind.TEMPLATE_TEMPLATE_PARAMETER):
             return TokenIdentifier.getTemplateTemplateParameterId()
+        if (kind == clang.cindex.CursorKind.MACRO_DEFINITION):
+            return TokenIdentifier.getMacroDefinitionId()
+        if (kind == clang.cindex.CursorKind.MACRO_INSTANTIATION):
+            return TokenIdentifier.getMacroInstantiationId()
         if (kind in [clang.cindex.CursorKind.TYPEDEF_DECL, clang.cindex.CursorKind.TYPE_ALIAS_DECL]):
             return TokenIdentifier.getTypedefId()
         if (kind == clang.cindex.CursorKind.NAMESPACE_ALIAS):
@@ -98,11 +102,4 @@ class ClangTokenizer():
         if (kind == clang.cindex.CursorKind.USING_DECLARATION):
             return TokenIdentifier.getUsingDeclarationId()
         return TokenIdentifier.getUnsupportedId()
-
-        # TODO We need to parse() with 'PARSE_DETAILED_PROCESSING_RECORD' to get these as well
-        #if (kind == clang.cindex.CursorKind.PREPROCESSING_DIRECTIVE):
-        #    return TokenIdentifier.getMacroId()
-        #CursorKind.MACRO_DEFINITION = CursorKind(501)
-        #CursorKind.MACRO_INSTANTIATION = CursorKind(502)
-        #CursorKind.INCLUSION_DIRECTIVE = CursorKind(503)
 
