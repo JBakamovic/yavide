@@ -1,27 +1,32 @@
 import sys
 import logging
+import subprocess
 import clang.cindex
 from services.syntax_highlighter.token_identifier import TokenIdentifier
+
+def get_system_includes():
+    output = subprocess.Popen(["clang", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    pattern = ["#include <...> search starts here:", "End of search list."]
+    output = str(output)
+    return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
 
 class ClangTokenizer():
     def __init__(self):
         self.filename = ''
         self.token_list = []
         self.index = clang.cindex.Index.create()
+        self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
     def run(self, filename):
         self.filename = filename
         self.token_list = []
         logging.info('Filename = {0}'.format(self.filename))
-        # TODO Think about adding PARSE_PRECOMPILED_PREAMBLE
-        translation_unit = self.index.parse(self.filename, ['-x', 'c++', '-std=c++14',
-            '-I', '/usr/bin/../lib64/clang/3.8.0/include',
-            '-I', '/usr/include',
-            '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1',
-            '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1/x86_64-redhat-linux',
-            '-I', '/usr/bin/../lib/gcc/x86_64-redhat-linux/6.2.1/../../../../include/c++/6.2.1/backward',
-            '-I', '/usr/local/include'], options=clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
-#            ])
+        logging.info('Args = {0}'.format(self.default_args))
+        translation_unit = self.index.parse(
+            path = self.filename,
+            args = self.default_args,
+            options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
+        )
 
         diag = translation_unit.diagnostics
         for d in diag:
