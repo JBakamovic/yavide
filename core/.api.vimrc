@@ -855,7 +855,83 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
     let l:currentBuffer = expand('%:p')
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], l:currentBuffer)
+    let l:contentsToAnalyze = l:currentBuffer
+
+    " If buffer contents are not saved we need to serialize contents of the current buffer into temporary file.
+    let l:buf_modified = getbufvar(bufnr('%'), '&modified')
+    if l:buf_modified == 1
+        let l:contentsToAnalyze = '/tmp/yavideTempFile'
+python << EOF
+import vim
+import os
+temp_file = open(vim.eval('l:contentsToAnalyze'), "w", 0)
+temp_file.writelines(line + '\n' for line in vim.current.buffer)
+EOF
+    endif
+
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contentsToAnalyze, l:currentBuffer])
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_RunConditionally()
+" Description:  Conditionally triggers the source code highlighting for current buffer.
+"               Condition evaluated is based on user input (i.e. certain symbols will trigger off the process).
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:prev_line = 0
+let g:prev_col  = 0
+let g:prev_char = ''
+function! Y_SrcCodeHighlighter_RunConditionally()
+
+python << EOF
+import vim
+import os
+import logging
+
+curr_line = int(vim.eval("line('.')"))
+curr_col = int(vim.eval("col('.')"))
+curr_char = str(vim.eval("getline('.')[col('.')-2]"))
+
+logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
+logging.info("prev_line = '{0}' prev_col = '{1}' prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('g:prev_line'), vim.eval('g:prev_col'), vim.eval('g:prev_char'), curr_line, curr_col, curr_char))
+
+# TODO Trigger highlighting on:
+#       1. adding a new line
+#       2. deleting a line
+#       3. modifying the line
+#           a) insert letter at the end
+#           b) insert letter at the beginning
+#           c) insert whitespace at the end
+#           d) insert whitespace at the beginning
+#           e) backspace the line
+
+if curr_line > int(vim.eval('g:prev_line')):
+    logging.info("Switched to next line!")
+    vim.command("call Y_SrcCodeHighlighter_Run()")
+elif curr_line < int(vim.eval('g:prev_line')):
+    logging.info("Switched to previous line!")
+    vim.command("call Y_SrcCodeHighlighter_Run()")
+else:
+    if not curr_char.isalnum():
+        if str(vim.eval('g:prev_char')).isalnum():
+            logging.info("Delimiter!")
+            vim.command("call Y_SrcCodeHighlighter_Run()")
+        else:
+            if curr_col > int(vim.eval('g:prev_col')):
+                logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("call Y_SrcCodeHighlighter_Run()")
+            elif curr_col < int(vim.eval('g:prev_col')):
+                logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("call Y_SrcCodeHighlighter_Run()")
+
+vim.command("let g:prev_line = %s" % curr_line)
+vim.command("let g:prev_col = %s" % curr_col)
+vim.command("let g:prev_char = '%s'" % curr_char)
+
+EOF
+
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

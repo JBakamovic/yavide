@@ -11,10 +11,12 @@ class SyntaxHighlighter(YavideService):
         self.output_syntax_file = "/tmp/yavideSyntaxFile.vim"
         self.syntax_highlighter = VimSyntaxHighlighter(self.output_syntax_file)
 
-    def run_impl(self, filename):
+    def run_impl(self, args):
+        contents = str(args[0])
+        original_filename = str(args[1])
         start = time.clock()
-        self.syntax_highlighter.generate_vim_syntax_file(filename)
+        self.syntax_highlighter.generate_vim_syntax_file(contents)
         end = time.clock()
-        logging.info("Generating vim syntax for '{0}' took {1}.".format(filename, end-start))
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + filename + "'" + ", '" + self.output_syntax_file + "')")
+        logging.info("Generating vim syntax for '{0}' took {1}.".format(original_filename, end-start))
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + original_filename + "'" + ", '" + self.output_syntax_file + "')")
 
