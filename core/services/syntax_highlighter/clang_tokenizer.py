@@ -49,6 +49,12 @@ class ClangTokenizer():
         else:
             return token.spelling
 
+    def get_token_line(self, token):
+        return token.location.line
+
+    def get_token_column(self, token):
+        return token.location.column
+
     def dump_token_list(self):
         for idx, token in enumerate(self.token_list):
             logging.debug(
@@ -84,7 +90,7 @@ class ClangTokenizer():
             return TokenIdentifier.getLocalVariableId()
         if (kind in [clang.cindex.CursorKind.FUNCTION_DECL, clang.cindex.CursorKind.FUNCTION_TEMPLATE]):
             return TokenIdentifier.getFunctionId()
-        if (kind == clang.cindex.CursorKind.CXX_METHOD):
+        if (kind in [clang.cindex.CursorKind.CXX_METHOD, clang.cindex.CursorKind.CONSTRUCTOR, clang.cindex.CursorKind.DESTRUCTOR]):
             return TokenIdentifier.getMethodId()
         if (kind == clang.cindex.CursorKind.PARM_DECL):
             return TokenIdentifier.getFunctionParameterId()

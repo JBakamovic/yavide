@@ -17,6 +17,9 @@ class VimSyntaxHighlighter:
         tokenizer = ClangTokenizer()
         tokenizer.run(filename)
 
+        vim_syntax_element = []
+        vim_syntax_element.append("call clearmatches()\n")
+
         # Build Vim syntax highlight rules
         vim_highlight_rules = set()
         token_list = tokenizer.get_token_list()
@@ -25,12 +28,24 @@ class VimSyntaxHighlighter:
             if token_id != TokenIdentifier.getUnsupportedId():
                 highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
                 vim_highlight_rules.add(highlight_rule)
+                vim_syntax_element.append(
+                    "call matchaddpos('" +
+                    str(self.__tag_id_to_vim_syntax_group(token_id)) +
+                    "', [[" +
+                    str(tokenizer.get_token_line(token)) +
+                    ", " +
+                    str(tokenizer.get_token_column(token)) +
+                    ", " +
+                    str(len(tokenizer.get_token_name(token))) +
+                    "]], -1)" +
+                    "\n"
+                )
             else:
                 logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
 
-        vim_syntax_element = []
-        for rule in vim_highlight_rules:
-            vim_syntax_element.append("syntax keyword " + rule + "\n")
+        #vim_syntax_element = []
+        #for rule in vim_highlight_rules:
+        #    vim_syntax_element.append("syntax keyword " + rule + "\n")
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w")
