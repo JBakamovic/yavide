@@ -12,22 +12,18 @@ class VimSyntaxHighlighter:
     def __init__(self, output_syntax_file):
         self.output_syntax_file = output_syntax_file
 
-    def generate_vim_syntax_file(self, filename):
+    def generate_vim_syntax_file_from_clang(self, source_filename, contents_modified_flag, contents):
         # Generate the tokens
         tokenizer = ClangTokenizer()
-        tokenizer.run(filename)
-
-        vim_syntax_element = []
-        vim_syntax_element.append("call clearmatches()\n")
+        tokenizer.run(source_filename, contents_modified_flag, contents)
 
         # Build Vim syntax highlight rules
-        vim_highlight_rules = set()
+        vim_syntax_element = ['call clearmatches()\n']
         token_list = tokenizer.get_token_list()
         for token in token_list:
             token_id = tokenizer.get_token_id(token)
             if token_id != TokenIdentifier.getUnsupportedId():
                 highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
-                vim_highlight_rules.add(highlight_rule)
                 vim_syntax_element.append(
                     "call matchaddpos('" +
                     str(self.__tag_id_to_vim_syntax_group(token_id)) +
@@ -42,10 +38,6 @@ class VimSyntaxHighlighter:
                 )
             else:
                 logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
-
-        #vim_syntax_element = []
-        #for rule in vim_highlight_rules:
-        #    vim_syntax_element.append("syntax keyword " + rule + "\n")
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w")
@@ -132,7 +124,7 @@ def main():
     args_dict = vars(args)
 
     vimHighlighter = VimSyntaxHighlighter(args.output_syntax_file)
-    vimHighlighter.generate_vim_syntax_file(args.filename)
+    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, 0, None)
  
 if __name__ == "__main__":
     main()

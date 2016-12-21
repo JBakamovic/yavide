@@ -847,10 +847,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Start()
-"python import sys
-"python import vim
-"python sys.argv = ['', vim.eval('l:currentBuffer'), "/tmp", "-n", "-c", "-s", "-e", "-ev", "-u", "-cusm", "-lv", "-vd", "-fp", "-fd", "-t", "-m", "-efwd"]  
-    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'some param')
+    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'dummy_param')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -880,21 +877,21 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
     let l:currentBuffer = expand('%:p')
-    let l:contentsToAnalyze = l:currentBuffer
+    let l:contentsToAnalyze = ''
 
-    " If buffer contents are not saved we need to serialize contents of the current buffer into temporary file.
-    let l:buf_modified = getbufvar(bufnr('%'), '&modified')
-    if l:buf_modified == 1
-        let l:contentsToAnalyze = '/tmp/yavideTempFile'
+    " If buffer contents are modified, we should serialize the contents first.
+    let l:bufferModified = getbufvar(bufnr('%'), '&modified')
+    if l:bufferModified == 1
 python << EOF
 import vim
 import os
-temp_file = open(vim.eval('l:contentsToAnalyze'), "w", 0)
-temp_file.writelines(line + '\n' for line in vim.current.buffer)
+import re
+buffer_contents = re.escape('\n'.join(vim.current.buffer))
+vim.command('let l:contentsToAnalyze = "' + buffer_contents + '"')
 EOF
     endif
 
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contentsToAnalyze, l:currentBuffer])
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:currentBuffer, l:bufferModified, l:contentsToAnalyze])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
