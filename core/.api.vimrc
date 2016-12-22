@@ -3,8 +3,67 @@
 "   YAVIDE VIMSCRIPT UTILS
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Utils_AppendToFile()
+" Description:  Writes 'lines' to 'file'
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! s:Y_Utils_AppendToFile(file, lines)
     call writefile(readfile(a:file) + a:lines, a:file)
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Utils_GetBufferChangeType()
+" Description:  Implements simple heuristics to detect what kind of buffer change has taken place.
+"               This is useful if one wants to install handler for 'TextChanged' events but not necessarily
+"               act on each of those. This is by no means a perfect implementation but it tries to give
+"               good enough approximations. It probably can be improved and specialized further.
+"               Returns 0 for a non-interesting change. Otherwise, some value != 0.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let s:prev_line = 0
+let s:prev_col  = 0
+let s:prev_char = ''
+function! s:Y_Utils_GetBufferChangeType()
+
+    let l:bufferChangeType = 0 " no interesting change (i.e. typed in a letter after letter)
+
+python << EOF
+import vim
+
+# Uncomment to enable debugging
+#import logging
+#logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
+#logging.info("prev_line = '{0}' prev_col = '{1}' prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('s:prev_line'), vim.eval('s:prev_col'), vim.eval('s:prev_char'), curr_line, curr_col, curr_char))
+
+curr_line = int(vim.eval("line('.')"))
+curr_col = int(vim.eval("col('.')"))
+curr_char = str(vim.eval("getline('.')[col('.')-2]"))
+
+if curr_line > int(vim.eval('s:prev_line')):
+    vim.command("let l:bufferChangeType = 1") #logging.info("Switched to next line!")
+elif curr_line < int(vim.eval('s:prev_line')):
+    vim.command("let l:bufferChangeType = 2") #logging.info("Switched to previous line!")
+else:
+    if not curr_char.isalnum():
+        if str(vim.eval('s:prev_char')).isalnum():
+            vim.command("let l:bufferChangeType = 3") #logging.info("Delimiter!")
+        else:
+            if curr_col > int(vim.eval('s:prev_col')): #logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:bufferChangeType = 3")
+            elif curr_col < int(vim.eval('s:prev_col')): #logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:bufferChangeType = 3")
+
+vim.command("let s:prev_line = %s" % curr_line)
+vim.command("let s:prev_col = %s" % curr_col)
+vim.command("let s:prev_char = '%s'" % curr_char)
+
+EOF
+
+    return l:bufferChangeType
+
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -873,65 +932,16 @@ EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_RunConditionally()
-" Description:  Conditionally triggers the source code highlighting for current buffer.
-"               Condition evaluated is based on user input (i.e. certain symbols will trigger off the process).
+" Function:     Y_SrcCodeHighlighter_RunOnTextChanged()
+" Description:  Conditionally runs the source code highlighter for current buffer.
+"               Tries to minimize triggering the syntax highlighter in some certain cases
+"               when it is not absolutely unnecessary (i.e. when typing letter after letter).
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:prev_line = 0
-let g:prev_col  = 0
-let g:prev_char = ''
-function! Y_SrcCodeHighlighter_RunConditionally()
-
-python << EOF
-import vim
-import os
-import logging
-
-curr_line = int(vim.eval("line('.')"))
-curr_col = int(vim.eval("col('.')"))
-curr_char = str(vim.eval("getline('.')[col('.')-2]"))
-
-logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
-logging.info("prev_line = '{0}' prev_col = '{1}' prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('g:prev_line'), vim.eval('g:prev_col'), vim.eval('g:prev_char'), curr_line, curr_col, curr_char))
-
-# TODO Trigger highlighting on:
-#       1. adding a new line
-#       2. deleting a line
-#       3. modifying the line
-#           a) insert letter at the end
-#           b) insert letter at the beginning
-#           c) insert whitespace at the end
-#           d) insert whitespace at the beginning
-#           e) backspace the line
-
-if curr_line > int(vim.eval('g:prev_line')):
-    logging.info("Switched to next line!")
-    vim.command("call Y_SrcCodeHighlighter_Run()")
-elif curr_line < int(vim.eval('g:prev_line')):
-    logging.info("Switched to previous line!")
-    vim.command("call Y_SrcCodeHighlighter_Run()")
-else:
-    if not curr_char.isalnum():
-        if str(vim.eval('g:prev_char')).isalnum():
-            logging.info("Delimiter!")
-            vim.command("call Y_SrcCodeHighlighter_Run()")
-        else:
-            if curr_col > int(vim.eval('g:prev_col')):
-                logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
-                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
-                    vim.command("call Y_SrcCodeHighlighter_Run()")
-            elif curr_col < int(vim.eval('g:prev_col')):
-                logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
-                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
-                    vim.command("call Y_SrcCodeHighlighter_Run()")
-
-vim.command("let g:prev_line = %s" % curr_line)
-vim.command("let g:prev_col = %s" % curr_col)
-vim.command("let g:prev_char = '%s'" % curr_char)
-
-EOF
-
+function! Y_SrcCodeHighlighter_RunOnTextChanged()
+    if s:Y_Utils_GetBufferChangeType()
+        call Y_SrcCodeHighlighter_Run()
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
