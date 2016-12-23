@@ -146,6 +146,7 @@ function! s:Y_Project_Create(bEmptyProject)
                     call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
                     call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
                     call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
+                    call add(l:project_settings, 'let g:' . 'project_compiler_args = ' . "\'\'")
                     call writefile(l:project_settings, g:project_configuration_filename)
                     return 0
                 endif
@@ -891,7 +892,7 @@ vim.command('let l:contentsToAnalyze = "' + buffer_contents + '"')
 EOF
     endif
 
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:currentBuffer, l:bufferModified, l:contentsToAnalyze])
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:currentBuffer, l:bufferModified, l:contentsToAnalyze, g:project_compiler_args])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

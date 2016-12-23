@@ -12,10 +12,10 @@ class VimSyntaxHighlighter:
     def __init__(self, output_syntax_file):
         self.output_syntax_file = output_syntax_file
 
-    def generate_vim_syntax_file_from_clang(self, source_filename, contents_modified_flag, contents):
+    def generate_vim_syntax_file_from_clang(self, source_filename, contents_modified_flag, contents, compiler_args):
         # Generate the tokens
         tokenizer = ClangTokenizer()
-        tokenizer.run(source_filename, contents_modified_flag, contents)
+        tokenizer.run(source_filename, contents_modified_flag, contents, compiler_args)
 
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
@@ -124,7 +124,7 @@ def main():
     args_dict = vars(args)
 
     vimHighlighter = VimSyntaxHighlighter(args.output_syntax_file)
-    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, 0, None)
+    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, 0, None, '')
  
 if __name__ == "__main__":
     main()
