@@ -20,6 +20,7 @@ augroup END
 
 augroup yavide_src_code_highlight_group
     autocmd!
+    autocmd BufEnter                *                               if index(['c', 'cpp'], &ft) < 0 | call clearmatches() | endif  " We need to clear matches when entering non-Cxx buffers 
     autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Reset()
     autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
     autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
