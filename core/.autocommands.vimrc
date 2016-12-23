@@ -20,10 +20,11 @@ augroup END
 
 augroup yavide_src_code_highlight_group
     autocmd!
+    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Reset()
     autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
     autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
     autocmd TextChanged             *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
-    autocmd TextChangedI            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp  call Y_SrcCodeHighlighter_RunOnTextChanged()
+    autocmd TextChangedI            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_RunConditionally()
 augroup END
 
 augroup yavide_layout_mgmt_group
