@@ -12,21 +12,20 @@ def get_system_includes():
 
 class ClangTokenizer():
     def __init__(self):
-        self.source_filename = ''
+        self.filename = ''
         self.token_list = []
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
-    def run(self, source_filename, contents_modified_flag, contents, compiler_args):
-        self.source_filename = source_filename
+    def run(self, filename, compiler_args):
+        self.filename = filename
         self.token_list = []
-        logging.info('Filename = {0}'.format(self.source_filename))
+        logging.info('Filename = {0}'.format(self.filename))
         logging.info('Default args = {0}'.format(self.default_args))
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         translation_unit = self.index.parse(
-            path = self.source_filename,
+            path = self.filename,
             args = self.default_args + compiler_args,
-            unsaved_files = [(source_filename, contents)] if contents_modified_flag else None,
             options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
         )
 
@@ -68,7 +67,7 @@ class ClangTokenizer():
 
     def __visit_all_nodes(self, node):
         for n in node.get_children():
-            if n.location.file and n.location.file.name == self.source_filename:
+            if n.location.file and n.location.file.name == self.filename:
                 self.token_list.append(n)
                 self.__visit_all_nodes(n)
 

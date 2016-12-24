@@ -878,21 +878,21 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
     let l:currentBuffer = expand('%:p')
-    let l:contentsToAnalyze = ''
+    let l:contentsToAnalyze = l:currentBuffer
 
-    " If buffer contents are modified, we should serialize the contents first.
+    " If buffer contents are not saved we need to serialize contents of the current buffer into temporary file.
     let l:bufferModified = getbufvar(bufnr('%'), '&modified')
     if l:bufferModified == 1
+        let l:contentsToAnalyze = '/tmp/yavideTempFile'
 python << EOF
 import vim
 import os
-import re
-buffer_contents = re.escape('\n'.join(vim.current.buffer))
-vim.command('let l:contentsToAnalyze = "' + buffer_contents + '"')
+temp_file = open(vim.eval('l:contentsToAnalyze'), "w", 0)
+temp_file.writelines(line + '\n' for line in vim.current.buffer)
 EOF
     endif
 
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:currentBuffer, l:bufferModified, l:contentsToAnalyze, g:project_compiler_args])
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contentsToAnalyze, l:currentBuffer, g:project_compiler_args])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
