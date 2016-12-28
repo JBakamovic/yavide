@@ -980,9 +980,9 @@ else:
                 if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
                     vim.command("let l:textChangeType = 3")
 
-vim.command("let s:y_prev_line = %s" % curr_line)
-vim.command("let s:y_prev_col = %s" % curr_col)
-vim.command("let s:y_prev_char = '%s'" % curr_char)
+vim.command('let s:y_prev_line = %s' % curr_line)
+vim.command('let s:y_prev_col = %s' % curr_col)
+vim.command('let s:y_prev_char = "%s"' % curr_char.replace('"', "\"").replace("\\", "\\\\"))
 
 EOF
 
