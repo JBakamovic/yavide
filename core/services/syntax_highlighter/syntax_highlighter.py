@@ -124,7 +124,7 @@ def main():
     args_dict = vars(args)
 
     vimHighlighter = VimSyntaxHighlighter(args.output_syntax_file)
-    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, '')
+    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, [''])
  
 if __name__ == "__main__":
     main()

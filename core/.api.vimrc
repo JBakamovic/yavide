@@ -877,22 +877,35 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
-    let l:currentBuffer = expand('%:p')
-    let l:contentsToAnalyze = l:currentBuffer
+    let l:current_buffer = expand('%:p')
+    let l:contents_filename = l:current_buffer
+    let l:compiler_args = g:project_compiler_args
 
-    " If buffer contents are not saved we need to serialize contents of the current buffer into temporary file.
+    " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
     let l:bufferModified = getbufvar(bufnr('%'), '&modified')
     if l:bufferModified == 1
-        let l:contentsToAnalyze = '/tmp/yavideTempFile'
+        let l:contents_filename = '/tmp/yavideTempBufferContents'
+
 python << EOF
 import vim
 import os
-temp_file = open(vim.eval('l:contentsToAnalyze'), "w", 0)
+
+# Serialize the contents
+temp_file = open(vim.eval('l:contents_filename'), "w", 0)
 temp_file.writelines(line + '\n' for line in vim.current.buffer)
+
+# Append additional include path to the compiler args which points to the parent directory of current buffer.
+#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
+#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
+#     Clang parsing errors.
+#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+#     potentially would not play well with other tools (indexer, version control, etc.).
+vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
 EOF
+
     endif
 
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contentsToAnalyze, l:currentBuffer, g:project_compiler_args])
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contents_filename, l:current_buffer, l:compiler_args])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -914,8 +927,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
-    let l:currentBuffer = expand('%:p')
-    if l:currentBuffer == a:filename
+    let l:current_buffer = expand('%:p')
+    if l:current_buffer == a:filename
         " Apply the syntax highlighting rules
         execute('source '.a:syntax_file)
 
@@ -1101,8 +1114,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    let l:currentBuffer = expand('%:p')
-    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:currentBuffer)
+    let l:current_buffer = expand('%:p')
+    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:current_buffer)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1111,8 +1124,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Apply(filename)
-    let l:currentBuffer = expand('%:p')
-    if l:currentBuffer == a:filename
+    let l:current_buffer = expand('%:p')
+    if l:current_buffer == a:filename
         execute('e')
     endif
 endfunction
