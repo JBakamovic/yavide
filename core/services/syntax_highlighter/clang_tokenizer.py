@@ -17,15 +17,16 @@ class ClangTokenizer():
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
-    def run(self, filename, compiler_args):
+    def run(self, filename, compiler_args, project_root_directory):
         self.filename = filename
         self.token_list = []
         logging.info('Filename = {0}'.format(self.filename))
         logging.info('Default args = {0}'.format(self.default_args))
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
+        logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         translation_unit = self.index.parse(
             path = self.filename,
-            args = self.default_args + compiler_args,
+            args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
             options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
         )
 
