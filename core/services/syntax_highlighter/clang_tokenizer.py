@@ -5,7 +5,7 @@ import clang.cindex
 from services.syntax_highlighter.token_identifier import TokenIdentifier
 
 def get_system_includes():
-    output = subprocess.Popen(["clang", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    output = subprocess.Popen(["g++", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     pattern = ["#include <...> search starts here:", "End of search list."]
     output = str(output)
     return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
