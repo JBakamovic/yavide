@@ -1114,8 +1114,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    let l:current_buffer = expand('%:p')
-    call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:current_buffer)
+    if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
+        let l:current_buffer = expand('%:p')
+        call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:current_buffer)
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
