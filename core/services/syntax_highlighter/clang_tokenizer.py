@@ -41,8 +41,21 @@ class ClangTokenizer():
         return self.token_list
 
     def get_token_id(self, token):
+        # CursorKind.OVERLOADED_DECL_REF basically identifies a reference to a set of overloaded functions
+        # or function templates which have not yet been resolved to a specific function or function template.
+        # This means that token kind might be one of the following:
+        #   CursorKind.FUNCTION_DECL, CursorKind.FUNCTION_TEMPLATE, CursorKind.CXX_METHOD
+        # To extract more information about the token we can use `clang_getNumOverloadedDecls()` to get how
+        # many overloads there are and then use `clang_getOverloadedDecl()` to get a specific overload.
+        # In our case, we can always use the first overload which explains hard-coded 0 as an index.
         if token.referenced:
+            if (token.referenced.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
+                if (ClangTokenizer.__get_num_overloaded_decls(token.referenced)):
+                    return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(token.referenced, 0).kind)
             return ClangTokenizer.to_token_id(token.referenced.kind)
+        if (token.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
+            if (ClangTokenizer.__get_num_overloaded_decls(token)):
+                return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(token, 0).kind)
         return ClangTokenizer.to_token_id(token.kind)
 
     def get_token_name(self, token):
@@ -63,8 +76,20 @@ class ClangTokenizer():
                 '%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
                 '%-40s ' % str(token.spelling) +
                 '%-40s ' % str(token.kind) +
-                ('%-40s ' % str(token.referenced.spelling) if (token.kind.is_reference()) else '') +
-                ('%-40s ' % str(token.referenced.kind) if (token.kind.is_reference()) else ''))  
+                ('%-40s ' % str(ClangTokenizer.__get_overloaded_decl(token, 0).spelling) if (token.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(token)) else '') +
+                ('%-40s ' % str(ClangTokenizer.__get_overloaded_decl(token, 0).kind) if (token.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(token)) else '') +
+                ('%-40s ' % str(token.referenced.spelling) if (token.referenced) else '') +
+                ('%-40s ' % str(token.referenced.kind) if (token.referenced) else ''))
+                #('%-40s ' % str(token.referenced.type.spelling) if (token.referenced) else '') +
+                #('%-40s ' % str(token.referenced.result_type.spelling) if (token.referenced) else '') +
+                #('%-40s ' % str(token.referenced.canonical.spelling) if (token.referenced) else '') +
+                #('%-40s ' % str(token.referenced.canonical.kind) if (token.referenced) else '') +
+                #('%-40s ' % str(token.referenced.semantic_parent.spelling) if (token.referenced and token.referenced.semantic_parent) else '') +
+                #('%-40s ' % str(token.referenced.semantic_parent.kind) if (token.referenced and token.referenced.semantic_parent) else '') +
+                #('%-40s ' % str(token.referenced.lexical_parent.spelling) if (token.referenced and token.referenced.lexical_parent) else '') +
+                #('%-40s ' % str(token.referenced.lexical_parent.kind) if (token.referenced and token.referenced.lexical_parent) else ''))
 
     def __visit_all_nodes(self, node):
         for n in node.get_children():
@@ -115,4 +140,14 @@ class ClangTokenizer():
         if (kind == clang.cindex.CursorKind.USING_DECLARATION):
             return TokenIdentifier.getUsingDeclarationId()
         return TokenIdentifier.getUnsupportedId()
+
+    # TODO Shall be removed once 'cindex.py' exposes it in its interface.
+    @staticmethod
+    def __get_num_overloaded_decls(cursor):
+        return clang.cindex.conf.lib.clang_getNumOverloadedDecls(cursor)
+
+    # TODO Shall be removed once 'cindex.py' exposes it in its interface.
+    @staticmethod
+    def __get_overloaded_decl(cursor, num):
+        return clang.cindex.conf.lib.clang_getOverloadedDecl(cursor, num)
 
