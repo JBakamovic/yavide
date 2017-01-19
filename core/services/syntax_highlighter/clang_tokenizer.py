@@ -4,6 +4,58 @@ import subprocess
 import clang.cindex
 from services.syntax_highlighter.token_identifier import TokenIdentifier
 
+class ChildVisitResult(clang.cindex.BaseEnumeration):
+    """
+    A ChildVisitResult describes how the traversal of the children of a particular cursor should proceed after visiting a particular child cursor.
+    """
+    _kinds = []
+    _name_map = None
+
+    def __repr__(self):
+        return 'ChildVisitResult.%s' % (self.name,)
+
+ChildVisitResult.BREAK = ChildVisitResult(0) # Terminates the cursor traversal.
+ChildVisitResult.CONTINUE = ChildVisitResult(1) # Continues the cursor traversal with the next sibling of the cursor just visited, without visiting its children.
+ChildVisitResult.RECURSE = ChildVisitResult(2) # Recursively traverse the children of this cursor, using the same visitor and client data.
+
+def default_visitor(child, parent, client_data):
+    """Default implementation of AST node visitor."""
+
+    return ChildVisitResult.CONTINUE.value
+
+def traverse(self, client_data, client_visitor = default_visitor):
+    """Traverse AST using the client provided visitor."""
+
+    def visitor(child, parent, client_data):
+        assert child != clang.cindex.conf.lib.clang_getNullCursor()
+        child._tu = self._tu
+        child.ast_parent = parent
+        return client_visitor(child, parent, client_data)
+
+    return clang.cindex.conf.lib.clang_visitChildren(self, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
+
+def get_children_patched(self):
+    """
+    Return an iterator for accessing the children of this cursor.
+    This is a patched version of Cursor.get_children() but which is built on top of new traversal interface.
+    See traverse() for more details.
+    """
+
+    def visitor(child, parent, children):
+        children.append(child)
+        return ChildVisitResult.CONTINUE.value
+
+    children = []
+    traverse(self, children, visitor)
+    return iter(children)
+
+"""
+Monkey-patch the existing Cursor.get_children() with get_children_patched().
+This is a temporary solution and should be removed once, and if, it becomes available in official libclang Python bindings.
+New version provides more functionality (i.e. AST parent node) which is needed in certain cases.
+"""
+clang.cindex.Cursor.get_children = get_children_patched
+
 def get_system_includes():
     output = subprocess.Popen(["g++", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     pattern = ["#include <...> search starts here:", "End of search list."]
