@@ -19,32 +19,32 @@ class VimSyntaxHighlighter:
 
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
-        token_list = tokenizer.get_token_list()
-        for token in token_list:
-            token_id = tokenizer.get_token_id(token)
-            if token_id != TokenIdentifier.getUnsupportedId():
-                highlight_rule = self.__tag_id_to_vim_syntax_group(token_id) + " " + tokenizer.get_token_name(token)
+        ast_node_list = tokenizer.get_ast_node_list()
+        for ast_node in ast_node_list:
+            ast_node_id = tokenizer.get_ast_node_id(ast_node)
+            if ast_node_id != TokenIdentifier.getUnsupportedId():
+                highlight_rule = self.__tag_id_to_vim_syntax_group(ast_node_id) + " " + tokenizer.get_ast_node_name(ast_node)
                 vim_syntax_element.append(
                     "call matchaddpos('" +
-                    str(self.__tag_id_to_vim_syntax_group(token_id)) +
+                    str(self.__tag_id_to_vim_syntax_group(ast_node_id)) +
                     "', [[" +
-                    str(tokenizer.get_token_line(token)) +
+                    str(tokenizer.get_ast_node_line(ast_node)) +
                     ", " +
-                    str(tokenizer.get_token_column(token)) +
+                    str(tokenizer.get_ast_node_column(ast_node)) +
                     ", " +
-                    str(len(tokenizer.get_token_name(token))) +
+                    str(len(tokenizer.get_ast_node_name(ast_node))) +
                     "]], -1)" +
                     "\n"
                 )
             else:
-                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(token.location.line, token.location.column, token.kind, tokenizer.get_token_name(token)))
+                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(ast_node.location.line, ast_node.location.column, ast_node.kind, tokenizer.get_ast_node_name(ast_node)))
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w")
         vim_syntax_file.writelines(vim_syntax_element)
 
         # Write some debug information
-        tokenizer.dump_token_list()
+        tokenizer.dump_ast_nodes()
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags

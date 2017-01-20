@@ -8,6 +8,11 @@
 * [FAQ](#faq)
 
 # Changes
+* 19th of January, 2016
+    * Polished some rough edges around syntax highlighting:
+        * Implemented support for handling a set of overloaded functions or function templates (CursorKind.OVERLOADED_DECL_REF expressions)
+        * Implemented support for handling dependent types (TypeKind.DEPENDENT expressions)
+        * Implemented non-intrusive patch for clang.cindex enabling more flexible AST traversal
 * 28th of December, 2016
     * Implemented Clang-based source code [syntax highlighting](docs/services_framework.md#syntax-highlighting) service
       (run `cd <yavide_install_dir>/colors/yaflandia && git pull` to get required colorscheme changes)

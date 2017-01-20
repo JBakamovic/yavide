@@ -65,89 +65,189 @@ def get_system_includes():
 class ClangTokenizer():
     def __init__(self):
         self.filename = ''
-        self.token_list = []
+        self.ast_nodes_list = []
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
     def run(self, filename, compiler_args, project_root_directory):
         self.filename = filename
-        self.token_list = []
+        self.ast_nodes_list = []
         logging.info('Filename = {0}'.format(self.filename))
         logging.info('Default args = {0}'.format(self.default_args))
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
-        translation_unit = self.index.parse(
-            path = self.filename,
-            args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
-            options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
-        )
+        try:
+            translation_unit = self.index.parse(
+                path = self.filename,
+                args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
+                options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
+            )
 
-        diag = translation_unit.diagnostics
-        for d in diag:
-            logging.info('Parsing error: ' + str(d))
+            for diag in translation_unit.diagnostics:
+                logging.info('Parsing error: ' + str(diag))
 
-        logging.info('Translation unit: '.format(translation_unit.spelling))
-        self.__visit_all_nodes(translation_unit.cursor)
+            logging.info('Translation unit: '.format(translation_unit.spelling))
+            self.__visit_all_nodes(translation_unit.cursor)
 
-    def get_token_list(self):
-        return self.token_list
+        except:
+            logging.error(sys.exc_info()[0])
 
-    def get_token_id(self, token):
-        # CursorKind.OVERLOADED_DECL_REF basically identifies a reference to a set of overloaded functions
-        # or function templates which have not yet been resolved to a specific function or function template.
-        # This means that token kind might be one of the following:
-        #   CursorKind.FUNCTION_DECL, CursorKind.FUNCTION_TEMPLATE, CursorKind.CXX_METHOD
-        # To extract more information about the token we can use `clang_getNumOverloadedDecls()` to get how
-        # many overloads there are and then use `clang_getOverloadedDecl()` to get a specific overload.
-        # In our case, we can always use the first overload which explains hard-coded 0 as an index.
-        if token.referenced:
-            if (token.referenced.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
-                if (ClangTokenizer.__get_num_overloaded_decls(token.referenced)):
-                    return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(token.referenced, 0).kind)
-            return ClangTokenizer.to_token_id(token.referenced.kind)
-        if (token.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
-            if (ClangTokenizer.__get_num_overloaded_decls(token)):
-                return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(token, 0).kind)
-        return ClangTokenizer.to_token_id(token.kind)
+    def get_ast_node_list(self):
+        return self.ast_nodes_list
 
-    def get_token_name(self, token):
-        if (token.referenced):
-            return token.referenced.spelling
+    def get_ast_node_id(self, cursor):
+        # We have to handle (at least) two different situations when libclang API will not give us enough details about the given cursor directly:
+        #   1. When Cursor.TypeKind is DEPENDENT
+        #       * Cursor.TypeKind happens to be set to DEPENDENT for constructs whose semantics may differ from one
+        #         instantiation to another. These are called dependent names (see 14.6.2 [temp.dep] in C++ standard).
+        #       * Example can be a call expression on non-instantiated function template, or even a reference to
+        #         a data member of non-instantiated class template.
+        #       * In this case we try to extract the right CursorKind by tokenizing the given cursor, selecting the
+        #         right token and, depending on its position in the AST tree, return the right CursorKind information.
+        #         See ClangTokenizer.__extract_dependent_type_kind() for more details.
+        #       * Similar actions have to be taken for extracting spelling and location for such cursors.
+        #   2. When Cursor.Kind is OVERLOADED_DECL_REF
+        #       * Cursor.Kind.OVERLOADED_DECL_REF basically identifies a reference to a set of overloaded functions
+        #         or function templates which have not yet been resolved to a specific function or function template.
+        #       * This means that token kind might be one of the following:
+        #            Cursor.Kind.FUNCTION_DECL, Cursor.Kind.FUNCTION_TEMPLATE, Cursor.Kind.CXX_METHOD
+        #       * To extract more information about the token we can use `clang_getNumOverloadedDecls()` to get how
+        #         many overloads there are and then use `clang_getOverloadedDecl()` to get a specific overload.
+        #       * In our case, we can always use the first overload which explains hard-coded 0 as an index.
+        if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
+            return ClangTokenizer.to_token_id(ClangTokenizer.__extract_dependent_type_kind(cursor))
         else:
-            return token.spelling
+            if cursor.referenced:
+                if (cursor.referenced.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
+                    if (ClangTokenizer.__get_num_overloaded_decls(cursor.referenced)):
+                        return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(cursor.referenced, 0).kind)
+                return ClangTokenizer.to_token_id(cursor.referenced.kind)
+            if (cursor.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
+                if (ClangTokenizer.__get_num_overloaded_decls(cursor)):
+                    return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(cursor, 0).kind)
+        return ClangTokenizer.to_token_id(cursor.kind)
 
-    def get_token_line(self, token):
-        return token.location.line
+    def get_ast_node_name(self, cursor):
+        if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
+            return ClangTokenizer.__extract_dependent_type_spelling(cursor)
+        else:
+            if (cursor.referenced):
+                return cursor.referenced.spelling
+            else:
+                return cursor.spelling
 
-    def get_token_column(self, token):
-        return token.location.column
+    def get_ast_node_line(self, cursor):
+        if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
+            return ClangTokenizer.__extract_dependent_type_location(cursor).line
+        return cursor.location.line
 
-    def dump_token_list(self):
-        for idx, token in enumerate(self.token_list):
+    def get_ast_node_column(self, cursor):
+        if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
+            return ClangTokenizer.__extract_dependent_type_location(cursor).column
+        return cursor.location.column
+
+    def dump_tokens(self, cursor):
+        for token in cursor.get_tokens():
             logging.debug(
-                '%-12s' % ('[' + str(token.location.line) + ', ' + str(token.location.column) + ']') +
-                '%-40s ' % str(token.spelling) +
-                '%-40s ' % str(token.kind) +
-                ('%-40s ' % str(ClangTokenizer.__get_overloaded_decl(token, 0).spelling) if (token.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(token)) else '') +
-                ('%-40s ' % str(ClangTokenizer.__get_overloaded_decl(token, 0).kind) if (token.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(token)) else '') +
-                ('%-40s ' % str(token.referenced.spelling) if (token.referenced) else '') +
-                ('%-40s ' % str(token.referenced.kind) if (token.referenced) else ''))
-                #('%-40s ' % str(token.referenced.type.spelling) if (token.referenced) else '') +
-                #('%-40s ' % str(token.referenced.result_type.spelling) if (token.referenced) else '') +
-                #('%-40s ' % str(token.referenced.canonical.spelling) if (token.referenced) else '') +
-                #('%-40s ' % str(token.referenced.canonical.kind) if (token.referenced) else '') +
-                #('%-40s ' % str(token.referenced.semantic_parent.spelling) if (token.referenced and token.referenced.semantic_parent) else '') +
-                #('%-40s ' % str(token.referenced.semantic_parent.kind) if (token.referenced and token.referenced.semantic_parent) else '') +
-                #('%-40s ' % str(token.referenced.lexical_parent.spelling) if (token.referenced and token.referenced.lexical_parent) else '') +
-                #('%-40s ' % str(token.referenced.lexical_parent.kind) if (token.referenced and token.referenced.lexical_parent) else ''))
+                '%-22s' % ('[' + str(token.extent.start.line) + ', ' + str(token.extent.start.column) + ']:[' + str(token.extent.end.line) + ', ' + str(token.extent.end.column) + ']') + 
+                '%-30s' % token.spelling +
+                '%-40s' % str(token.kind) +
+                '%-40s' % str(token.cursor.kind) +
+                'Token.Cursor.Extent %-25s' % ('[' + str(token.cursor.extent.start.line) + ', ' + str(token.cursor.extent.start.column) + ']:[' + str(token.cursor.extent.end.line) + ', ' + str(token.cursor.extent.end.column) + ']') +
+                'Cursor.Extent %-25s' % ('[' + str(cursor.extent.start.line) + ', ' + str(cursor.extent.start.column) + ']:[' + str(cursor.extent.end.line) + ', ' + str(cursor.extent.end.column) + ']'))
+
+    def dump_ast_nodes(self):
+        logging.debug('%-12s' % '[Line, Col]' + '%-40s' % 'Spelling' + '%-40s' % 'Kind' + '%-40s' % 'Type.Spelling' +
+                '%-40s' % 'Type.Kind' +
+                '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
+                '%-40s' % 'Referenced.Spelling' + '%-40s' % 'Referenced.Kind' +
+                '%-40s' % 'Referenced.Type.Spelling' + '%-40s' % 'Referenced.Type.Kind' +
+                '%-40s' % 'Referenced.ResultType.Spelling' + '%-40s' % 'Referenced.ResultType.Kind' +
+                '%-40s' % 'Referenced.Canonical.Spelling' + '%-40s' % 'Referenced.Canonical.Kind' +
+                '%-40s' % 'Referenced.SemanticParent.Spelling' + '%-40s' % 'Referenced.SemanticParent.Kind' +
+                '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind')
+        logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
+
+        for idx, cursor in enumerate(self.ast_nodes_list):
+
+            # if cursor.kind in [clang.cindex.CursorKind.CALL_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]:
+            #    self.dump_tokens(cursor)
+
+            logging.debug(
+                '%-12s' % ('[' + str(cursor.location.line) + ', ' + str(cursor.location.column) + ']') +
+                '%-40s' % str(cursor.spelling) +
+                '%-40s' % str(cursor.kind) +
+                '%-40s' % str(cursor.type.spelling) +
+                '%-40s' % str(cursor.type.kind) +
+                ('%-40s' % str(ClangTokenizer.__get_overloaded_decl(cursor, 0).spelling) if (cursor.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
+                ('%-40s' % str(ClangTokenizer.__get_overloaded_decl(cursor, 0).kind) if (cursor.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.spelling) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.kind) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.type.spelling) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.type.kind) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.result_type.spelling) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.result_type.kind) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.canonical.spelling) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.canonical.kind) if (cursor.referenced) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.semantic_parent.spelling) if (cursor.referenced and cursor.referenced.semantic_parent) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.semantic_parent.kind) if (cursor.referenced and cursor.referenced.semantic_parent) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.lexical_parent.spelling) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-') +
+                ('%-40s' % str(cursor.referenced.lexical_parent.kind) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-'))
 
     def __visit_all_nodes(self, node):
         for n in node.get_children():
             if n.location.file and n.location.file.name == self.filename:
-                self.token_list.append(n)
+                self.ast_nodes_list.append(n)
                 self.__visit_all_nodes(n)
+
+    @staticmethod
+    def __extract_dependent_type_kind(cursor):
+        # For cursors whose CursorKind is MEMBER_REF_EXPR and whose TypeKind is DEPENDENT we don't get much information
+        # from libclang API directly (i.e. cursor spelling will be empty).
+        # Instead, we can extract such information indirectly by:
+        #   1. Tokenizing the cursor
+        #       * It will contain all the tokens that make up the MEMBER_REF_EXPR and therefore all the spellings, locations, extents, etc.
+        #   2. Finding a token whose:
+        #       * TokenKind is IDENTIFIER
+        #       * CursorKind of a cursor that it corresponds to matches the MEMBER_REF_EXPR
+        #       * Extent of a cursor that it corresponds to matches the extent of original cursor
+        #   3. If CursorKind of original cursor AST parent is CALL_EXPR then we know that token found is CursorKind.CXX_METHOD
+        #      If CursorKind of original cursor AST parent is not CALL_EXPR then we know that token found is CursorKind.FIELD_DECL
+        assert cursor.type.kind == clang.cindex.TypeKind.DEPENDENT
+        if cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR:
+            if cursor.ast_parent and (cursor.ast_parent.kind == clang.cindex.CursorKind.CALL_EXPR):
+                for token in cursor.get_tokens():
+                    if (token.kind == clang.cindex.TokenKind.IDENTIFIER) and (token.cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (token.cursor.extent == cursor.extent):
+                        return clang.cindex.CursorKind.CXX_METHOD # We've got a function member call
+            else:
+                for token in cursor.get_tokens():
+                    if (token.kind == clang.cindex.TokenKind.IDENTIFIER) and (token.cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (token.cursor.extent == cursor.extent):
+                        return clang.cindex.CursorKind.FIELD_DECL # We've got a data member
+        return cursor.kind
+
+    @staticmethod
+    def __extract_dependent_type_spelling(cursor):
+        # See __extract_dependent_type_kind() for more details but in essence we have to tokenize the cursor and
+        # return the spelling of appropriate token.
+        assert cursor.type.kind == clang.cindex.TypeKind.DEPENDENT
+        if cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR:
+            for token in cursor.get_tokens():
+                if (token.kind == clang.cindex.TokenKind.IDENTIFIER) and (token.cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (token.cursor.extent == cursor.extent):
+                    return token.spelling
+        return cursor.spelling
+
+    @staticmethod
+    def __extract_dependent_type_location(cursor):
+        # See __extract_dependent_type_kind() for more details but in essence we have to tokenize the cursor and
+        # return the location of appropriate token.
+        assert cursor.type.kind == clang.cindex.TypeKind.DEPENDENT
+        if cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR:
+            for token in cursor.get_tokens():
+                if (token.kind == clang.cindex.TokenKind.IDENTIFIER) and (token.cursor.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (token.cursor.extent == cursor.extent):
+                    return token.location
+        return cursor.location
 
     @staticmethod
     def to_token_id(kind):
