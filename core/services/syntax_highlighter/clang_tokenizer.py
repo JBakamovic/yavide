@@ -92,6 +92,108 @@ class ClangTokenizer():
         except:
             logging.error(sys.exc_info()[0])
 
+    @staticmethod
+    def __extract_auto_deducted_type(cursor):
+        # How do we try to deduct auto types?
+        # There are a couple of situations where auto specifier may occur:
+        #   A) auto <variable-initializer>
+        #       Where <variable-initializer> can be one of the following:
+        #           1. (expression-list)
+        #           2. = expression
+        #           3. {initializer-list}
+        #
+        #       Depending on the context, initializer will result with one of the following:
+        #           1. Value initialization
+        #           2. Direct initialization
+        #           3. Copy initialization
+        #           4. List initialization
+        #           5. Aggregate initialization
+        #           6. Reference initialization
+        #
+        #       But we are here actually interested in expressions and the forms that they can take:
+        #           1. (Dependent-name) variable
+        #           2. (Dependent-name) free-standing function call
+        #           3. (Dependent-name) member function call
+        #           4. Lambda expression
+        #           5. More complex expressions comprised of multiple expressions
+        #           ?
+        #
+        #       Expressions holding non-dependent-names will be already automatically deduced to the corresponding type.
+        #       However, for a full resolution of dependent-names, one needs to transform them into non-dependent names
+        #       by instantiatiating corresponding constructs (e.g. using them in the source code).
+        #
+        #       Therefore, in dependent-name contexts the best we can do is not really try to deduce the final type, because
+        #       we cannot do that, but instead we can try to extract a spelling of corresponding dependent-name.
+        #       Spelling will still be defined in terms of dependent-names (e.g. template parameter T) but that is fine as long as
+        #       it provides additional information about the underlying type (e.g. std::vector<T>).
+        #
+        #   B) auto <function> -> return type
+        #   C) auto <function>
+        #   D) decltype(auto) <variable-initializer>
+        #   E) decltype(auto) <function>
+        #   F) template <auto <parameter> >
+        #   G) <cv> auto <ref> <parameter> (generic lambda expression)
+        #
+        #   // example
+        #   template <typename T>
+        #   bool foobar() {
+        #       my_struct<T> s;
+        #       auto var1 = s;
+        #       auto var2 = s._data;
+        #       auto var3 = s.empty();
+        #       auto var4 = foo<T>();
+        #       auto var5 = bar();
+        #   }
+        #
+        #   A1. Cursor.Kind is VAR_DECL & AST parent will be DECL_STMT
+        #       A1.1 DECL_REF_EXPR is our first descendent
+        #            * If there are no dependent name descendants of DECL_REF_EXPR cursor, we simply grab the Type.Spelling of DECL_REF_EXPR cursor.
+        #            * Otherwise, ...?
+        #       A1.2.
+
+        # Make sure we are at auto cursor.
+        #   auto var -> var is TypeKind.AUTO
+        #   auto& var -> var is TypeKind.LVALUEREFERENCE
+        if ((cursor.type.kind != clang.cindex.TypeKind.AUTO) and (cursor.type.kind != clang.cindex.TypeKind.LVALUEREFERENCE)):
+            return cursor.type.spelling
+
+        # Sometimes libclang will deduce the Type.Spelling for us automatically
+        if "auto" not in cursor.type.spelling:
+            return cursor.type.spelling
+
+        # TODO Append '&' with LVALUEREFERENCE's
+        child_iter = cursor.get_children(ChildVisitResult.RECURSE)
+        first_child = next(child_iter, None)
+        if cursor.kind == clang.cindex.CursorKind.VAR_DECL:
+            if first_child:
+                if first_child.kind == clang.cindex.CursorKind.DECL_REF_EXPR:
+                    return first_child.type.spelling
+                elif (first_child.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (first_child.type.kind == clang.cindex.TypeKind.DEPENDENT):
+                    second_child = next(child_iter, None)
+                    if second_child and (second_child.kind == clang.cindex.CursorKind.DECL_REF_EXPR):
+                        declaration = second_child.type.get_declaration()
+                        for child in declaration.get_children():
+                            for token in first_child.get_tokens():
+                                if token.spelling == child.spelling:
+                                    return child.type.spelling
+                        # TODO if not found, try its parent(s) via CXX_BASE_SPECIFIER(s)
+                elif (first_child.kind == clang.cindex.CursorKind.CALL_EXPR):
+                    second_child = next(child_iter, None)
+                    if second_child and (second_child.kind == clang.cindex.CursorKind.MEMBER_REF_EXPR) and (second_child.type.kind == clang.cindex.TypeKind.DEPENDENT):
+                        third_child = next(child_iter, None)
+                        if third_child and (third_child.kind == clang.cindex.CursorKind.DECL_REF_EXPR):
+                            declaration = third_child.type.get_declaration()
+                            for child in declaration.get_children():
+                                for token in second_child.get_tokens():
+                                    if token.spelling == child.spelling:
+                                        return child.result_type.spelling
+                    elif second_child and (second_child.kind == clang.cindex.CursorKind.DECL_REF_EXPR):
+                        third_child = next(child_iter, None)
+                        if third_child and (third_child.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
+                            if (ClangTokenizer.__get_num_overloaded_decls(third_child)):
+                                return ClangTokenizer.__get_overloaded_decl(third_child, 0).result_type.spelling
+        return cursor.type.spelling
+
     def get_ast_node_list(self):
         return self.ast_nodes_list
 
