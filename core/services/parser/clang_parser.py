@@ -34,7 +34,7 @@ def traverse(self, client_data, client_visitor = default_visitor):
 
     return clang.cindex.conf.lib.clang_visitChildren(self, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
 
-def get_children_patched(self):
+def get_children_patched(self, traversal_type = ChildVisitResult.CONTINUE):
     """
     Return an iterator for accessing the children of this cursor.
     This is a patched version of Cursor.get_children() but which is built on top of new traversal interface.
@@ -43,7 +43,7 @@ def get_children_patched(self):
 
     def visitor(child, parent, children):
         children.append(child)
-        return ChildVisitResult.CONTINUE.value
+        return traversal_type.value
 
     children = []
     traverse(self, children, visitor)
