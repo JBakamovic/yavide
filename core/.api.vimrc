@@ -839,27 +839,42 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"   SOURCE CODE HIGHLIGHT API
+"   SOURCE CODE MODEL API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Start()
-" Description:  Starts the code highlight background service.
+" Function:     Y_SrcCodeModel_Start()
+" Description:  Starts the source code model background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Start()
-    call Y_ServerStartService(g:project_service_src_code_highlighter['id'], 'dummy_param')
+function! Y_SrcCodeModel_Start()
+    call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Stop()
-" Description:  Stops the code highlight background service.
+" Function:     Y_SrcCodeModel_Stop()
+" Description:  Stops the source code model background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Stop()
-    call Y_ServerStopService(g:project_service_src_code_highlighter['id'])
+function! Y_SrcCodeModel_Stop()
+    call Y_ServerStopService(g:project_service_src_code_model['id'])
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_Run(service_id, args)
+" Description:  Runs the specific service within the source code model (super)-service (i.e. syntax highlight, fixit, diagnostics, ...)
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_Run(service_id, args)
+    call insert(a:args, a:service_id)
+    call Y_ServerSendMsg(g:project_service_src_code_model['id'], a:args)
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE HIGHLIGHT API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeHighlighter_Reset()
 " Description:  Resets variables to initial state.
@@ -877,14 +892,15 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
-    let l:current_buffer = expand('%:p')
-    let l:contents_filename = l:current_buffer
-    let l:compiler_args = g:project_compiler_args
+    if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
+        let l:current_buffer = expand('%:p')
+        let l:contents_filename = l:current_buffer
+        let l:compiler_args = g:project_compiler_args
 
-    " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-    let l:bufferModified = getbufvar(bufnr('%'), '&modified')
-    if l:bufferModified == 1
-        let l:contents_filename = '/tmp/yavideTempBufferContents'
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:bufferModified = getbufvar(bufnr('%'), '&modified')
+        if l:bufferModified == 1
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
 
 python << EOF
 import vim
@@ -903,9 +919,9 @@ temp_file.writelines(line + '\n' for line in vim.current.buffer)
 vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
 EOF
 
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
     endif
-
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
