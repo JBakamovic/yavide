@@ -6,14 +6,14 @@ from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
 from services.indexer_service import SourceCodeIndexer
-from services.syntax_highlighter_service import SyntaxHighlighter
+from services.source_code_model_service import SourceCodeModel
 
 class YavideServer():
     def __init__(self, msg_queue, yavide_instance):
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SyntaxHighlighter(self.msg_queue, self.yavide_instance),
+            0x0 : SourceCodeModel(self.msg_queue, self.yavide_instance),
             0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
             0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance),
             0x3 : SourceCodeIndexer(self.msg_queue, self.yavide_instance)

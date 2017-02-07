@@ -905,7 +905,7 @@ EOF
 
     endif
 
-    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
+    call Y_ServerSendMsg(g:project_service_src_code_highlighter['id'], [0x0, l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

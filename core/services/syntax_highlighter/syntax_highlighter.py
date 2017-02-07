@@ -12,9 +12,8 @@ class VimSyntaxHighlighter:
     def __init__(self, output_syntax_file):
         self.output_syntax_file = output_syntax_file
 
-    def generate_vim_syntax_file_from_clang(self, filename, compiler_args, project_root_directory):
+    def generate_vim_syntax_file_from_clang(self, tokenizer, filename, compiler_args, project_root_directory):
         # Generate the tokens
-        tokenizer = ClangTokenizer()
         tokenizer.run(filename, compiler_args, project_root_directory)
 
         # Build Vim syntax highlight rules
