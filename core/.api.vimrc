@@ -839,132 +839,45 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
-"   SOURCE CODE MODEL API
+"   SOURCE CODE MODEL UTILITY FUNCTIONS
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_Start()
-" Description:  Starts the source code model background service.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_Start()
-    call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_Stop()
-" Description:  Stops the source code model background service.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_Stop()
-    call Y_ServerStopService(g:project_service_src_code_model['id'])
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_Run(service_id, args)
-" Description:  Runs the specific service within the source code model (super)-service (i.e. syntax highlight, fixit, diagnostics, ...)
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_Run(service_id, args)
-    call insert(a:args, a:service_id)
-    call Y_ServerSendMsg(g:project_service_src_code_model['id'], a:args)
-endfunction
-
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
-"   SOURCE CODE HIGHLIGHT API
-"
-" --------------------------------------------------------------------------------------------------------------------------------------
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Reset()
+" Function:     Y_SrcCodeModel_TextChangedIReset()
 " Description:  Resets variables to initial state.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Reset()
+function! Y_SrcCodeModel_TextChangedIReset()
     let s:y_prev_line = 0
     let s:y_prev_col  = 0
     let s:y_prev_char = ''
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Run()
-" Description:  Triggers the source code highlighting for current buffer.
+" Function:     Y_SrcCodeModel_TextChangedI()
+" Description:  A hook for services which are ought to be on 'TextChangedI' event (i.e. semantic highlight as you type).
+"               In order to minimize triggering the services after each and every character typed in, there is a
+"               Y_SrcCodeModel_TextChangedType() function which heuristicly gives us a hint if there was a big enough
+"               change for us to run the services or not.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Run()
-    if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
-        let l:current_buffer = expand('%:p')
-        let l:contents_filename = l:current_buffer
-        let l:compiler_args = g:project_compiler_args
-
-        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-        let l:bufferModified = getbufvar(bufnr('%'), '&modified')
-        if l:bufferModified == 1
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
-
-python << EOF
-import vim
-import os
-
-# Serialize the contents
-temp_file = open(vim.eval('l:contents_filename'), "w", 0)
-temp_file.writelines(line + '\n' for line in vim.current.buffer)
-
-# Append additional include path to the compiler args which points to the parent directory of current buffer.
-#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
-#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
-#     Clang parsing errors.
-#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-#     potentially would not play well with other tools (indexer, version control, etc.).
-vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
-EOF
-
-        endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_RunConditionally()
-" Description:  Conditionally runs the source code highlighter for current buffer.
-"               Tries to minimize triggering the syntax highlighter in some certain cases
-"               when it is not absolutely unnecessary (i.e. when typing letter after letter).
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_RunConditionally()
-    if Y_SrcCodeHighlighter_CheckTextChangedType()
+function! Y_SrcCodeModel_TextChangedI()
+    if Y_SrcCodeModel_TextChangedType()
         call Y_SrcCodeHighlighter_Run()
+        call Y_SrcCodeDiagnostics_Run()
     endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Apply()
-" Description:  Apply the results of source code highlighting for given filename.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
-    let l:current_buffer = expand('%:p')
-    if l:current_buffer == a:filename
-        " Apply the syntax highlighting rules
-        execute('source '.a:syntax_file)
-
-        " Following command is a quick hack to apply the new syntax for
-        " the given buffer. I haven't found any other more viable way to do it 
-        " while keeping it fast & low on resources,
-        execute(':redrawstatus')
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_CheckTextChangedType()
+" Function:     Y_SrcCodeModel_CheckTextChangedType()
 " Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
-"               This is useful if one wants to install handler for 'TextChanged' events but not necessarily
-"               act on each of those because they are triggered rather frequently. This is by no means a perfect 
+"               This is useful if one wants to install handler for 'TextChangedI' events but not necessarily
+"               act on each of those because they are triggered rather frequently. This is by no means a perfect
 "               implementation but it tries to give good enough approximations. It probably can be improved and specialized further.
 "               Returns 0 for a non-interesting change. Otherwise, some value != 0.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_CheckTextChangedType()
+function! Y_SrcCodeModel_TextChangedType()
 
     let l:textChangeType = 0 " no interesting change (i.e. typed in a letter after letter)
 
@@ -1004,6 +917,141 @@ EOF
 
     return l:textChangeType
 
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE MODEL API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_Start()
+" Description:  Starts the source code model background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_Start()
+    call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_Stop()
+" Description:  Stops the source code model background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_Stop()
+    call Y_ServerStopService(g:project_service_src_code_model['id'])
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_Run(service_id, args)
+" Description:  Runs the specific service within the source code model (super)-service (i.e. syntax highlight, fixit, diagnostics, ...)
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_Run(service_id, args)
+    call insert(a:args, a:service_id)
+    call Y_ServerSendMsg(g:project_service_src_code_model['id'], a:args)
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE HIGHLIGHT API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_Run(service_id, args)
+" Description:  Runs the specific service within the source code model (super)-service (i.e. syntax highlight, fixit, diagnostics, ...)
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_Run(service_id, args)
+    call insert(a:args, a:service_id)
+    call Y_ServerSendMsg(g:project_service_src_code_model['id'], a:args)
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE HIGHLIGHT API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_Run()
+" Description:  Triggers the source code highlighting for current buffer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeHighlighter_Run()
+    if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
+        let l:current_buffer = expand('%:p')
+        let l:contents_filename = l:current_buffer
+        let l:compiler_args = g:project_compiler_args
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:bufferModified = getbufvar(bufnr('%'), '&modified')
+        if l:bufferModified == 1
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+
+python << EOF
+import vim
+import os
+
+# Serialize the contents
+temp_file = open(vim.eval('l:contents_filename'), "w", 0)
+temp_file.writelines(line + '\n' for line in vim.current.buffer)
+
+# Append additional include path to the compiler args which points to the parent directory of current buffer.
+#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
+#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
+#     Clang parsing errors.
+#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+#     potentially would not play well with other tools (indexer, version control, etc.).
+vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
+EOF
+
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeHighlighter_Apply()
+" Description:  Apply the results of source code highlighting for given filename.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
+    let l:current_buffer = expand('%:p')
+    if l:current_buffer == a:filename
+        " Apply the syntax highlighting rules
+        execute('source '.a:syntax_file)
+
+        " Following command is a quick hack to apply the new syntax for
+        " the given buffer. I haven't found any other more viable way to do it 
+        " while keeping it fast & low on resources,
+        execute(':redrawstatus')
+    endif
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE DIAGNOSTICS API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeDiagnostics_Run()
+" Description:  Triggers the source code diagnostics for current buffer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeDiagnostics_Run()
+    if g:project_service_src_code_model['services']['diagnostics']['enabled']
+        let l:current_buffer = bufnr('%')
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_buffer])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeDiagnostics_Apply()
+" Description:  Populates the quickfix window with source code diagnostics.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeDiagnostics_Apply(diagnostics)
+    call setqflist(a:diagnostics, 'r')
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------

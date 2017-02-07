@@ -67,6 +67,7 @@ class ClangParser():
         self.contents_filename = ''
         self.original_filename = ''
         self.ast_nodes_list = []
+        self.translation_unit = None
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
@@ -79,20 +80,22 @@ class ClangParser():
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         try:
-            translation_unit = self.index.parse(
+            self.translation_unit = self.index.parse(
                 path = self.contents_filename,
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
 
-            for diag in translation_unit.diagnostics:
-                logging.info('Parsing error: ' + str(diag))
-
-            logging.info('Translation unit: '.format(translation_unit.spelling))
-            self.__visit_all_nodes(translation_unit.cursor)
+            logging.info('Translation unit: '.format(self.translation_unit.spelling))
+            self.__visit_all_nodes(self.translation_unit.cursor)
 
         except:
             logging.error(sys.exc_info()[0])
+
+    def get_diagnostics(self):
+        for diag in self.translation_unit.diagnostics:
+            logging.debug('Parsing diagnostics: ' + str(diag))
+        return self.translation_unit.diagnostics
 
     def get_ast_node_list(self):
         return self.ast_nodes_list
