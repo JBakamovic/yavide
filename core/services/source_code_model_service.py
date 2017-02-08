@@ -1,7 +1,7 @@
 import logging
 from yavide_service import YavideService
 from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
-from syntax_highlighter.syntax_highlight import SyntaxHighlighter
+from syntax_highlighter.syntax_highlighter import SyntaxHighlighter
 
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
