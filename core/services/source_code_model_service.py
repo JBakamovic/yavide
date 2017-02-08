@@ -16,5 +16,5 @@ class SourceCodeModel(YavideService):
         pass
 
     def run_impl(self, args):
-        self.service.get(int(args[0]), self.unknown_service).run_impl(args[1:len(args)])
+        self.service.get(int(args[0]), self.unknown_service)(args[1:len(args)])
 

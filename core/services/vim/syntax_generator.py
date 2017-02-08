@@ -1,6 +1,7 @@
 import sys
 import argparse
 import logging
+import time
 from common.yavide_utils import YavideUtils
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.ctags_parser import CtagsTokenizer
@@ -10,7 +11,9 @@ class VimSyntaxGenerator:
         self.yavide_instance = yavide_instance
         self.output_syntax_file = output_syntax_file
 
-    def run(self, clang_parser):
+    def __call__(self, clang_parser):
+        start = time.clock()
+
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
         ast_node_list = clang_parser.get_ast_node_list()
@@ -40,12 +43,16 @@ class VimSyntaxGenerator:
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w", 0)
         vim_syntax_file.writelines(vim_syntax_element)
+        time_elapsed = time.clock() - start
 
         # Apply newly generated syntax rules
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + clang_parser.filename + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
         clang_parser.dump_ast_nodes()
+
+        # Log how long generating Vim syntax file took
+        logging.info("Vim syntax generator for '{0}' took {1}.".format(clang_parser.filename, time_elapsed))
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
@@ -125,7 +132,7 @@ def main():
     args_dict = vars(args)
 
     vimHighlighter = VimSyntaxGenerator(args.output_syntax_file)
-    vimHighlighter.generate_vim_syntax_file_from_clang(args.filename, [''])
+    vimHighlighter(args.filename, [''])
  
 if __name__ == "__main__":
     main()
