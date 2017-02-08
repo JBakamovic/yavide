@@ -64,21 +64,23 @@ def get_system_includes():
 
 class ClangTokenizer():
     def __init__(self):
-        self.filename = ''
+        self.contents_filename = ''
+        self.original_filename = ''
         self.ast_nodes_list = []
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
-    def run(self, filename, compiler_args, project_root_directory):
-        self.filename = filename
+    def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
+        self.contents_filename = contents_filename
+        self.original_filename = original_filename
         self.ast_nodes_list = []
-        logging.info('Filename = {0}'.format(self.filename))
+        logging.info('Filename = {0}'.format(self.original_filename))
         logging.info('Default args = {0}'.format(self.default_args))
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         try:
             translation_unit = self.index.parse(
-                path = self.filename,
+                path = self.contents_filename,
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
@@ -146,6 +148,10 @@ class ClangTokenizer():
             return ClangTokenizer.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
+    @property
+    def filename(self):
+        return self.original_filename
+
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
             logging.debug(
@@ -198,7 +204,7 @@ class ClangTokenizer():
 
     def __visit_all_nodes(self, node):
         for n in node.get_children():
-            if n.location.file and n.location.file.name == self.filename:
+            if n.location.file and n.location.file.name == self.contents_filename:
                 self.ast_nodes_list.append(n)
                 self.__visit_all_nodes(n)
 

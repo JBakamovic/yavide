@@ -2,13 +2,14 @@ import logging
 from yavide_service import YavideService
 from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
 from syntax_highlighter.syntax_highlighter import SyntaxHighlighter
+from services.vim.syntax_generator import VimSyntaxGenerator
 
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
-        self.tokenizer = ClangTokenizer()
+        self.parser = ClangTokenizer()
         self.service = {
-            0x0 : SyntaxHighlighter(self.tokenizer, yavide_instance)
+            0x0 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim"))
         }
 
     def unknown_service(self):

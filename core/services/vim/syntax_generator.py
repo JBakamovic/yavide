@@ -1,6 +1,7 @@
 import sys
 import argparse
 import logging
+from common.yavide_utils import YavideUtils
 from services.syntax_highlighter.token_identifier import TokenIdentifier
 from services.syntax_highlighter.ctags_tokenizer import CtagsTokenizer
 from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
@@ -9,13 +10,11 @@ from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
 import clang.cindex
 
 class VimSyntaxGenerator:
-    def __init__(self, output_syntax_file):
+    def __init__(self, yavide_instance, output_syntax_file):
+        self.yavide_instance = yavide_instance
         self.output_syntax_file = output_syntax_file
 
-    def generate_vim_syntax_file_from_clang(self, tokenizer, filename, compiler_args, project_root_directory):
-        # Generate the tokens
-        tokenizer.run(filename, compiler_args, project_root_directory)
-
+    def run(self, tokenizer):
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
         ast_node_list = tokenizer.get_ast_node_list()
@@ -39,8 +38,11 @@ class VimSyntaxGenerator:
                 logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(ast_node.location.line, ast_node.location.column, ast_node.kind, tokenizer.get_ast_node_name(ast_node)))
 
         # Write Vim syntax file
-        vim_syntax_file = open(self.output_syntax_file, "w")
+        vim_syntax_file = open(self.output_syntax_file, "w", 0)
         vim_syntax_file.writelines(vim_syntax_element)
+
+        # Apply newly generated syntax rules
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + tokenizer.filename + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
         tokenizer.dump_ast_nodes()
