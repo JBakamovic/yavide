@@ -2,50 +2,50 @@ import sys
 import argparse
 import logging
 from common.yavide_utils import YavideUtils
-from services.syntax_highlighter.token_identifier import TokenIdentifier
-from services.syntax_highlighter.ctags_tokenizer import CtagsTokenizer
-from services.syntax_highlighter.clang_tokenizer import ClangTokenizer
-
-# TODO remove this once 'Unsupported token id' message is removed
-import clang.cindex
+from services.parser.ast_node_identifier import ASTNodeId
+from services.parser.ctags_parser import CtagsTokenizer
 
 class VimSyntaxGenerator:
     def __init__(self, yavide_instance, output_syntax_file):
         self.yavide_instance = yavide_instance
         self.output_syntax_file = output_syntax_file
 
-    def run(self, tokenizer):
+    def run(self, clang_parser):
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
-        ast_node_list = tokenizer.get_ast_node_list()
+        ast_node_list = clang_parser.get_ast_node_list()
         for ast_node in ast_node_list:
-            ast_node_id = tokenizer.get_ast_node_id(ast_node)
-            if ast_node_id != TokenIdentifier.getUnsupportedId():
-                highlight_rule = self.__tag_id_to_vim_syntax_group(ast_node_id) + " " + tokenizer.get_ast_node_name(ast_node)
+            ast_node_id = clang_parser.get_ast_node_id(ast_node)
+            if ast_node_id != ASTNodeId.getUnsupportedId():
+                highlight_rule = self.__tag_id_to_vim_syntax_group(ast_node_id) + " " + clang_parser.get_ast_node_name(ast_node)
                 vim_syntax_element.append(
                     "call matchaddpos('" +
                     str(self.__tag_id_to_vim_syntax_group(ast_node_id)) +
                     "', [[" +
-                    str(tokenizer.get_ast_node_line(ast_node)) +
+                    str(clang_parser.get_ast_node_line(ast_node)) +
                     ", " +
-                    str(tokenizer.get_ast_node_column(ast_node)) +
+                    str(clang_parser.get_ast_node_column(ast_node)) +
                     ", " +
-                    str(len(tokenizer.get_ast_node_name(ast_node))) +
+                    str(len(clang_parser.get_ast_node_name(ast_node))) +
                     "]], -1)" +
                     "\n"
                 )
             else:
-                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(ast_node.location.line, ast_node.location.column, ast_node.kind, tokenizer.get_ast_node_name(ast_node)))
+                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(
+                        ast_node.location.line, ast_node.location.column, 
+                        ast_node.kind, clang_parser.get_ast_node_name(ast_node)
+                    )
+                )
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w", 0)
         vim_syntax_file.writelines(vim_syntax_element)
 
         # Apply newly generated syntax rules
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + tokenizer.filename + "'" + ", '" + self.output_syntax_file + "')")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + clang_parser.filename + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
-        tokenizer.dump_ast_nodes()
+        clang_parser.dump_ast_nodes()
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
@@ -76,45 +76,45 @@ class VimSyntaxGenerator:
                 tags_db.close()
 
     def __tag_id_to_vim_syntax_group(self, tag_identifier):
-        if tag_identifier == TokenIdentifier.getNamespaceId():
+        if tag_identifier == ASTNodeId.getNamespaceId():
             return "yavideCppNamespace"
-        if tag_identifier == TokenIdentifier.getNamespaceAliasId():
+        if tag_identifier == ASTNodeId.getNamespaceAliasId():
             return "yavideCppNamespaceAlias"
-        if tag_identifier == TokenIdentifier.getClassId():
+        if tag_identifier == ASTNodeId.getClassId():
             return "yavideCppClass"
-        if tag_identifier == TokenIdentifier.getStructId():
+        if tag_identifier == ASTNodeId.getStructId():
             return "yavideCppStructure"
-        if tag_identifier == TokenIdentifier.getEnumId():
+        if tag_identifier == ASTNodeId.getEnumId():
             return "yavideCppEnum"
-        if tag_identifier == TokenIdentifier.getEnumValueId():
+        if tag_identifier == ASTNodeId.getEnumValueId():
             return "yavideCppEnumValue"
-        if tag_identifier == TokenIdentifier.getUnionId():
+        if tag_identifier == ASTNodeId.getUnionId():
             return "yavideCppUnion"
-        if tag_identifier == TokenIdentifier.getFieldId():
+        if tag_identifier == ASTNodeId.getFieldId():
             return "yavideCppField"
-        if tag_identifier == TokenIdentifier.getLocalVariableId():
+        if tag_identifier == ASTNodeId.getLocalVariableId():
             return "yavideCppLocalVariable"
-        if tag_identifier == TokenIdentifier.getFunctionId():
+        if tag_identifier == ASTNodeId.getFunctionId():
             return "yavideCppFunction"
-        if tag_identifier == TokenIdentifier.getMethodId():
+        if tag_identifier == ASTNodeId.getMethodId():
             return "yavideCppMethod"
-        if tag_identifier == TokenIdentifier.getFunctionParameterId():
+        if tag_identifier == ASTNodeId.getFunctionParameterId():
             return "yavideCppFunctionParameter"
-        if tag_identifier == TokenIdentifier.getTemplateTypeParameterId():
+        if tag_identifier == ASTNodeId.getTemplateTypeParameterId():
             return "yavideCppTemplateTypeParameter"
-        if tag_identifier == TokenIdentifier.getTemplateNonTypeParameterId():
+        if tag_identifier == ASTNodeId.getTemplateNonTypeParameterId():
             return "yavideCppTemplateNonTypeParameter"
-        if tag_identifier == TokenIdentifier.getTemplateTemplateParameterId():
+        if tag_identifier == ASTNodeId.getTemplateTemplateParameterId():
             return "yavideCppTemplateTemplateParameter"
-        if tag_identifier == TokenIdentifier.getMacroDefinitionId():
+        if tag_identifier == ASTNodeId.getMacroDefinitionId():
             return "yavideCppMacroDefinition"
-        if tag_identifier == TokenIdentifier.getMacroInstantiationId():
+        if tag_identifier == ASTNodeId.getMacroInstantiationId():
             return "yavideCppMacroInstantiation"
-        if tag_identifier == TokenIdentifier.getTypedefId():
+        if tag_identifier == ASTNodeId.getTypedefId():
             return "yavideCppTypedef"
-        if tag_identifier == TokenIdentifier.getUsingDirectiveId():
+        if tag_identifier == ASTNodeId.getUsingDirectiveId():
             return "yavideCppUsingDirective"
-        if tag_identifier == TokenIdentifier.getUsingDeclarationId():
+        if tag_identifier == ASTNodeId.getUsingDeclarationId():
             return "yavideCppUsingDeclaration"
 
 def main():

@@ -1,4 +1,4 @@
-class TokenIdentifier():
+class ASTNodeId():
     @staticmethod
     def getNamespaceId():
         return "namespace"

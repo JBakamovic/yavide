@@ -2,7 +2,7 @@ import sys
 import logging
 import subprocess
 import clang.cindex
-from services.syntax_highlighter.token_identifier import TokenIdentifier
+from services.parser.ast_node_identifier import ASTNodeId
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
     """
@@ -62,7 +62,7 @@ def get_system_includes():
     output = str(output)
     return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
 
-class ClangTokenizer():
+class ClangParser():
     def __init__(self):
         self.contents_filename = ''
         self.original_filename = ''
@@ -106,7 +106,7 @@ class ClangTokenizer():
         #         a data member of non-instantiated class template.
         #       * In this case we try to extract the right CursorKind by tokenizing the given cursor, selecting the
         #         right token and, depending on its position in the AST tree, return the right CursorKind information.
-        #         See ClangTokenizer.__extract_dependent_type_kind() for more details.
+        #         See ClangParser.__extract_dependent_type_kind() for more details.
         #       * Similar actions have to be taken for extracting spelling and location for such cursors.
         #   2. When Cursor.Kind is OVERLOADED_DECL_REF
         #       * Cursor.Kind.OVERLOADED_DECL_REF basically identifies a reference to a set of overloaded functions
@@ -117,21 +117,21 @@ class ClangTokenizer():
         #         many overloads there are and then use `clang_getOverloadedDecl()` to get a specific overload.
         #       * In our case, we can always use the first overload which explains hard-coded 0 as an index.
         if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
-            return ClangTokenizer.to_token_id(ClangTokenizer.__extract_dependent_type_kind(cursor))
+            return ClangParser.to_ast_node_id(ClangParser.__extract_dependent_type_kind(cursor))
         else:
             if cursor.referenced:
                 if (cursor.referenced.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
-                    if (ClangTokenizer.__get_num_overloaded_decls(cursor.referenced)):
-                        return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(cursor.referenced, 0).kind)
-                return ClangTokenizer.to_token_id(cursor.referenced.kind)
+                    if (ClangParser.__get_num_overloaded_decls(cursor.referenced)):
+                        return ClangParser.to_ast_node_id(ClangParser.__get_overloaded_decl(cursor.referenced, 0).kind)
+                return ClangParser.to_ast_node_id(cursor.referenced.kind)
             if (cursor.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF):
-                if (ClangTokenizer.__get_num_overloaded_decls(cursor)):
-                    return ClangTokenizer.to_token_id(ClangTokenizer.__get_overloaded_decl(cursor, 0).kind)
-        return ClangTokenizer.to_token_id(cursor.kind)
+                if (ClangParser.__get_num_overloaded_decls(cursor)):
+                    return ClangParser.to_ast_node_id(ClangParser.__get_overloaded_decl(cursor, 0).kind)
+        return ClangParser.to_ast_node_id(cursor.kind)
 
     def get_ast_node_name(self, cursor):
         if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
-            return ClangTokenizer.__extract_dependent_type_spelling(cursor)
+            return ClangParser.__extract_dependent_type_spelling(cursor)
         else:
             if (cursor.referenced):
                 return cursor.referenced.spelling
@@ -140,12 +140,12 @@ class ClangTokenizer():
 
     def get_ast_node_line(self, cursor):
         if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
-            return ClangTokenizer.__extract_dependent_type_location(cursor).line
+            return ClangParser.__extract_dependent_type_location(cursor).line
         return cursor.location.line
 
     def get_ast_node_column(self, cursor):
         if cursor.type.kind == clang.cindex.TypeKind.DEPENDENT:
-            return ClangTokenizer.__extract_dependent_type_location(cursor).column
+            return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
     @property
@@ -185,10 +185,10 @@ class ClangTokenizer():
                 '%-40s' % str(cursor.kind) +
                 '%-40s' % str(cursor.type.spelling) +
                 '%-40s' % str(cursor.type.kind) +
-                ('%-40s' % str(ClangTokenizer.__get_overloaded_decl(cursor, 0).spelling) if (cursor.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
-                ('%-40s' % str(ClangTokenizer.__get_overloaded_decl(cursor, 0).kind) if (cursor.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangTokenizer.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
+                ('%-40s' % str(ClangParser.__get_overloaded_decl(cursor, 0).spelling) if (cursor.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
+                ('%-40s' % str(ClangParser.__get_overloaded_decl(cursor, 0).kind) if (cursor.kind ==
+                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
                 ('%-40s' % str(cursor.referenced.spelling) if (cursor.referenced) else '%-40s' % '-') +
                 ('%-40s' % str(cursor.referenced.kind) if (cursor.referenced) else '%-40s' % '-') +
                 ('%-40s' % str(cursor.referenced.type.spelling) if (cursor.referenced) else '%-40s' % '-') +
@@ -256,48 +256,48 @@ class ClangTokenizer():
         return cursor.location
 
     @staticmethod
-    def to_token_id(kind):
+    def to_ast_node_id(kind):
         if (kind == clang.cindex.CursorKind.NAMESPACE):
-            return TokenIdentifier.getNamespaceId()
+            return ASTNodeId.getNamespaceId()
         if (kind in [clang.cindex.CursorKind.CLASS_DECL, clang.cindex.CursorKind.CLASS_TEMPLATE, clang.cindex.CursorKind.CLASS_TEMPLATE_PARTIAL_SPECIALIZATION]):
-            return TokenIdentifier.getClassId()
+            return ASTNodeId.getClassId()
         if (kind == clang.cindex.CursorKind.STRUCT_DECL):
-            return TokenIdentifier.getStructId()
+            return ASTNodeId.getStructId()
         if (kind == clang.cindex.CursorKind.ENUM_DECL):
-            return TokenIdentifier.getEnumId()
+            return ASTNodeId.getEnumId()
         if (kind == clang.cindex.CursorKind.ENUM_CONSTANT_DECL):
-            return TokenIdentifier.getEnumValueId()
+            return ASTNodeId.getEnumValueId()
         if (kind == clang.cindex.CursorKind.UNION_DECL):
-            return TokenIdentifier.getUnionId()
+            return ASTNodeId.getUnionId()
         if (kind == clang.cindex.CursorKind.FIELD_DECL):
-            return TokenIdentifier.getFieldId()
+            return ASTNodeId.getFieldId()
         if (kind == clang.cindex.CursorKind.VAR_DECL):
-            return TokenIdentifier.getLocalVariableId()
+            return ASTNodeId.getLocalVariableId()
         if (kind in [clang.cindex.CursorKind.FUNCTION_DECL, clang.cindex.CursorKind.FUNCTION_TEMPLATE]):
-            return TokenIdentifier.getFunctionId()
+            return ASTNodeId.getFunctionId()
         if (kind in [clang.cindex.CursorKind.CXX_METHOD, clang.cindex.CursorKind.CONSTRUCTOR, clang.cindex.CursorKind.DESTRUCTOR]):
-            return TokenIdentifier.getMethodId()
+            return ASTNodeId.getMethodId()
         if (kind == clang.cindex.CursorKind.PARM_DECL):
-            return TokenIdentifier.getFunctionParameterId()
+            return ASTNodeId.getFunctionParameterId()
         if (kind == clang.cindex.CursorKind.TEMPLATE_TYPE_PARAMETER):
-            return TokenIdentifier.getTemplateTypeParameterId()
+            return ASTNodeId.getTemplateTypeParameterId()
         if (kind == clang.cindex.CursorKind.TEMPLATE_NON_TYPE_PARAMETER):
-            return TokenIdentifier.getTemplateNonTypeParameterId()
+            return ASTNodeId.getTemplateNonTypeParameterId()
         if (kind == clang.cindex.CursorKind.TEMPLATE_TEMPLATE_PARAMETER):
-            return TokenIdentifier.getTemplateTemplateParameterId()
+            return ASTNodeId.getTemplateTemplateParameterId()
         if (kind == clang.cindex.CursorKind.MACRO_DEFINITION):
-            return TokenIdentifier.getMacroDefinitionId()
+            return ASTNodeId.getMacroDefinitionId()
         if (kind == clang.cindex.CursorKind.MACRO_INSTANTIATION):
-            return TokenIdentifier.getMacroInstantiationId()
+            return ASTNodeId.getMacroInstantiationId()
         if (kind in [clang.cindex.CursorKind.TYPEDEF_DECL, clang.cindex.CursorKind.TYPE_ALIAS_DECL]):
-            return TokenIdentifier.getTypedefId()
+            return ASTNodeId.getTypedefId()
         if (kind == clang.cindex.CursorKind.NAMESPACE_ALIAS):
-            return TokenIdentifier.getNamespaceAliasId()
+            return ASTNodeId.getNamespaceAliasId()
         if (kind == clang.cindex.CursorKind.USING_DIRECTIVE):
-            return TokenIdentifier.getUsingDirectiveId()
+            return ASTNodeId.getUsingDirectiveId()
         if (kind == clang.cindex.CursorKind.USING_DECLARATION):
-            return TokenIdentifier.getUsingDeclarationId()
-        return TokenIdentifier.getUnsupportedId()
+            return ASTNodeId.getUsingDeclarationId()
+        return ASTNodeId.getUnsupportedId()
 
     # TODO Shall be removed once 'cindex.py' exposes it in its interface.
     @staticmethod
