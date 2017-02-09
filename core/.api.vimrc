@@ -839,6 +839,88 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
+"   SOURCE CODE MODEL UTILITY FUNCTIONS
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_TextChangedIReset()
+" Description:  Resets variables to initial state.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_TextChangedIReset()
+    let s:y_prev_line = 0
+    let s:y_prev_col  = 0
+    let s:y_prev_char = ''
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_TextChangedI()
+" Description:  A hook for services which are ought to be on 'TextChangedI' event (i.e. semantic highlight as you type).
+"               In order to minimize triggering the services after each and every character typed in, there is a
+"               Y_SrcCodeModel_TextChangedType() function which heuristicly gives us a hint if there was a big enough
+"               change for us to run the services or not.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_TextChangedI()
+    if Y_SrcCodeModel_TextChangedType()
+        call Y_SrcCodeHighlighter_Run()
+        call Y_SrcCodeDiagnostics_Run()
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeModel_CheckTextChangedType()
+" Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
+"               This is useful if one wants to install handler for 'TextChangedI' events but not necessarily
+"               act on each of those because they are triggered rather frequently. This is by no means a perfect
+"               implementation but it tries to give good enough approximations. It probably can be improved and specialized further.
+"               Returns 0 for a non-interesting change. Otherwise, some value != 0.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeModel_TextChangedType()
+
+    let l:textChangeType = 0 " no interesting change (i.e. typed in a letter after letter)
+
+python << EOF
+import vim
+
+# Uncomment to enable debugging
+#import logging
+#logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
+#logging.info("y_prev_line = '{0}' y_prev_col = '{1}' y_prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('s:y_prev_line'), vim.eval('s:y_prev_col'), vim.eval('s:y_prev_char'), curr_line, curr_col, curr_char))
+
+curr_line = int(vim.eval("line('.')"))
+curr_col = int(vim.eval("col('.')"))
+curr_char = str(vim.eval("getline('.')[col('.')-2]"))
+
+if curr_line > int(vim.eval('s:y_prev_line')):
+    vim.command("let l:textChangeType = 1") #logging.info("Switched to next line!")
+elif curr_line < int(vim.eval('s:y_prev_line')):
+    vim.command("let l:textChangeType = 2") #logging.info("Switched to previous line!")
+else:
+    if not curr_char.isalnum():
+        if str(vim.eval('s:y_prev_char')).isalnum():
+            vim.command("let l:textChangeType = 3") #logging.info("Delimiter!")
+        else:
+            if curr_col > int(vim.eval('s:y_prev_col')): #logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:textChangeType = 3")
+            elif curr_col < int(vim.eval('s:y_prev_col')): #logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
+                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
+                    vim.command("let l:textChangeType = 3")
+
+vim.command('let s:y_prev_line = %s' % curr_line)
+vim.command('let s:y_prev_col = %s' % curr_col)
+vim.command('let s:y_prev_char = "%s"' % curr_char.replace('"', "\"").replace("\\", "\\\\"))
+
+EOF
+
+    return l:textChangeType
+
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
 "   SOURCE CODE MODEL API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -891,17 +973,6 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_Reset()
-" Description:  Resets variables to initial state.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_Reset()
-    let s:y_prev_line = 0
-    let s:y_prev_col  = 0
-    let s:y_prev_char = ''
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeHighlighter_Run()
 " Description:  Triggers the source code highlighting for current buffer.
 " Dependency:
@@ -940,19 +1011,6 @@ EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_RunConditionally()
-" Description:  Conditionally runs the source code highlighter for current buffer.
-"               Tries to minimize triggering the syntax highlighter in some certain cases
-"               when it is not absolutely unnecessary (i.e. when typing letter after letter).
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_RunConditionally()
-    if Y_SrcCodeHighlighter_CheckTextChangedType()
-        call Y_SrcCodeHighlighter_Run()
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeHighlighter_Apply()
 " Description:  Apply the results of source code highlighting for given filename.
 " Dependency:
@@ -970,55 +1028,30 @@ function! Y_SrcCodeHighlighter_Apply(filename, syntax_file)
     endif
 endfunction
 
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE DIAGNOSTICS API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeHighlighter_CheckTextChangedType()
-" Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
-"               This is useful if one wants to install handler for 'TextChanged' events but not necessarily
-"               act on each of those because they are triggered rather frequently. This is by no means a perfect 
-"               implementation but it tries to give good enough approximations. It probably can be improved and specialized further.
-"               Returns 0 for a non-interesting change. Otherwise, some value != 0.
+" Function:     Y_SrcCodeDiagnostics_Run()
+" Description:  Triggers the source code diagnostics for current buffer.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeHighlighter_CheckTextChangedType()
+function! Y_SrcCodeDiagnostics_Run()
+    if g:project_service_src_code_model['services']['diagnostics']['enabled']
+        let l:current_buffer = bufnr('%')
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_buffer])
+    endif
+endfunction
 
-    let l:textChangeType = 0 " no interesting change (i.e. typed in a letter after letter)
-
-python << EOF
-import vim
-
-# Uncomment to enable debugging
-#import logging
-#logging.basicConfig(filename='/tmp/temp', filemode='w', level=logging.INFO)
-#logging.info("y_prev_line = '{0}' y_prev_col = '{1}' y_prev_char = '{2}'. curr_line = '{3}' curr_col = '{4}' curr_char = '{5}'".format(vim.eval('s:y_prev_line'), vim.eval('s:y_prev_col'), vim.eval('s:y_prev_char'), curr_line, curr_col, curr_char))
-
-curr_line = int(vim.eval("line('.')"))
-curr_col = int(vim.eval("col('.')"))
-curr_char = str(vim.eval("getline('.')[col('.')-2]"))
-
-if curr_line > int(vim.eval('s:y_prev_line')):
-    vim.command("let l:textChangeType = 1") #logging.info("Switched to next line!")
-elif curr_line < int(vim.eval('s:y_prev_line')):
-    vim.command("let l:textChangeType = 2") #logging.info("Switched to previous line!")
-else:
-    if not curr_char.isalnum():
-        if str(vim.eval('s:y_prev_char')).isalnum():
-            vim.command("let l:textChangeType = 3") #logging.info("Delimiter!")
-        else:
-            if curr_col > int(vim.eval('s:y_prev_col')): #logging.info("---> '{0}'".format(vim.eval("getline('.')")[curr_col-1:]))
-                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
-                    vim.command("let l:textChangeType = 3")
-            elif curr_col < int(vim.eval('s:y_prev_col')): #logging.info("<--- '{0}'".format(vim.eval("getline('.')")[:curr_col-1]))
-                if len(vim.eval("getline('.')")[curr_col-1:]) > 0:
-                    vim.command("let l:textChangeType = 3")
-
-vim.command('let s:y_prev_line = %s' % curr_line)
-vim.command('let s:y_prev_col = %s' % curr_col)
-vim.command('let s:y_prev_char = "%s"' % curr_char.replace('"', "\"").replace("\\", "\\\\"))
-
-EOF
-
-    return l:textChangeType
-
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeDiagnostics_Apply()
+" Description:  Populates the quickfix window with source code diagnostics.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeDiagnostics_Apply(diagnostics)
+    call setqflist(a:diagnostics, 'r')
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------

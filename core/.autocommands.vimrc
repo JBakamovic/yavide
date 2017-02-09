@@ -18,14 +18,25 @@ augroup yavide_src_code_formatting_group
     autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeFormatter_Run()
 augroup END
 
+augroup yavide_src_code_model_group
+    autocmd!
+    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeModel_TextChangedIReset()
+    autocmd TextChangedI            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeModel_TextChangedI()
+augroup END
+
 augroup yavide_src_code_highlight_group
     autocmd!
     autocmd BufEnter                *                               if index(['c', 'cpp'], &ft) < 0 | call clearmatches() | endif  " We need to clear matches when entering non-Cxx buffers 
-    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Reset()
     autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
     autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
     autocmd TextChanged             *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_Run()
-    autocmd TextChangedI            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeHighlighter_RunConditionally()
+augroup END
+
+augroup yavide_src_code_diagnostics_group
+    autocmd!
+    autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeDiagnostics_Run()
+    autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeDiagnostics_Run()
+    autocmd TextChanged             *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeDiagnostics_Run()
 augroup END
 
 augroup yavide_layout_mgmt_group
