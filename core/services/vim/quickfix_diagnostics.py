@@ -5,7 +5,7 @@ class VimQuickFixDiagnostics():
     def __init__(self, yavide_instance):
         self.yavide_instance = yavide_instance
 
-    def __call__(self, clang_parser, args):
+    def __call__(self, diagnostics_iter, args):
         def clang_severity_to_quickfix_type(severity):
             # Clang severity | Vim Quickfix type
             # ----------------------------------
@@ -28,7 +28,7 @@ class VimQuickFixDiagnostics():
             return '0'
 
         diagnostics = []
-        for d in clang_parser.get_diagnostics():
+        for d in diagnostics_iter:
             diagnostics.append(
                 "{'bufnr': '" + str(args[0]) + "', " +
                 "'lnum': '" + str(d.location.line) + "', " +
