@@ -11,7 +11,7 @@ class VimSyntaxGenerator:
         self.yavide_instance = yavide_instance
         self.output_syntax_file = output_syntax_file
 
-    def __call__(self, clang_parser):
+    def __call__(self, clang_parser, args):
         start = time.clock()
 
         # Build Vim syntax highlight rules

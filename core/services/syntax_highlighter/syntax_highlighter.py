@@ -17,5 +17,5 @@ class SyntaxHighlighter():
         logging.info("Parsing '{0}' took {1}.".format(original_filename, time_elapsed))
 
         if self.callback:
-            self.callback(self.parser)
+            self.callback(self.parser, args)
 
