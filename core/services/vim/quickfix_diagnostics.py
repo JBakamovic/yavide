@@ -37,6 +37,22 @@ class VimQuickFixDiagnostics():
                 "'text': '" + d.category_name + " | " + str(d.spelling).replace("'", r"") + "'}"
             )
 
+            fixits = "Hint:"
+            for f in d.fixits:
+                fixits += \
+                    " Try using '" + str(f.value) + "' instead. [col=" + \
+                    str(f.range.start.column) + ":" + str(f.range.end.column) + "]"
+                    # TODO How to handle multiline quickfix entries? It would be nice show each fixit in its own line.
+
+            if len(d.fixits):
+                diagnostics.append(
+                    "{'bufnr': '" + str(args[0]) + "', " +
+                    "'lnum': '" + str(d.location.line) + "', " +
+                    "'col': '" + str(d.location.column) + "', " +
+                    "'type': 'I', " +
+                    "'text': '" + str(fixits).replace("'", r"") + "'}"
+                )
+
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeDiagnostics_Apply(" + str(diagnostics).replace('"', r"") + ")")
         logging.debug("Diagnostics: " + str(diagnostics))
 
