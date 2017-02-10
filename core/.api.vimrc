@@ -930,6 +930,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Start()
+    " Enable balloon expressions if TypeDeduction service is enabled.
+    if g:project_service_src_code_model['services']['type_deduction']['enabled']
+        set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
+    endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
 endfunction
 
@@ -1059,15 +1063,16 @@ endfunction
 "   SOURCE CODE TYPE DEDUCTION API
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
-set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
 function! Y_SrcCodeTypeDeduction_Run()
-    " TODO Handle unsaved buffers as in syntax highlighting
+    if g:project_service_src_code_model['services']['type_deduction']['enabled']
+        " TODO Handle unsaved buffers as in syntax highlighting
 
-    " Execute requests only on non-special, ordinary buffers. I.e. ignore NERD_Tree, Tagbar, quickfix and alike.
-    " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
-    " any make sense then.
-    if getbufvar(v:beval_bufnr, "&buftype") == ''
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [bufname(v:beval_bufnr), v:beval_lnum, v:beval_col])
+        " Execute requests only on non-special, ordinary buffers. I.e. ignore NERD_Tree, Tagbar, quickfix and alike.
+        " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
+        " any make sense then.
+        if getbufvar(v:beval_bufnr, "&buftype") == ''
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [bufname(v:beval_bufnr), v:beval_lnum, v:beval_col])
+        endif
     endif
     return ''
 endfunction
