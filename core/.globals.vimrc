@@ -45,7 +45,8 @@ let g:project_supported_types           = {
 let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'start' : function("Y_SrcCodeModel_Start"), 'stop' : function("Y_SrcCodeModel_Stop"),
 \                                              'services' : {
 \                                                   'semantic_syntax_highlight' : { 'id' : 0, 'enabled' : 1 },
-\                                                   'diagnostics'               : { 'id' : 1, 'enabled' : 1 }
+\                                                   'diagnostics'               : { 'id' : 1, 'enabled' : 1 },
+\                                                   'type_deduction'            : { 'id' : 2, 'enabled' : 1 }
 \                                               }
 \                                            }
 let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }

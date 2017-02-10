@@ -1056,6 +1056,30 @@ endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
+"   SOURCE CODE TYPE DEDUCTION API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
+function! Y_SrcCodeTypeDeduction_Run()
+    " TODO
+    "   1. Only if we are in a source code buffer (not NERD_Tree, Tagbar, quickfix, etc.)
+    "   2. Handle unsaved buffers as in syntax highlighting
+    call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [bufname(v:beval_bufnr), v:beval_lnum, v:beval_col])
+    return ''
+endfunction
+
+function! Y_SrcCodeTypeDeduction_Apply(deducted_type)
+    if exists('*balloon_show')
+        if a:deducted_type != ''
+            call balloon_show(a:deducted_type)
+        endif
+    else
+        echo a:deducted_type
+    endif
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
 "   STATIC ANALYSIS API
 " 
 " --------------------------------------------------------------------------------------------------------------------------------------
