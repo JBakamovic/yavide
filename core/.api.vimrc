@@ -1061,10 +1061,14 @@ endfunction
 " --------------------------------------------------------------------------------------------------------------------------------------
 set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
 function! Y_SrcCodeTypeDeduction_Run()
-    " TODO
-    "   1. Only if we are in a source code buffer (not NERD_Tree, Tagbar, quickfix, etc.)
-    "   2. Handle unsaved buffers as in syntax highlighting
-    call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [bufname(v:beval_bufnr), v:beval_lnum, v:beval_col])
+    " TODO Handle unsaved buffers as in syntax highlighting
+
+    " Execute requests only on non-special, ordinary buffers. I.e. ignore NERD_Tree, Tagbar, quickfix and alike.
+    " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
+    " any make sense then.
+    if getbufvar(v:beval_bufnr, "&buftype") == ''
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [bufname(v:beval_bufnr), v:beval_lnum, v:beval_col])
+    endif
     return ''
 endfunction
 
