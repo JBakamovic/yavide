@@ -8,6 +8,9 @@
 * [FAQ](#faq)
 
 # Changes
+* 12th of February, 2016
+    * Implemented [type deduction](docs/services_framework.md#type-deduction) service.
+        * A mouse cursor hover over source code will give details about the underlying constructs (i.e. data types, function signatures, etc.).
 * 10th of February, 2016
     * Implemented Clang-based [fixits & diagnostics](docs/services_framework.md#fixits-and-diagnostics) service.
     * Implemented mechanism which enables sharing the same AST within multiple services:

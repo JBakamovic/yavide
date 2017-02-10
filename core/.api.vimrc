@@ -21,6 +21,20 @@ function! s:Y_Utils_AppendToFile(file, lines)
     call writefile(readfile(a:file) + a:lines, a:file)
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Utils_SerializeCurrentBufferContents()
+" Description:  Writes current buffer contents to 'filename'
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Utils_SerializeCurrentBufferContents(filename)
+python << EOF
+import vim
+import os
+temp_file = open(vim.eval('a:filename'), "w", 0)
+temp_file.writelines(line + '\n' for line in vim.current.buffer)
+EOF
+endfunction
+
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "   ENVIRONMENT INIT/DEINIT API
@@ -930,6 +944,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Start()
+    " Enable balloon expressions if TypeDeduction service is enabled.
+    if g:project_service_src_code_model['services']['type_deduction']['enabled']
+        set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
+    endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
 endfunction
 
@@ -980,22 +998,17 @@ endfunction
 function! Y_SrcCodeHighlighter_Run()
     if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
         let l:current_buffer = expand('%:p')
-        let l:contents_filename = l:current_buffer
         let l:compiler_args = g:project_compiler_args
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-        let l:bufferModified = getbufvar(bufnr('%'), '&modified')
-        if l:bufferModified == 1
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
             let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
 
 python << EOF
 import vim
 import os
-
-# Serialize the contents
-temp_file = open(vim.eval('l:contents_filename'), "w", 0)
-temp_file.writelines(line + '\n' for line in vim.current.buffer)
-
 # Append additional include path to the compiler args which points to the parent directory of current buffer.
 #   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
 #     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
@@ -1052,6 +1065,40 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeDiagnostics_Apply(diagnostics)
     call setqflist(a:diagnostics, 'r')
+endfunction
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE TYPE DEDUCTION API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+function! Y_SrcCodeTypeDeduction_Run()
+    if g:project_service_src_code_model['services']['type_deduction']['enabled']
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = bufname(v:beval_bufnr)
+        if getbufvar(v:beval_bufnr, '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+
+        " Execute requests only on non-special, ordinary buffers. I.e. ignore NERD_Tree, Tagbar, quickfix and alike.
+        " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
+        " any make sense then.
+        if getbufvar(v:beval_bufnr, "&buftype") == ''
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, v:beval_lnum, v:beval_col])
+        endif
+    endif
+    return ''
+endfunction
+
+function! Y_SrcCodeTypeDeduction_Apply(deducted_type)
+    if exists('*balloon_show')
+        if a:deducted_type != ''
+            call balloon_show(a:deducted_type)
+        endif
+    else
+        echo a:deducted_type
+    endif
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
