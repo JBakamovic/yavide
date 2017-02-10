@@ -5,6 +5,8 @@ from syntax_highlighter.syntax_highlighter import SyntaxHighlighter
 from services.vim.syntax_generator import VimSyntaxGenerator
 from diagnostics.diagnostics import Diagnostics
 from services.vim.quickfix_diagnostics import VimQuickFixDiagnostics
+from type_deduction.type_deduction import TypeDeduction
+from services.vim.type_deduction import VimTypeDeduction
 
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
@@ -12,7 +14,8 @@ class SourceCodeModel(YavideService):
         self.parser = ClangParser()
         self.service = {
             0x0 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
-            0x1 : Diagnostics(self.parser, VimQuickFixDiagnostics(yavide_instance))
+            0x1 : Diagnostics(self.parser, VimQuickFixDiagnostics(yavide_instance)),
+            0x2 : TypeDeduction(self.parser, VimTypeDeduction(yavide_instance))
         }
 
     def unknown_service(self):

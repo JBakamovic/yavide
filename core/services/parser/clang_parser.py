@@ -151,6 +151,18 @@ class ClangParser():
             return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
+    def map_source_location_to_type(self, filename, line, column):
+        cursor = clang.cindex.Cursor.from_location(
+                    self.translation_unit,
+                    clang.cindex.SourceLocation.from_position(
+                        self.translation_unit,
+                        clang.cindex.File.from_name(self.translation_unit, filename),
+                        line,
+                        column
+                    )
+                 )
+        return cursor.type.spelling
+
     @property
     def filename(self):
         return self.original_filename
