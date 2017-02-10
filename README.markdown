@@ -8,6 +8,14 @@
 * [FAQ](#faq)
 
 # Changes
+* 10th of February, 2016
+    * Implemented Clang-based [fixits & diagnostics](docs/services_framework.md#fixits-and-diagnostics) service.
+    * Implemented mechanism which enables sharing the same AST within multiple services:
+        * E.g. Once the AST is built, semantic syntax highlighting and Clang fixits services
+          will be able to share the same AST.
+        * This will be especially important when more heavy-weight Clang-based services will
+          come into play, such as indexer and auto-completion engine.
+    * Refactored server-side code to decouple editor-specific integrations from the core implementation of services.
 * 19th of January, 2016
     * Polished some rough edges around syntax highlighting:
         * Implemented support for handling a set of overloaded functions or function templates (CursorKind.OVERLOADED_DECL_REF expressions)
