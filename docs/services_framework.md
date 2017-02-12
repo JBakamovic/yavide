@@ -2,6 +2,8 @@
 * [Framework](#framework)
 * [Services](#services)
   * [Syntax highlighting](#syntax-highlighting)
+  * [Fixits and diagnostics](#fixits-and-diagnostics)
+  * [Type deduction](#type-deduction)
   * [Indexing](#indexing)
   * [Auto-formatting](#auto-formatting)
   * [Project builder](#project-builder)
@@ -113,6 +115,12 @@ Clang is known for its [expressive diagnostics and fix-it hints](https://clang.l
 This feature is now made available and integrated into the Vim `QuickFix` buffer which will be continuously displaying such information for current buffer.
 
 If you find it too intrusive or redundant you can always turn it off. See [How to enable/disable service](#how-to-enabledisable-service).
+
+## Type deduction
+
+Putting a mouse cursor over source code will provide details about the underlying constructs. Vim integration is achieved with balloon expressions. The problem is that it wasn't anticipated
+for balloon expressions to be used in asynchronous use-cases. A [patch](https://github.com/vim/vim/pull/1449) which will fix this issue has been proposed and waits to be merged in. One could
+apply the patch by themselves to check it out. Until then, in vanilla Vim distributions, details will be displayed in command line bar.
 
 ## Indexing
 TBD
