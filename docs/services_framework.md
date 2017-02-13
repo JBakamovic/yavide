@@ -122,6 +122,8 @@ Putting a mouse cursor over source code will provide details about the underlyin
 for balloon expressions to be used in asynchronous use-cases. A [patch](https://github.com/vim/vim/pull/1449) which will fix this issue has been proposed and waits to be merged in. One could
 apply the patch by themselves to check it out. Until then, in vanilla Vim distributions, details will be displayed in command line bar.
 
+![Type deduction in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/type_deduction.gif)
+
 ## Indexing
 TBD
 
