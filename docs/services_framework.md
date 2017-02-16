@@ -116,6 +116,8 @@ This feature is now made available and integrated into the Vim `QuickFix` buffer
 
 If you find it too intrusive or redundant you can always turn it off. See [How to enable/disable service](#how-to-enabledisable-service).
 
+![Fixits and diagnostics in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/diagnostics.gif)
+
 ## Type deduction
 
 Putting a mouse cursor over source code will provide details about the underlying constructs. Vim integration is achieved with balloon expressions. The problem is that it wasn't anticipated
