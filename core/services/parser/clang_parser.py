@@ -64,15 +64,17 @@ def get_system_includes():
 
 class ClangParser():
     def __init__(self):
-        self.contents_filename = ''
         self.original_filename = ''
         self.ast_nodes_list = []
         self.translation_unit = None
+        self.tunits = {}
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
     def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
-        self.contents_filename = contents_filename
+        #if self.tunits.has_key(original_filename) == False:
+        #    self.tunits[original_filename] = clang.cindex.TranslationUnit()
+
         self.original_filename = original_filename
         self.ast_nodes_list = []
         logging.info('Filename = {0}'.format(self.original_filename))
@@ -80,22 +82,26 @@ class ClangParser():
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         try:
-            self.translation_unit = self.index.parse(
-                path = self.contents_filename,
+            self.tunits[original_filename] = self.index.parse(
+                path = contents_filename,
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
 
-            logging.info('Translation unit: '.format(self.translation_unit.spelling))
-            self.__visit_all_nodes(self.translation_unit.cursor)
+            logging.info('Translation unit: '.format(self.tunits[original_filename].spelling))
+            self.__visit_all_nodes(self.tunits[original_filename].cursor, contents_filename)
 
         except:
             logging.error(sys.exc_info()[0])
 
-    def get_diagnostics(self):
-        for diag in self.translation_unit.diagnostics:
-            logging.debug('Parsing diagnostics: ' + str(diag))
-        return self.translation_unit.diagnostics
+        logging.info("tunits: " + str(self.tunits))
+
+    def get_diagnostics(self, filename):
+        tunit = self.tunits.get(filename, None)
+        logging.info("get_diagnostics() for " + filename + " tunit: " + str(tunit))
+        if tunit:
+            return tunit.diagnostics
+        return None
 
     def get_ast_node_list(self):
         return self.ast_nodes_list
@@ -151,26 +157,27 @@ class ClangParser():
             return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
-    def map_source_location_to_type(self, filename, line, column):
+    def map_source_location_to_type(self, original_filename, contents_filename, line, column):
+        logging.info("Mapping source location to type for " + str(original_filename))
+
+        if original_filename not in self.tunits:
+            return ''
+
         cursor = clang.cindex.Cursor.from_location(
-                    self.translation_unit,
+                    self.tunits[original_filename],
                     clang.cindex.SourceLocation.from_position(
-                        self.translation_unit,
-                        clang.cindex.File.from_name(self.translation_unit, filename),
+                        self.tunits[original_filename],
+                        clang.cindex.File.from_name(self.tunits[original_filename], contents_filename),
                         line,
                         column
                     )
                  )
         return cursor.type.spelling
 
-    @property
-    def filename(self):
-        return self.original_filename
-
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
             logging.debug(
-                '%-22s' % ('[' + str(token.extent.start.line) + ', ' + str(token.extent.start.column) + ']:[' + str(token.extent.end.line) + ', ' + str(token.extent.end.column) + ']') + 
+                '%-22s' % ('[' + str(token.extent.start.line) + ', ' + str(token.extent.start.column) + ']:[' + str(token.extent.end.line) + ', ' + str(token.extent.end.column) + ']') +
                 '%-30s' % token.spelling +
                 '%-40s' % str(token.kind) +
                 '%-40s' % str(token.cursor.kind) +
@@ -217,11 +224,11 @@ class ClangParser():
                 ('%-40s' % str(cursor.referenced.lexical_parent.spelling) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-') +
                 ('%-40s' % str(cursor.referenced.lexical_parent.kind) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-'))
 
-    def __visit_all_nodes(self, node):
+    def __visit_all_nodes(self, node, filename):
         for n in node.get_children():
-            if n.location.file and n.location.file.name == self.contents_filename:
+            if n.location.file and n.location.file.name == filename:
                 self.ast_nodes_list.append(n)
-                self.__visit_all_nodes(n)
+                self.__visit_all_nodes(n, filename)
 
     @staticmethod
     def __extract_dependent_type_kind(cursor):
