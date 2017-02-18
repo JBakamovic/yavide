@@ -968,6 +968,8 @@ function! Y_SrcCodeModel_Start()
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
+    " TODO make it happen on SrcCodeModel_StartCallback()
+    call Y_SrcCodeIndexer_Start()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1259,37 +1261,32 @@ endfunction
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_Start()
-" Description:  Starts the source code indexer background service.
+" Description:  Starts indexing the whole project starting from root directory.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_Start()
-    " Serialize parameters for the source code indexer
-    let l:args = []
-    for proj_type in values(g:project_supported_types)
-        if proj_type.id == g:project_type
-            call add(l:args, len(proj_type.extensions))
-            for extension in proj_type.extensions
-                call add(l:args, extension)
-            endfor
-            break
-        endif
-    endfor
-    call add(l:args, g:project_root_directory)
-    call add(l:args, g:project_cxx_tags_filename)
-    call add(l:args, g:project_java_tags_filename)
-    call add(l:args, g:project_cscope_db_filename)
-    call Y_ServerStartService(g:project_service_src_code_indexer['id'], l:args)
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory, g:project_compiler_args])
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_Stop()
-" Description:  Stops the source code indexer background service.
+" Function:     Y_SrcCodeIndexer_JumpToDefinition()
+" Description:  Jumps to the definition of current cursor.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_Stop()
-    call Y_ServerStopService(g:project_service_src_code_indexer['id'])
+function! Y_SrcCodeIndexer_JumpToDefinition()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:current_bufname = expand('%:p')
+        let l:contents_filename = l:current_bufname
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, l:current_bufname, l:contents_filename, line('.'), col('.')])
+    endif
 endfunction
-
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
