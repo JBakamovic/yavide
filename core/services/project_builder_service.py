@@ -1,7 +1,7 @@
 import logging
 import subprocess
 import tempfile
-import time 
+import time
 from yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
