@@ -46,17 +46,16 @@ let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'start' 
 \                                              'services' : {
 \                                                   'semantic_syntax_highlight' : { 'id' : 0, 'enabled' : 1 },
 \                                                   'diagnostics'               : { 'id' : 1, 'enabled' : 1 },
-\                                                   'type_deduction'            : { 'id' : 2, 'enabled' : 1 }
+\                                                   'type_deduction'            : { 'id' : 2, 'enabled' : 1 },
+\                                                   'indexer'                   : { 'id' : 3, 'enabled' : 1 }
 \                                               }
 \                                            }
 let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }
 let g:project_service_src_code_formatter   = { 'id' : 2, 'enabled' : 1, 'start' : function("Y_SrcCodeFormatter_Start"), 'stop' : function("Y_SrcCodeFormatter_Stop") }
-let g:project_service_src_code_indexer     = { 'id' : 3, 'enabled' : 1, 'start' : function("Y_SrcCodeIndexer_Start"), 'stop' : function("Y_SrcCodeIndexer_Stop") }
 let g:project_available_services           = [
 \                                               g:project_service_src_code_model,
 \                                               g:project_service_project_builder,
-\                                               g:project_service_src_code_formatter,
-\                                               g:project_service_src_code_indexer
+\                                               g:project_service_src_code_formatter
 \]
 
 " --------------------------------------------------------------------------------------------------------------------------------------
