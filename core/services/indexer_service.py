@@ -2,11 +2,10 @@ import logging
 from yavide_service import YavideService
 from services.indexer.yavide_indexer import YavideSourceCodeIndexer
 from services.indexer.yavide_indexer import YavideSourceCodeIndexerParams
-from common.yavide_utils import YavideUtils
 
 class SourceCodeIndexer(YavideService):
-    def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook, self.__shutdown_hook)
+    def __init__(self, yavide_instance):
+        YavideService.__init__(self, yavide_instance, self.__startup_hook, self.__shutdown_hook)
         self.src_code_indexer = ""
 
     def __startup_hook(self, args):

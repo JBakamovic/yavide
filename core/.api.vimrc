@@ -29,7 +29,6 @@ endfunction
 function! Y_Utils_SerializeCurrentBufferContents(filename)
 python << EOF
 import vim
-import os
 temp_file = open(vim.eval('a:filename'), "w", 0)
 temp_file.writelines(line + '\n' for line in vim.current.buffer)
 EOF
@@ -102,6 +101,7 @@ function! s:Y_Project_Create(bEmptyProject)
 
             if l:project_type > 0
                 " Ask user to provide project category
+                echo ' '
                 let l:category_list = ['Project category:']
                 for [descr, proj_category] in items(g:project_supported_categories)
                     let l:cat_string = '[' . proj_category.id . '] ' . descr
@@ -112,8 +112,8 @@ function! s:Y_Project_Create(bEmptyProject)
                 call inputrestore()
 
                 if l:project_category > 0
+                    " Create project root directory for new projects
                     if a:bEmptyProject == 1
-                        " Create project root directory
                         let l:project_root_directory = l:project_root_directory . '/' . l:project_name
                         call mkdir(l:project_root_directory, "p")
                     endif
@@ -154,13 +154,32 @@ function! s:Y_Project_Create(bEmptyProject)
                         let g:project_type_mixed.extensions = filter(copy(l:extension_list), 'index(l:extension_list, v:val, v:key+1)==-1')
                     endif
 
+                    " Find out if project exposes compilation database
+                    " TODO allow out-of-source compilation db's
+                    let l:project_env_compilation_db_path = ''
+                    if filereadable(g:project_supported_compilation_db['json'].name)
+                        let l:project_env_compilation_db_path = l:project_root_directory . '/' . g:project_supported_compilation_db['json'].name
+                    elseif filereadable(g:project_supported_compilation_db['txt'].name)
+                        let l:project_env_compilation_db_path = l:project_root_directory . '/' . g:project_supported_compilation_db['txt'].name
+                    else
+                        echo ' '
+                        echohl WarningMsg | echomsg 'No config file found which exposes project-specific compiler flags. Functionality will be limited!' | echohl None
+                        echohl MoreMsg
+                        echomsg 'Supported ways of providing compiler flags are:'
+                        for [descr, comp_db_type] in items(g:project_supported_compilation_db)
+                            echomsg '[' . comp_db_type.id . '] ' . comp_db_type.name . '  (' . comp_db_type.description . ')'
+                        endfor
+                        echohl None
+                        call input('Press <Enter> to continue')
+                    endif
+
                     " Store project specific settings into the project configuration file
                     let l:project_settings = []
                     call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
                     call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
                     call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
                     call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
-                    call add(l:project_settings, 'let g:' . 'project_compiler_args = ' . "\'\'")
+                    call add(l:project_settings, 'let g:' . 'project_env_compilation_db_path = ' . "\'" . l:project_env_compilation_db_path . "\'")
                     call writefile(l:project_settings, g:project_configuration_filename)
                     return 0
                 endif
@@ -204,17 +223,28 @@ function! s:Y_Project_Load()
         let g:project_java_tags = g:project_root_directory . '/' . g:project_java_tags_filename
         let g:project_cxx_tags  = g:project_root_directory . '/' . g:project_cxx_tags_filename
 
+        " If there were no compilation database previously,
+        " check if one has been added in the meantime.
+        if g:project_env_compilation_db_path == ''
+            if filereadable(g:project_supported_compilation_db['json'].name)
+                let g:project_env_compilation_db_path = g:project_root_directory . '/' . g:project_supported_compilation_db['json'].name
+            elseif filereadable(g:project_supported_compilation_db['txt'].name)
+                let g:project_env_compilation_db_path = g:project_root_directory . '/' . g:project_supported_compilation_db['txt'].name
+            endif
+            if g:project_env_compilation_db_path != ''
+                echo ' ' | echohl MoreMsg | echomsg 'New compiler-flags config file detected! Re-run the indexer (<ctrl>-\ r).' | echohl None
+                call s:Y_Project_SaveEnv()
+                call input('Press <Enter> to continue')
+            endif
+        endif
+
         " Load project session information
         if filereadable(g:project_session_filename)
             execute('source ' . g:project_session_filename)
         endif
 
         " Start background services
-        for service in g:project_available_services
-            if service['enabled']
-                call service['start']()
-            endif
-        endfor
+        call Y_ServerStartAllServices()
 
         call Y_Buffer_CloseEmpty()
         let g:project_loaded = 1
@@ -244,6 +274,7 @@ function! s:Y_Project_SaveEnv()
     let l:project_env = []
     call add(l:project_env, 'let g:' . 'project_env_build_preproces_command = ' . "\'" . g:project_env_build_preproces_command . "\'")
     call add(l:project_env, 'let g:' . 'project_env_build_command = ' . "\'" . g:project_env_build_command . "\'")
+    call add(l:project_env, 'let g:' . 'project_env_compilation_db_path = ' . "\'" . g:project_env_compilation_db_path . "\'")
     call s:Y_Utils_AppendToFile(g:project_configuration_filename, l:project_env)
 endfunction
 
@@ -319,11 +350,7 @@ function! Y_Project_Close()
     endif
 
     " Stop background services
-    for service in g:project_available_services
-        if service['enabled']
-            call service['stop']()
-        endif
-    endfor
+    call Y_ServerStopAllServices(v:true)
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -792,12 +819,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartAllServices()
-python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xF0, 0xFF, "start_all_services"])
-
-EOF
+    for service in g:project_available_services
+        if service['enabled']
+            call service['start']()
+        endif
+    endfor
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -807,10 +833,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartService(id, payload)
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xF1, vim.eval('a:id'), vim.eval('a:payload')])
-
 EOF
 endfunction
 
@@ -821,10 +844,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerSendServiceRequest(id, payload)
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xF2, int(vim.eval('a:id')), vim.eval('a:payload')])
-
 EOF
 endfunction
 
@@ -833,13 +853,13 @@ endfunction
 " Description:  Stops all Yavide server background services.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopAllServices()
-python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xFD, 0xFF, "stop_all_services"])
-
-EOF
+function! Y_ServerStopAllServices(subscribe_for_shutdown_callback)
+    " Stop background services
+    for service in g:project_available_services
+        if service['enabled']
+            call service['stop'](a:subscribe_for_shutdown_callback)
+        endif
+    endfor
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -847,12 +867,9 @@ endfunction
 " Description:  Stops specific Yavide server backround service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopService(id)
+function! Y_ServerStopService(id, subscribe_for_shutdown_callback)
 python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xFE, vim.eval('a:id'), 'stop_service'])
-
+server_queue.put([0xFE, vim.eval('a:id'), vim.eval('a:subscribe_for_shutdown_callback')])
 EOF
 endfunction
 
@@ -863,10 +880,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStop()
 python << EOF
-from multiprocessing import Queue
-
-server_queue.put([0xFF, 0xFF, "shutdown_and_exit"])
-
+server_queue.put([0xFF, 0xFF, False])
 EOF
 endfunction
 
@@ -875,32 +889,6 @@ endfunction
 "   SOURCE CODE MODEL UTILITY FUNCTIONS
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_TextChangedIReset()
-" Description:  Resets variables to initial state.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_TextChangedIReset()
-    let s:y_prev_line = 0
-    let s:y_prev_col  = 0
-    let s:y_prev_char = ''
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_TextChangedI()
-" Description:  A hook for services which are ought to be on 'TextChangedI' event (i.e. semantic highlight as you type).
-"               In order to minimize triggering the services after each and every character typed in, there is a
-"               Y_SrcCodeModel_TextChangedType() function which heuristicly gives us a hint if there was a big enough
-"               change for us to run the services or not.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_TextChangedI()
-    if Y_SrcCodeModel_TextChangedType()
-        call Y_SrcCodeHighlighter_Run()
-        call Y_SrcCodeDiagnostics_Run()
-    endif
-endfunction
-
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeModel_CheckTextChangedType()
 " Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
@@ -967,7 +955,12 @@ function! Y_SrcCodeModel_Start()
     if g:project_service_src_code_model['services']['type_deduction']['enabled']
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
-    call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
+    call Y_ServerStartService(g:project_service_src_code_model['id'], [g:project_root_directory, g:project_env_compilation_db_path])
+endfunction
+
+function! Y_SrcCodeModel_StartCompleted()
+    let g:project_service_src_code_model['started'] = 1
+    call Y_SrcCodeIndexer_RunOnDirectory()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -975,8 +968,12 @@ endfunction
 " Description:  Stops the source code model background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_Stop()
-    call Y_ServerStopService(g:project_service_src_code_model['id'])
+function! Y_SrcCodeModel_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_src_code_model['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_SrcCodeModel_StopCompleted()
+    let g:project_service_src_code_model['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -985,8 +982,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Run(service_id, args)
-    call insert(a:args, a:service_id)
-    call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
+    if g:project_service_src_code_model['started']
+        call insert(a:args, a:service_id)
+        call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
+    endif
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1002,28 +1001,14 @@ endfunction
 function! Y_SrcCodeHighlighter_Run()
     if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
         let l:current_buffer = expand('%:p')
-        let l:compiler_args = g:project_compiler_args
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
-
-python << EOF
-import vim
-import os
-# Append additional include path to the compiler args which points to the parent directory of current buffer.
-#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
-#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
-#     Clang parsing errors.
-#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-#     potentially would not play well with other tools (indexer, version control, etc.).
-vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
-EOF
-
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer, l:compiler_args, g:project_root_directory])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer])
     endif
 endfunction
 
@@ -1057,8 +1042,15 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeDiagnostics_Run()
     if g:project_service_src_code_model['services']['diagnostics']['enabled']
-        let l:current_buffer = bufnr('%')
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_buffer])
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:contents_filename, l:current_buffer])
     endif
 endfunction
 
@@ -1079,18 +1071,19 @@ endfunction
 " --------------------------------------------------------------------------------------------------------------------------------------
 function! Y_SrcCodeTypeDeduction_Run()
     if g:project_service_src_code_model['services']['type_deduction']['enabled']
-        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-        let l:contents_filename = bufname(v:beval_bufnr)
-        if getbufvar(v:beval_bufnr, '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
-            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
-        endif
-
         " Execute requests only on non-special, ordinary buffers. I.e. ignore NERD_Tree, Tagbar, quickfix and alike.
         " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
         " any make sense then.
         if getbufvar(v:beval_bufnr, "&buftype") == ''
-            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, v:beval_lnum, v:beval_col])
+            let l:current_buffer = fnamemodify(bufname(v:beval_bufnr), ':p')
+
+            " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+            let l:contents_filename = l:current_buffer
+            if getbufvar(bufnr('%'), '&modified')
+                let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
+                call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+            endif
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, l:current_buffer, v:beval_lnum, v:beval_col])
         endif
     endif
     return ''
@@ -1103,6 +1096,75 @@ function! Y_SrcCodeTypeDeduction_Apply(deducted_type)
         endif
     else
         echo a:deducted_type
+    endif
+endfunction
+
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE NAVIGATION API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToDefinition()
+" Description:  Jumps to the definition of a symbol under the cursor.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeNavigation_GoToDefinition()
+    if g:project_service_src_code_model['services']['go_to_definition']['enabled']
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_definition']['id'], [l:contents_filename, l:current_buffer, line('.'), col('.')])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToDefinitionCompleted()
+" Description:  Jumps to the definition found.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column)
+    if a:filename != ''
+        if expand('%:p') != a:filename
+            execute('edit ' . a:filename)
+        endif
+        call cursor(a:line, a:column)
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToInclude()
+" Description:  Fetches the filename which include directive corresponds to on the given (current) line.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeNavigation_GoToInclude()
+    if g:project_service_src_code_model['services']['go_to_include']['enabled']
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_include']['id'], [l:contents_filename, l:current_buffer, line('.')])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToIncludeCompleted()
+" Description:  Opens the filename which corresponds to the include directive.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeNavigation_GoToIncludeCompleted(filename)
+    if a:filename != ''
+        execute('edit ' . a:filename)
     endif
 endfunction
 
@@ -1162,13 +1224,21 @@ function! Y_ProjectBuilder_Start()
     call Y_ServerStartService(g:project_service_project_builder['id'], args)
 endfunction
 
+function! Y_ProjectBuilder_StartCompleted()
+    let g:project_service_project_builder['started'] = 1
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_ProjectBuilder_Stop()
 " Description:  Stops the project builder background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ProjectBuilder_Stop()
-    call Y_ServerStopService(g:project_service_project_builder['id'])
+function! Y_ProjectBuilder_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_project_builder['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_ProjectBuilder_StopCompleted()
+    let g:project_service_project_builder['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1177,17 +1247,19 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Run(...)
-    let args = [g:project_env_build_command]
-    if a:0 != 0
-        let args = a:1
-        let i = 2
-        while i <= a:0
-            execute "let args = args . \" \" . a:" . i
-            let i = i + 1
-        endwhile
+    if g:project_service_project_builder['started']
+        let args = [g:project_env_build_command]
+        if a:0 != 0
+            let args = a:1
+            let i = 2
+            while i <= a:0
+                execute "let args = args . \" \" . a:" . i
+                let i = i + 1
+            endwhile
+        endif
+        call setqflist([])
+        call Y_ServerSendServiceRequest(g:project_service_project_builder['id'], args)
     endif
-    call setqflist([])
-    call Y_ServerSendServiceRequest(g:project_service_project_builder['id'], args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1216,13 +1288,21 @@ function! Y_SrcCodeFormatter_Start()
     call Y_ServerStartService(g:project_service_src_code_formatter['id'], l:configFile)
 endfunction
 
+function! Y_SrcCodeFormatter_StartCompleted()
+    let g:project_service_src_code_formatter['started'] = 1
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Stop()
 " Description:  Stops the project builder background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeFormatter_Stop()
-    call Y_ServerStopService(g:project_service_src_code_formatter['id'])
+function! Y_SrcCodeFormatter_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_src_code_formatter['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_SrcCodeFormatter_StopCompleted()
+    let g:project_service_src_code_formatter['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1231,9 +1311,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
-        let l:current_buffer = expand('%:p')
-        call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
+    if g:project_service_src_code_formatter['started']
+        if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
+            let l:current_buffer = expand('%:p')
+            call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
+        endif
     endif
 endfunction
 
@@ -1256,38 +1338,123 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_Start()
-" Description:  Starts the source code indexer background service.
+" Function:     Y_SrcCodeIndexer_RunOnSingleFile()
+" Description:  Runs indexer on a single file.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_Start()
-    " Serialize parameters for the source code indexer
-    let l:args = []
-    for proj_type in values(g:project_supported_types)
-        if proj_type.id == g:project_type
-            call add(l:args, len(proj_type.extensions))
-            for extension in proj_type.extensions
-                call add(l:args, extension)
-            endfor
-            break
+function! Y_SrcCodeIndexer_RunOnSingleFile()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-    endfor
-    call add(l:args, g:project_root_directory)
-    call add(l:args, g:project_cxx_tags_filename)
-    call add(l:args, g:project_java_tags_filename)
-    call add(l:args, g:project_cscope_db_filename)
-    call Y_ServerStartService(g:project_service_src_code_indexer['id'], l:args)
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, l:contents_filename, l:current_buffer])
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_Stop()
-" Description:  Stops the source code indexer background service.
+" Function:     Y_SrcCodeIndexer_RunOnSingleFileCompleted()
+" Description:  Running indexer on a single file completed.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_Stop()
-    call Y_ServerStopService(g:project_service_src_code_indexer['id'])
+function! Y_SrcCodeIndexer_RunOnSingleFileCompleted()
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_RunOnDirectory()
+" Description:  Runs indexer on a whole directory.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_RunOnDirectory()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        echomsg 'Indexing on ' . g:project_root_directory . ' started ... It may take a while if it is run for the first time.'
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_RunOnDirectoryCompleted()
+" Description:  Running indexer on a directory completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_RunOnDirectoryCompleted()
+    echomsg 'Indexing run on ' . g:project_root_directory . ' completed.'
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropSingleFile()
+" Description:  Drops index for given file from the indexer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropSingleFile(filename)
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, a:filename])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropSingleFileCompleted()
+" Description:  Dropping single file from indexing results completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropSingleFileCompleted()
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAll()
+" Description:  Drops all of the indices from the indexer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAll()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, v:true])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAllCompleted()
+" Description:  Dropping all indices from indexing results completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAllCompleted()
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
+" Description:  Drops the index database and runs indexer again (aka reindexing operation)
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, v:true])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_FindAllReferences()
+" Description:  Finds project-wide references of a symbol under the cursor.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_FindAllReferences()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, expand('%:p'), line('.'), col('.')])
+    endif
+endfunction
+
+function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
+python << EOF
+import vim
+with open(vim.eval('a:references'), 'r') as f:
+    vim.eval("setqflist([" + f.read() + "], 'r')")
+EOF
+    execute('copen')
+    redraw
+endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "

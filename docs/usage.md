@@ -61,14 +61,10 @@ Category                          | Shortcut                          | Descript
 |                                  | `<Shift-F4>`                      | Switch between header & implementation (in a vertical split window)
 |                                  | `<F12>` or `<Ctrl-LeftMouse>`     | Goto definition of token under the cursor
 |                                  | `<Shift-F12>`                     | Goto definition of token under the cursor (in a vertical split window)
-|                                  | `<Ctrl-t>` or `<Ctrl-RightMouse>` | Jump back from definition
 |                                  | `<Ctrl-\>s`                       | Find all references to token under the cursor
-|                                  | `<Ctrl-\>g`                       | Find global definition(s) of token under the cursor
-|                                  | `<Ctrl-\>c`                       | Find all functions calling the function under the cursor
-|                                  | `<Ctrl-\>d`                       | Find all functions called by the function under the cursor
-|                                  | `<Ctrl-\>i`                       | Find all files that include the filename under the cursor
-|                                  | `<Ctrl-\>t`                       | Find all instances of the text under the cursor
-|                                  | `<Ctrl-\>e`                       | Search for the word under the cursor using `egrep`
+|                                  | `<Ctrl-\>r`                       | Rebuild symbol database index for current project
+|                                  | `<Alt-Left>`                      | Jump back to previous cursor location
+|                                  | `<Alt-Right>`                     | Jump to next cursor location
 |**Source code static analysis**   |                                   |
 |                                  | `:YavideAnalyzerCppCheckBuf`      | Runs the `cppcheck` static analysis on current buffer
 |                                  | `:YavideAnalyzerCppCheck`         | Runs the `cppcheck` static analysis on whole project

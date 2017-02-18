@@ -1,22 +1,20 @@
-import sys
 import logging
+import sys
 import tempfile
 from multiprocessing import Process, Queue
 from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
-from services.indexer_service import SourceCodeIndexer
 
 class YavideServer():
     def __init__(self, msg_queue, yavide_instance):
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SourceCodeModel(self.msg_queue, self.yavide_instance),
-            0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance),
-            0x3 : SourceCodeIndexer(self.msg_queue, self.yavide_instance)
+            0x0 : SourceCodeModel(self.yavide_instance),
+            0x1 : ProjectBuilder(self.yavide_instance),
+            0x2 : ClangSourceCodeFormatter(self.yavide_instance)
         }
         self.service_processes = {}
         self.action = {
@@ -53,11 +51,11 @@ class YavideServer():
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def __shutdown_all_services(self, dummyServiceId, dummyPayload):
+    def __shutdown_all_services(self, dummyServiceId, payload):
         logging.info("Shutting down all registered services ... {0}".format(self.service))
         if self.service_processes:
             for id, svc in self.service.iteritems():
-                svc.send_shutdown_request(dummyPayload)
+                svc.send_shutdown_request(payload)
             for svc_id, svc_process in self.service_processes.iteritems():
                 svc_process.join()
             del self.service_processes
@@ -71,9 +69,9 @@ class YavideServer():
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def __shutdown_and_exit(self, dummyServiceId, dummyPayload):
+    def __shutdown_and_exit(self, dummyServiceId, payload):
         logging.info("Shutting down the Yavide server ...")
-        self.__shutdown_all_services(dummyServiceId, dummyPayload)
+        self.__shutdown_all_services(dummyServiceId, payload)
         self.keep_listening = False
 
     def __send_service_request(self, serviceId, payload):
@@ -85,7 +83,6 @@ class YavideServer():
 
     def __unknown_action(self, serviceId, payload):
         logging.error("Unknown action triggered! Valid actions are: {0}".format(self.action))
-        return
 
     def listen(self):
         while self.keep_listening is True:
@@ -129,7 +126,69 @@ def yavide_server_run(msg_queue, yavide_instance):
     except:
         sys.excepthook(*sys.exc_info())
 
+def test__clang_indexer__run_on_directory():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+def test__clang_indexer__find_all_references():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+    line = 27
+    col = 15
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
+    q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find-all-references
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+def test__clang_syntax_highlighter():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x1, proj_root_dir, filename, filename, compiler_args]]) # syntax-highlight
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+def test__clang_diagnostics():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x2, proj_root_dir, filename, filename, compiler_args]]) # diagnostics
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+def test__clang_type_deduction():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+    line = 27
+    col = 15
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x3, proj_root_dir, filename, filename, compiler_args, line, col]]) # type-deduction
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+
 def main():
+    return test__clang_indexer__find_all_references()
+    return test__clang_indexer__run_on_directory()
+    return test__clang_type_deduction()
+    return test__clang_diagnostics()
+    return test__clang_syntax_highlighter()
+
     q = Queue()
     #q.put([0xF0, "start_all_services"])
     q.put([0xF1, 0, "--class --struct --func"])

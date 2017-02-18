@@ -1,8 +1,9 @@
-import sys
-import logging
-import subprocess
 import clang.cindex
+import logging
+import os
+import sys
 from services.parser.ast_node_identifier import ASTNodeId
+from services.parser.compiler_args import CompilerArgs
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
     """
@@ -23,16 +24,16 @@ def default_visitor(child, parent, client_data):
 
     return ChildVisitResult.CONTINUE.value
 
-def traverse(self, client_data, client_visitor = default_visitor):
+def traverse(cursor, client_data, client_visitor = default_visitor):
     """Traverse AST using the client provided visitor."""
 
     def visitor(child, parent, client_data):
         assert child != clang.cindex.conf.lib.clang_getNullCursor()
-        child._tu = self._tu
+        child._tu = cursor._tu
         child.ast_parent = parent
         return client_visitor(child, parent, client_data)
 
-    return clang.cindex.conf.lib.clang_visitChildren(self, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
+    return clang.cindex.conf.lib.clang_visitChildren(cursor, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
 
 def get_children_patched(self, traversal_type = ChildVisitResult.CONTINUE):
     """
@@ -56,49 +57,70 @@ New version provides more functionality (i.e. AST parent node) which is needed i
 """
 clang.cindex.Cursor.get_children = get_children_patched
 
-def get_system_includes():
-    output = subprocess.Popen(["g++", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    pattern = ["#include <...> search starts here:", "End of search list."]
-    output = str(output)
-    return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
-
 class ClangParser():
-    def __init__(self):
-        self.contents_filename = ''
-        self.original_filename = ''
-        self.ast_nodes_list = []
-        self.translation_unit = None
-        self.index = clang.cindex.Index.create()
-        self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
+    def __init__(self, compiler_args_filename, tunit_cache):
+        self.index         = clang.cindex.Index.create()
+        self.compiler_args = CompilerArgs(compiler_args_filename)
+        self.tunit_cache   = tunit_cache
 
-    def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
-        self.contents_filename = contents_filename
-        self.original_filename = original_filename
-        self.ast_nodes_list = []
-        logging.info('Filename = {0}'.format(self.original_filename))
-        logging.info('Default args = {0}'.format(self.default_args))
-        logging.info('User-provided compiler args = {0}'.format(compiler_args))
-        logging.info('Compiler working-directory = {0}'.format(project_root_directory))
-        try:
-            self.translation_unit = self.index.parse(
-                path = self.contents_filename,
-                args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
-                options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
-            )
+    def get_compiler_args_db(self):
+        return self.compiler_args
 
-            logging.info('Translation unit: '.format(self.translation_unit.spelling))
-            self.__visit_all_nodes(self.translation_unit.cursor)
+    def parse(self, contents_filename, original_filename):
+        def do_parse(contents_filename, original_filename):
+            try:
+                return self.index.parse(
+                    path = contents_filename,
+                    args = self.compiler_args.get(original_filename, contents_filename != original_filename),
+                    options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
+                )
+            except:
+                logging.error(sys.exc_info())
 
-        except:
-            logging.error(sys.exc_info()[0])
+        logging.info('Filename = {0}'.format(original_filename))
+        logging.info('Contents Filename = {0}'.format(contents_filename))
 
-    def get_diagnostics(self):
-        for diag in self.translation_unit.diagnostics:
-            logging.debug('Parsing diagnostics: ' + str(diag))
-        return self.translation_unit.diagnostics
+        # Check if we have this tunit already in the cache ...
+        tunit, m_timestamp = self.tunit_cache.fetch(contents_filename)
 
-    def get_ast_node_list(self):
-        return self.ast_nodes_list
+        if tunit is None:
+            tunit = do_parse(contents_filename, original_filename)      # If we don't, we simply have to parse it ...
+        else:
+            logging.info('TUnit found in cache.')
+            if m_timestamp != os.path.getmtime(contents_filename):      # We still have to make sure that cached tunit is not out-of-date.
+                tunit = do_parse(contents_filename, original_filename)
+                logging.info('Cached TUnit contents do not match the current contents (i.e. file is edited furthermore)')
+
+        # Insert the tunit into the cache ...
+        if tunit:
+            self.tunit_cache.insert(contents_filename, tunit)
+
+        return tunit
+
+    def get_diagnostics(self, tunit):
+        if not tunit:
+            return None
+
+        diag = tunit.diagnostics
+        logging.info("Fetching diagnostics for {0}: {1}".format(tunit.spelling, diag))
+        return diag
+
+    def get_top_level_includes(self, tunit):
+        def visitor(cursor, parent, include_directives_list):
+            if cursor.location.file and cursor.location.file.name == tunit.spelling:  # we're only interested in symbols from associated translation unit
+                if cursor.kind == clang.cindex.CursorKind.INCLUSION_DIRECTIVE:
+                    include_directives_list.append((ClangParser.__get_included_file_name(cursor), cursor.location.line, cursor.location.column),)
+                return ChildVisitResult.CONTINUE.value  # We don't want to waste time traversing recursively for include directives
+            return ChildVisitResult.CONTINUE.value
+
+        top_level_includes = []
+        if tunit:
+            traverse(tunit.cursor, top_level_includes, visitor)
+        logging.info(top_level_includes)
+        return top_level_includes
+
+    def traverse(self, cursor, client_data, client_visitor):
+        traverse(cursor, client_data, client_visitor)
 
     def get_ast_node_id(self, cursor):
         # We have to handle (at least) two different situations when libclang API will not give us enough details about the given cursor directly:
@@ -151,77 +173,109 @@ class ClangParser():
             return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
-    def map_source_location_to_type(self, filename, line, column):
+    def get_cursor(self, tunit, line, column):
+        if not tunit:
+            return None
+
+        logging.info("Extracting cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
         cursor = clang.cindex.Cursor.from_location(
-                    self.translation_unit,
+                    tunit,
                     clang.cindex.SourceLocation.from_position(
-                        self.translation_unit,
-                        clang.cindex.File.from_name(self.translation_unit, filename),
+                        tunit,
+                        clang.cindex.File.from_name(tunit, tunit.spelling),
                         line,
                         column
                     )
                  )
-        return cursor.type.spelling
+        return cursor
 
-    @property
-    def filename(self):
-        return self.original_filename
+    def get_definition(self, cursor):
+        if cursor:
+            logging.info("Extracting definition of cursor from '{0}': [{1},{2}] '{3}'.".format(
+                cursor.location.file.name, cursor.location.line, cursor.location.column, cursor.spelling)
+            )
+            return cursor.get_definition()
+        return None
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
             logging.debug(
-                '%-22s' % ('[' + str(token.extent.start.line) + ', ' + str(token.extent.start.column) + ']:[' + str(token.extent.end.line) + ', ' + str(token.extent.end.column) + ']') + 
+                '%-22s' % ('[' + str(token.extent.start.line) + ', ' + str(token.extent.start.column) + ']:[' + str(token.extent.end.line) + ', ' + str(token.extent.end.column) + ']') +
                 '%-30s' % token.spelling +
                 '%-40s' % str(token.kind) +
                 '%-40s' % str(token.cursor.kind) +
                 'Token.Cursor.Extent %-25s' % ('[' + str(token.cursor.extent.start.line) + ', ' + str(token.cursor.extent.start.column) + ']:[' + str(token.cursor.extent.end.line) + ', ' + str(token.cursor.extent.end.column) + ']') +
                 'Cursor.Extent %-25s' % ('[' + str(cursor.extent.start.line) + ', ' + str(cursor.extent.start.column) + ']:[' + str(cursor.extent.end.line) + ', ' + str(cursor.extent.end.column) + ']'))
 
-    def dump_ast_nodes(self):
-        logging.debug('%-12s' % '[Line, Col]' + '%-40s' % 'Spelling' + '%-40s' % 'Kind' + '%-40s' % 'Type.Spelling' +
+    def dump_ast_nodes(self, tunit):
+        def visitor(ast_node, ast_parent_node, client_data):
+            if ast_node.location.file and ast_node.location.file.name == tunit.spelling:  # we're only interested in symbols from given file
+                # if ast_node.kind in [clang.cindex.CursorKind.CALL_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]:
+                #    self.dump_tokens(ast_node)
+
+                logging.debug(
+                    '%-12s' % ('[' + str(ast_node.location.line) + ', ' + str(ast_node.location.column) + ']') +
+                    '%-25s' % ('[' + str(ast_node.extent.start.line) + ', ' + str(ast_node.extent.start.column) + ']:[' + str(ast_node.extent.end.line) + ', ' + str(ast_node.extent.end.column) + ']') +
+                    '%-40s' % str(ast_node.spelling) +
+                    '%-40s' % str(ast_node.kind) +
+                    '%-40s' % str(ast_parent_node.kind) +
+                    '%-40s' % str(ast_node.type.spelling) +
+                    '%-40s' % str(ast_node.type.kind) +
+                    ('%-25s' % ('[' + str(ast_node.type.get_declaration().location.line) + ', ' + str(ast_node.type.get_declaration().location.column) + ']') if (ast_node.type and ast_node.type.get_declaration()) else '%-25s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.get_definition().location.line) + ', ' + str(ast_node.get_definition().location.column) + ']') if (ast_node.get_definition()) else '%-25s' % '-') +
+                    '%-40s' % str(ast_node.get_usr()) +
+                    ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).spelling) if (ast_node.kind ==
+                        clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(ast_node)) else '%-40s' % '-') +
+                    ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).kind) if (ast_node.kind ==
+                        clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(ast_node)) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.spelling) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.kind) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.type.spelling) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.type.kind) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.result_type.spelling) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.result_type.kind) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.canonical.spelling) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.canonical.kind) if (ast_node.referenced) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.semantic_parent.spelling) if (ast_node.referenced and ast_node.referenced.semantic_parent) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.semantic_parent.kind) if (ast_node.referenced and ast_node.referenced.semantic_parent) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.lexical_parent.spelling) if (ast_node.referenced and ast_node.referenced.lexical_parent) else '%-40s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.lexical_parent.kind) if (ast_node.referenced and ast_node.referenced.lexical_parent) else '%-40s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.referenced.type.get_declaration().location.line) + ', ' + str(ast_node.referenced.type.get_declaration().location.column) + ']')
+                        if (ast_node.referenced and ast_node.referenced.type and ast_node.referenced.type.get_declaration()) else '%-25s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.referenced.get_definition().location.line) + ', ' + str(ast_node.referenced.get_definition().location.column) + ']')
+                        if (ast_node.referenced and ast_node.referenced.get_definition()) else '%-25s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.get_usr()) if ast_node.referenced else '%-40s' % '-')
+                )
+                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
+
+
+        if tunit:
+            logging.debug(
+                '%-12s' % '[Line, Col]' +
+                '%-25s' % 'Extent' +
+                '%-40s' % 'Spelling' +
+                '%-40s' % 'Kind' +
+                '%-40s' % 'Parent.Kind' +
+                '%-40s' % 'Type.Spelling' +
                 '%-40s' % 'Type.Kind' +
+                '%-25s' % 'Declaration.Location' +
+                '%-25s' % 'Definition.Location' +
+                '%-40s' % 'USR' +
                 '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
                 '%-40s' % 'Referenced.Spelling' + '%-40s' % 'Referenced.Kind' +
                 '%-40s' % 'Referenced.Type.Spelling' + '%-40s' % 'Referenced.Type.Kind' +
                 '%-40s' % 'Referenced.ResultType.Spelling' + '%-40s' % 'Referenced.ResultType.Kind' +
                 '%-40s' % 'Referenced.Canonical.Spelling' + '%-40s' % 'Referenced.Canonical.Kind' +
                 '%-40s' % 'Referenced.SemanticParent.Spelling' + '%-40s' % 'Referenced.SemanticParent.Kind' +
-                '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind')
-        logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
+                '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind' +
+                '%-25s' % 'Referenced.Declaration.Location' +
+                '%-25s' % 'Referenced.Definition.Location' +
+                '%-25s' % 'Referenced.USR'
+            )
 
-        for idx, cursor in enumerate(self.ast_nodes_list):
-
-            # if cursor.kind in [clang.cindex.CursorKind.CALL_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]:
-            #    self.dump_tokens(cursor)
-
-            logging.debug(
-                '%-12s' % ('[' + str(cursor.location.line) + ', ' + str(cursor.location.column) + ']') +
-                '%-40s' % str(cursor.spelling) +
-                '%-40s' % str(cursor.kind) +
-                '%-40s' % str(cursor.type.spelling) +
-                '%-40s' % str(cursor.type.kind) +
-                ('%-40s' % str(ClangParser.__get_overloaded_decl(cursor, 0).spelling) if (cursor.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
-                ('%-40s' % str(ClangParser.__get_overloaded_decl(cursor, 0).kind) if (cursor.kind ==
-                    clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(cursor)) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.spelling) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.kind) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.type.spelling) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.type.kind) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.result_type.spelling) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.result_type.kind) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.canonical.spelling) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.canonical.kind) if (cursor.referenced) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.semantic_parent.spelling) if (cursor.referenced and cursor.referenced.semantic_parent) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.semantic_parent.kind) if (cursor.referenced and cursor.referenced.semantic_parent) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.lexical_parent.spelling) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-') +
-                ('%-40s' % str(cursor.referenced.lexical_parent.kind) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-'))
-
-    def __visit_all_nodes(self, node):
-        for n in node.get_children():
-            if n.location.file and n.location.file.name == self.contents_filename:
-                self.ast_nodes_list.append(n)
-                self.__visit_all_nodes(n)
+            logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
+            self.traverse(tunit.cursor, None, visitor)
 
     @staticmethod
     def __extract_dependent_type_kind(cursor):
@@ -323,4 +377,30 @@ class ClangParser():
     @staticmethod
     def __get_overloaded_decl(cursor, num):
         return clang.cindex.conf.lib.clang_getOverloadedDecl(cursor, num)
+
+    # TODO Shall be removed once 'cindex.py' exposes it in its interface.
+    @staticmethod
+    def __get_included_file_name(inclusion_directive_cursor):
+        #
+        # NOTE Python binding for clang_getIncludedFile() is currently
+        #      incompatible with the implementation of clang.cindex.File.
+        #      Assert is being risen because clang.cindex.File object is
+        #      being constructed with the type which is not of ClangObject
+        #      type (e.g. clang.cindex.Cursor is ctypes.Structure)
+        #
+        #      This implementation workarounds this limitation.
+        #
+        _libclang = clang.cindex.conf.get_cindex_library()
+        _libclang.clang_getIncludedFile.argtypes = [clang.cindex.Cursor]
+        _libclang.clang_getIncludedFile.restype  =  clang.cindex.c_object_p
+        _libclang.clang_getFileName.argtypes     = [clang.cindex.c_object_p]
+        _libclang.clang_getFileName.restype      =  clang.cindex._CXString
+
+        return clang.cindex.conf.lib.clang_getCString(
+            _libclang.clang_getFileName(
+                _libclang.clang_getIncludedFile(
+                    inclusion_directive_cursor
+                )
+            )
+        )
 

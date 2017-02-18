@@ -2,12 +2,11 @@ import logging
 from multiprocessing import Queue
 
 class YavideService():
-    def __init__(self, server_queue, yavide_instance, startup_hook = None, shutdown_hook = None):
+    def __init__(self, yavide_instance, startup_callback, shutdown_callback):
         self.queue = Queue()
-        self.server_queue = server_queue
         self.yavide_instance = yavide_instance
-        self.startup_hook = startup_hook
-        self.shutdown_hook = shutdown_hook
+        self.startup_callback = startup_callback
+        self.shutdown_callback = shutdown_callback
         self.action = {
             0x0 : self.__startup_request,
             0x1 : self.__shutdown_request,
@@ -19,13 +18,11 @@ class YavideService():
 
     def __startup_request(self, payload):
         logging.info("Service startup ... Payload = {0}".format(payload))
-        if self.startup_hook:
-            self.startup_hook(payload)
+        self.startup_callback(payload)
 
     def __shutdown_request(self, payload):
         logging.info("Service shutdown ... Payload = {0}".format(payload))
-        if self.shutdown_hook:
-            self.shutdown_hook(payload)
+        self.shutdown_callback(payload)
         self.keep_listening = False
 
     def __request(self, payload):
