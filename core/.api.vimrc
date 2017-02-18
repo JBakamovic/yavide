@@ -1057,8 +1057,9 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeDiagnostics_Run()
     if g:project_service_src_code_model['services']['diagnostics']['enabled']
-        let l:current_buffer = bufnr('%')
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_buffer])
+        let l:current_bufnr = bufnr('%')
+        let l:current_bufname = expand('%:p')
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_bufname, l:current_bufnr])
     endif
 endfunction
 
@@ -1080,7 +1081,8 @@ endfunction
 function! Y_SrcCodeTypeDeduction_Run()
     if g:project_service_src_code_model['services']['type_deduction']['enabled']
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-        let l:contents_filename = bufname(v:beval_bufnr)
+        let l:current_bufname = fnamemodify(bufname(v:beval_bufnr), ':p')
+        let l:contents_filename = l:current_bufname
         if getbufvar(v:beval_bufnr, '&modified')
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
@@ -1090,7 +1092,7 @@ function! Y_SrcCodeTypeDeduction_Run()
         " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
         " any make sense then.
         if getbufvar(v:beval_bufnr, "&buftype") == ''
-            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, v:beval_lnum, v:beval_col])
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:current_bufname, l:contents_filename, v:beval_lnum, v:beval_col])
         endif
     endif
     return ''

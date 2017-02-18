@@ -46,13 +46,13 @@ class VimSyntaxGenerator:
         time_elapsed = time.clock() - start
 
         # Apply newly generated syntax rules
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + clang_parser.filename + "'" + ", '" + self.output_syntax_file + "')")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[1]) + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
         clang_parser.dump_ast_nodes()
 
         # Log how long generating Vim syntax file took
-        logging.info("Vim syntax generator for '{0}' took {1}.".format(clang_parser.filename, time_elapsed))
+        logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[1]), time_elapsed))
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags

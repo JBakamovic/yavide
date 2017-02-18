@@ -30,7 +30,7 @@ class VimQuickFixDiagnostics():
         diagnostics = []
         for d in diagnostics_iter:
             diagnostics.append(
-                "{'bufnr': '" + str(args[0]) + "', " +
+                "{'bufnr': '" + str(args[1]) + "', " +
                 "'lnum': '" + str(d.location.line) + "', " +
                 "'col': '" + str(d.location.column) + "', " +
                 "'type': '" + clang_severity_to_quickfix_type(d.severity) + "', " +
@@ -46,7 +46,7 @@ class VimQuickFixDiagnostics():
 
             if len(d.fixits):
                 diagnostics.append(
-                    "{'bufnr': '" + str(args[0]) + "', " +
+                    "{'bufnr': '" + str(args[1]) + "', " +
                     "'lnum': '" + str(d.location.line) + "', " +
                     "'col': '" + str(d.location.column) + "', " +
                     "'type': 'I', " +
