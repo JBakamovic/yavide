@@ -174,6 +174,21 @@ class ClangParser():
                  )
         return cursor.type.spelling
 
+    def get_definition(self, original_filename, contents_filename, line, column):
+        if original_filename not in self.tunits:
+            return ''
+
+        cursor = clang.cindex.Cursor.from_location(
+                    self.tunits[original_filename],
+                    clang.cindex.SourceLocation.from_position(
+                        self.tunits[original_filename],
+                        clang.cindex.File.from_name(self.tunits[original_filename], contents_filename),
+                        line,
+                        column
+                    )
+                 )
+        return cursor.get_definition()
+
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
             logging.debug(
