@@ -1,4 +1,5 @@
 import sys
+import os
 import logging
 import subprocess
 import clang.cindex
@@ -211,6 +212,22 @@ class ClangParser():
                 if ast_node.spelling == cursor.spelling:
                     references.append(ast_node.location)
         return references
+
+    def save_to_disk(self, root_dir):
+        for filename, tunit in self.tunits.iteritems():
+            directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            logging.info('save_to_disk(): File = ' + os.path.join(root_dir, filename[1:len(filename)]))
+            tunit.save(os.path.join(root_dir, filename[1:len(filename)]))
+
+    def load_from_disk(self, root_dir):
+        self.tunits.clear()
+        for dirpath, dirs, files in os.walk(root_dir):
+            for file in files:
+                full_path = os.path.join(dirpath, file)
+                logging.info('load_from_disk(): File = ' + full_path)
+                self.tunits[full_path] = self.index.read(full_path)
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
