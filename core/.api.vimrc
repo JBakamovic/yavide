@@ -1260,6 +1260,28 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_LoadFromDisk()
+" Description:  Load previously saved indexing results from the disk.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_LoadFromDisk()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory . '/.indexer'])
+    endif
+endfunction
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_SaveToDisk()
+" Description:  Save indexing results to the disk.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_SaveToDisk()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory . '/.indexer'])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_Start()
 " Description:  Starts indexing the whole project starting from root directory.
 " Dependency:
@@ -1272,7 +1294,7 @@ endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_GoToDefinition()
-" Description:  Jumps to the definition of current cursor.
+" Description:  Jumps to the definition of a symbol under the cursor.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_GoToDefinition()
@@ -1289,8 +1311,8 @@ function! Y_SrcCodeIndexer_GoToDefinition()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_GoToDefinition()
-" Description:  Jumps to the definition of current cursor.
+" Function:     Y_SrcCodeIndexer_FindAllReferences()
+" Description:  Finds project-wide references of a symbol under the cursor.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_FindAllReferences()
