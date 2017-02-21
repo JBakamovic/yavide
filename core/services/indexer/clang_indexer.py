@@ -48,11 +48,16 @@ class ClangIndexer():
         logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
     def __save_to_disk(self, args):
-        # TODO: Serialize AST's into the file so we can recover once we reload the project
-        pass
+        start = time.clock()
+        self.parser.save_to_disk(str(args[0]))
+        time_elapsed = time.clock() - start
+        logging.info("Saving to {0} took {1}.".format(str(args[0]), time_elapsed))
 
     def __load_from_disk(self, args):
-        pass
+        start = time.clock()
+        self.parser.load_from_disk(str(args[0]))
+        time_elapsed = time.clock() - start
+        logging.info("Loading from {0} took {1}.".format(str(args[0]), time_elapsed))
 
     def __go_to_definition(self, args):
         cursor = self.parser.get_definition(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
