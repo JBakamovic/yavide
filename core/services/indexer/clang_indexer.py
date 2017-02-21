@@ -9,10 +9,11 @@ class ClangIndexer():
         self.parser = parser
         self.callback = callback
         self.op = {
-            0x0 : self.__start_indexer,
-            0x1 : self.__go_to_definition,
-            0x2 : self.__save_to_disk,
-            0x3 : self.__load_from_disk
+            0x0 : self.__load_from_disk,
+            0x1 : self.__save_to_disk,
+            0x2 : self.__start_indexer,
+            0x3 : self.__go_to_definition,
+            0x4 : self.__find_all_references
         }
 
     def __call__(self, args):
@@ -44,7 +45,7 @@ class ClangIndexer():
         logging.info("Indexing for {0} completed.".format(proj_root_directory))
 
     def __save_to_disk(self, args):
-        # TODO: Serialize AST's into files so we can recover once we reload the project
+        # TODO: Serialize AST's into the file so we can recover once we reload the project
         pass
 
     def __load_from_disk(self, args):
