@@ -1287,6 +1287,22 @@ function! Y_SrcCodeIndexer_GoToDefinition()
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, l:current_bufname, l:contents_filename, line('.'), col('.')])
     endif
 endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_GoToDefinition()
+" Description:  Jumps to the definition of current cursor.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_FindAllReferences()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:current_bufname = expand('%:p')
+        let l:contents_filename = l:current_bufname
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x4, l:current_bufname, l:contents_filename, line('.'), col('.')])
     endif
 endfunction
 
