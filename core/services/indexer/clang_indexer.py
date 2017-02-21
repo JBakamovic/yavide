@@ -34,6 +34,7 @@ class ClangIndexer():
         logging.info("Starting indexing {0} ... ".format(proj_root_directory))
 
         # Index each file in project root directory
+        start = time.clock()
         for dirpath, dirs, files in os.walk(proj_root_directory):
             for file in files:
                 name, extension = os.path.splitext(file)
@@ -41,8 +42,8 @@ class ClangIndexer():
                     full_path = os.path.join(dirpath, file)
                     logging.info("Indexing ... {0}".format(full_path))
                     self.parser.run(full_path, full_path, compiler_args, proj_root_directory)
-
-        logging.info("Indexing for {0} completed.".format(proj_root_directory))
+        time_elapsed = time.clock() - start
+        logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
     def __save_to_disk(self, args):
         # TODO: Serialize AST's into the file so we can recover once we reload the project
