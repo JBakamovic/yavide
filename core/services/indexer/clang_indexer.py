@@ -29,6 +29,8 @@ class ClangIndexer():
         #             in which case we will want to rerun indexer on those files
         #       2. Otherwise, start indexing the whole project (might take a while)
 
+        # TODO Run this in a separate non-blocking process
+
         proj_root_directory = str(args[0])
         compiler_args = list(str(args[1]).split())
         logging.info("Starting indexing {0} ... ".format(proj_root_directory))
@@ -59,3 +61,9 @@ class ClangIndexer():
 
         if self.callback:
             self.callback.go_to_definition(cursor, args)
+
+    def __find_all_references(self, args):
+        references = self.parser.find_all_references(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
+        logging.info("find_all_references():")
+        for r in references:
+            logging.info("Ref location %s" % str(r))
