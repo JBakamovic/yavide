@@ -968,8 +968,13 @@ function! Y_SrcCodeModel_Start()
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
-    " TODO make it happen on SrcCodeModel_StartCallback()
-    call Y_SrcCodeIndexer_Start()
+
+    " TODO Make this happen on SrcCodeModel_StartCallback()
+    if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
+        call Y_SrcCodeIndexer_LoadFromDisk()
+    else
+        call Y_SrcCodeIndexer_RunOnProject()
+    endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -978,6 +983,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Stop()
+    call Y_SrcCodeIndexer_SaveToDisk()
+    call Y_SrcCodeIndexer_DropAll()
     call Y_ServerStopService(g:project_service_src_code_model['id'])
 endfunction
 
@@ -1266,7 +1273,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_LoadFromDisk()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory . '/.indexer'])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory . '/' . g:project_indexer_directory])
     endif
 endfunction
 
@@ -1277,18 +1284,51 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_SaveToDisk()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory . '/.indexer'])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory . '/' . g:project_indexer_directory])
     endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_Start()
-" Description:  Starts indexing the whole project starting from root directory.
+" Function:     Y_SrcCodeIndexer_RunOnSingleFile()
+" Description:  Runs indexer on a single file.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_Start()
+function! Y_SrcCodeIndexer_RunOnSingleFile(filename)
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, g:project_root_directory, g:project_compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, g:project_root_directory, a:filename, g:project_compiler_args])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_RunOnProject()
+" Description:  Runs indexer on a whole project starting from root directory.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_RunOnProject()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, g:project_root_directory, g:project_compiler_args])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropSingleFile()
+" Description:  Drops index for given file from the indexer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropSingleFile(filename)
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x4, a:filename])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAll()
+" Description:  Drops all of the indices from the indexer.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAll()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x5])
     endif
 endfunction
 
@@ -1306,7 +1346,7 @@ function! Y_SrcCodeIndexer_GoToDefinition()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, l:current_bufname, l:contents_filename, line('.'), col('.')])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, l:current_bufname, l:contents_filename, line('.'), col('.')])
     endif
 endfunction
 
@@ -1324,7 +1364,7 @@ function! Y_SrcCodeIndexer_FindAllReferences()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x4, l:current_bufname, l:contents_filename, line('.'), col('.')])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x11, l:current_bufname, l:contents_filename, line('.'), col('.')])
     endif
 endfunction
 

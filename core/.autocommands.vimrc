@@ -11,6 +11,7 @@ augroup yavide_src_code_indexer_group
     autocmd!
     autocmd BufEnter                *.java                          exec 'set tags='.g:project_java_tags
     autocmd BufEnter                *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   exec 'set tags='.g:project_cxx_tags
+    autocmd BufWritePost            *.cpp,*.cc,*.c,*.h,*.hh,*.hpp   call Y_SrcCodeIndexer_RunOnSingleFile(expand('%:p'))
 augroup END
 
 augroup yavide_src_code_formatting_group
