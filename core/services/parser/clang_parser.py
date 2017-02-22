@@ -222,8 +222,8 @@ class ClangParser():
         for dirpath, dirs, files in os.walk(root_dir):
             for file in files:
                 full_path = os.path.join(dirpath, file)
-                logging.info('load_from_disk(): File = ' + full_path)
-                self.tunits[full_path] = self.index.read(full_path)
+                logging.info('load_from_disk(): Full file path = ' + full_path)
+                self.tunits[full_path[len(root_dir):]] = self.index.read(full_path)
 
     def drop_ast_node(self, filename):
         if filename in self.tunits:
