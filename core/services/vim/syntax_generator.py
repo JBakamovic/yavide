@@ -16,7 +16,7 @@ class VimSyntaxGenerator:
 
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
-        ast_node_list = clang_parser.get_ast_node_list()
+        ast_node_list = clang_parser.get_ast_node_list(str(args[1]))
         for ast_node in ast_node_list:
             ast_node_id = clang_parser.get_ast_node_id(ast_node)
             if ast_node_id != ASTNodeId.getUnsupportedId():
@@ -35,7 +35,7 @@ class VimSyntaxGenerator:
                 )
             else:
                 logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(
-                        ast_node.location.line, ast_node.location.column, 
+                        ast_node.location.line, ast_node.location.column,
                         ast_node.kind, clang_parser.get_ast_node_name(ast_node)
                     )
                 )
@@ -49,7 +49,7 @@ class VimSyntaxGenerator:
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[1]) + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
-        clang_parser.dump_ast_nodes()
+        clang_parser.dump_ast_nodes(str(args[1]))
 
         # Log how long generating Vim syntax file took
         logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[1]), time_elapsed))
@@ -133,7 +133,7 @@ def main():
 
     vimHighlighter = VimSyntaxGenerator(args.output_syntax_file)
     vimHighlighter(args.filename, [''])
- 
+
 if __name__ == "__main__":
     main()
 
