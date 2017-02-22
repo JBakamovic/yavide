@@ -1,7 +1,6 @@
 import logging
 import time
 import os
-from services.parser.clang_parser import ClangParser
 
 
 class ClangIndexer():
@@ -11,9 +10,12 @@ class ClangIndexer():
         self.op = {
             0x0 : self.__load_from_disk,
             0x1 : self.__save_to_disk,
-            0x2 : self.__start_indexer,
-            0x3 : self.__go_to_definition,
-            0x4 : self.__find_all_references
+            0x2 : self.__run_on_single_file,
+            0x3 : self.__run_on_directory,
+            0x4 : self.__drop_single_file,
+            0x5 : self.__drop_all,
+            0x10 : self.__go_to_definition,
+            0x11 : self.__find_all_references
         }
 
     def __call__(self, args):
@@ -22,21 +24,40 @@ class ClangIndexer():
     def __unknown_op(self):
         pass
 
-    def __start_indexer(self, args):
-        # TODO Project has been already indexed?
-        #       1. If yes, then reload the serialized AST's
-        #           * It might be that source code has been modified outside the IDE,
-        #             in which case we will want to rerun indexer on those files
-        #       2. Otherwise, start indexing the whole project (might take a while)
+    def __load_from_disk(self, args):
+        start = time.clock()
+        self.parser.load_from_disk(str(args[0]))
+        time_elapsed = time.clock() - start
+        logging.info("Loading from {0} took {1}.".format(str(args[0]), time_elapsed))
+
+    def __save_to_disk(self, args):
+        start = time.clock()
+        self.parser.save_to_disk(str(args[0]))
+        time_elapsed = time.clock() - start
+        logging.info("Saving to {0} took {1}.".format(str(args[0]), time_elapsed))
+
+    def __run_on_single_file(self, args):
+        proj_root_directory = str(args[0])
+        filename = str(args[1])
+        compiler_args = list(str(args[2]).split())
+        logging.info("Indexing a single file '{0}' ... ".format(filename))
 
         # TODO Run this in a separate non-blocking process
+        # Index a single file
+        start = time.clock()
+        self.parser.run(filename, filename, compiler_args, proj_root_directory)
+        time_elapsed = time.clock() - start
+        logging.info("Indexing {0} took {1}.".format(filename, time_elapsed))
 
+    def __run_on_directory(self, args):
         proj_root_directory = str(args[0])
         compiler_args = list(str(args[1]).split())
-        logging.info("Starting indexing {0} ... ".format(proj_root_directory))
+        logging.info("Indexing a whole project '{0}' ... ".format(proj_root_directory))
 
+        # TODO Run this in a separate non-blocking process
         # Index each file in project root directory
         start = time.clock()
+        self.parser.drop_ast_node_list()
         for dirpath, dirs, files in os.walk(proj_root_directory):
             for file in files:
                 name, extension = os.path.splitext(file)
@@ -47,17 +68,11 @@ class ClangIndexer():
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
-    def __save_to_disk(self, args):
-        start = time.clock()
-        self.parser.save_to_disk(str(args[0]))
-        time_elapsed = time.clock() - start
-        logging.info("Saving to {0} took {1}.".format(str(args[0]), time_elapsed))
+    def __drop_single_file(self, args):
+        self.parser.drop_ast_node(str(args[0]))
 
-    def __load_from_disk(self, args):
-        start = time.clock()
-        self.parser.load_from_disk(str(args[0]))
-        time_elapsed = time.clock() - start
-        logging.info("Loading from {0} took {1}.".format(str(args[0]), time_elapsed))
+    def __drop_all(self, dummy = 0):
+        self.parser.drop_ast_node_list()
 
     def __go_to_definition(self, args):
         cursor = self.parser.get_definition(str(args[0]), str(args[1]), int(args[2]), int(args[3]))

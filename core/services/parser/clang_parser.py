@@ -70,9 +70,6 @@ class ClangParser():
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
     def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
-        #if self.tunits.has_key(original_filename) == False:
-        #    self.tunits[original_filename] = clang.cindex.TranslationUnit()
-
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
         logging.info('Default args = {0}'.format(self.default_args))
@@ -98,15 +95,14 @@ class ClangParser():
         logging.info("tunits: " + str(self.tunits))
 
     def get_diagnostics(self, filename):
-        tunit = self.tunits.get(filename, None)
-        logging.info("get_diagnostics() for " + filename + " tunit: " + str(tunit))
-        if tunit:
-            return tunit.diagnostics
+        if filename in self.tunits:
+            logging.info("get_diagnostics() for " + filename + " tunit: " + str(self.tunits[filename]))
+            return self.tunits[filename].diagnostics
         return None
 
-    def get_ast_node_list(self, original_filename):
-        if original_filename in self.tunits:
-            return self.tunits[original_filename].ast_node_list
+    def get_ast_node_list(self, filename):
+        if filename in self.tunits:
+            return self.tunits[filename].ast_node_list
         return []
 
     def get_ast_node_id(self, cursor):
@@ -179,7 +175,7 @@ class ClangParser():
 
     def get_definition(self, original_filename, contents_filename, line, column):
         if original_filename not in self.tunits:
-            return ''
+            return None
 
         cursor = clang.cindex.Cursor.from_location(
                     self.tunits[original_filename],
@@ -193,9 +189,8 @@ class ClangParser():
         return cursor.get_definition()
 
     def find_all_references(self, original_filename, contents_filename, line, column):
-        references = []
         if original_filename not in self.tunits:
-            return references
+            return []
 
         cursor = clang.cindex.Cursor.from_location(
                     self.tunits[original_filename],
@@ -207,6 +202,7 @@ class ClangParser():
                     )
                  )
 
+        references = []
         for tunit in self.tunits.itervalues():
             for ast_node in tunit.ast_node_list:
                 if ast_node.spelling == cursor.spelling:
@@ -229,6 +225,13 @@ class ClangParser():
                 logging.info('load_from_disk(): File = ' + full_path)
                 self.tunits[full_path] = self.index.read(full_path)
 
+    def drop_ast_node(self, filename):
+        if filename in self.tunits:
+            del self.tunits[filename]
+
+    def drop_ast_node_list(self):
+        self.tunits.clear()
+
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
             logging.debug(
@@ -239,7 +242,10 @@ class ClangParser():
                 'Token.Cursor.Extent %-25s' % ('[' + str(token.cursor.extent.start.line) + ', ' + str(token.cursor.extent.start.column) + ']:[' + str(token.cursor.extent.end.line) + ', ' + str(token.cursor.extent.end.column) + ']') +
                 'Cursor.Extent %-25s' % ('[' + str(cursor.extent.start.line) + ', ' + str(cursor.extent.start.column) + ']:[' + str(cursor.extent.end.line) + ', ' + str(cursor.extent.end.column) + ']'))
 
-    def dump_ast_nodes(self, original_filename):
+    def dump_ast_nodes(self, filename):
+        if filename not in self.tunits:
+            return
+
         logging.debug('%-12s' % '[Line, Col]' + '%-40s' % 'Spelling' + '%-40s' % 'Kind' + '%-40s' % 'Type.Spelling' +
                 '%-40s' % 'Type.Kind' +
                 '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
@@ -251,7 +257,7 @@ class ClangParser():
                 '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind')
         logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
 
-        for idx, cursor in enumerate(self.tunits[original_filename].ast_node_list):
+        for idx, cursor in enumerate(self.tunits[filename].ast_node_list):
 
             # if cursor.kind in [clang.cindex.CursorKind.CALL_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]:
             #    self.dump_tokens(cursor)
@@ -385,4 +391,3 @@ class ClangParser():
     @staticmethod
     def __get_overloaded_decl(cursor, num):
         return clang.cindex.conf.lib.clang_getOverloadedDecl(cursor, num)
-
