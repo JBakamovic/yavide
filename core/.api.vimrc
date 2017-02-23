@@ -832,7 +832,7 @@ function! Y_ServerStopService(id)
 python << EOF
 from multiprocessing import Queue
 
-server_queue.put([0xFE, 0xFF, vim.eval('a:id')])
+server_queue.put([0xFE, vim.eval('a:id'), 'stop_service'])
 
 EOF
 endfunction
