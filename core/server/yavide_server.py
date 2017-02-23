@@ -83,7 +83,6 @@ class YavideServer():
 
     def unknown_action(self, serviceId, payload):
         logging.error("Unknown action triggered! Valid actions are: {0}".format(self.action))
-        return
 
     def run(self):
         while self.exit_main_loop is False:
