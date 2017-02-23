@@ -367,8 +367,8 @@ function! Y_Project_Save()
     " Save Vim session
     execute('mksession! ' . g:project_session_filename)
 
-    " Delete NERDTree related entries
-    let cmd = 'sed -i ' . '"' . '\:' . 'NERD_tree' . ':d' . '" ' . g:project_session_filename
+    " Delete NERDTree & Tagbar related entries
+    let cmd = 'sed -i ' . '"' . '\:' . 'NERD_tree\|Tagbar' . ':d' . '" ' . g:project_session_filename
     let resp = system(cmd)
 endfunction
 
