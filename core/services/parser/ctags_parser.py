@@ -3,7 +3,7 @@ import shlex
 import logging
 import os.path
 from subprocess import call
-from services.syntax_highlighter.token_identifier import TokenIdentifier
+from services.parser.ast_node_identifier import ASTNodeId
 
 class CtagsTokenizer():
     def __init__(self, tag_db_path):
@@ -46,31 +46,30 @@ class CtagsTokenizer():
     @staticmethod
     def to_token_id(kind):
         if (kind == "namespace"):
-            return TokenIdentifier.getNamespaceId()
+            return ASTNodeId.getNamespaceId()
         if (kind == "class"):
-            return TokenIdentifier.getClassId()
+            return ASTNodeId.getClassId()
         if (kind == "struct"):
-            return TokenIdentifier.getStructId()
+            return ASTNodeId.getStructId()
         if (kind == "enum"):
-            return TokenIdentifier.getEnumId()
+            return ASTNodeId.getEnumId()
         if (kind == "enumerator"):
-            return TokenIdentifier.getEnumValueId()
+            return ASTNodeId.getEnumValueId()
         if (kind == "union"):
-            return TokenIdentifier.getUnionId()
+            return ASTNodeId.getUnionId()
         if (kind == "member"):
-            return TokenIdentifier.getClassStructUnionMemberId()
+            return ASTNodeId.getClassStructUnionMemberId()
         if (kind == "local"):
-            return TokenIdentifier.getLocalVariableId()
+            return ASTNodeId.getLocalVariableId()
         if (kind == "variable"):
-            return TokenIdentifier.getVariableDefinitionId()
+            return ASTNodeId.getVariableDefinitionId()
         if (kind == "prototype"):
-            return TokenIdentifier.getFunctionPrototypeId()
+            return ASTNodeId.getFunctionPrototypeId()
         if (kind == "function"):
-            return TokenIdentifier.getFunctionDefinitionId()
+            return ASTNodeId.getFunctionDefinitionId()
         if (kind == "macro"):
-            return TokenIdentifier.getMacroId()
+            return ASTNodeId.getMacroId()
         if (kind == "typedef"):
-            return TokenIdentifier.getTypedefId()
+            return ASTNodeId.getTypedefId()
         if (kind == "externvar"):
-            return TokenIdentifier.getExternFwdDeclarationId()
-
+            return ASTNodeId.getExternFwdDeclarationId()
