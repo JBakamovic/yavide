@@ -21,20 +21,26 @@ class ClangIndexer():
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(args[1:len(args)])
 
-    def __unknown_op(self):
-        pass
+    def __unknown_op(self, args):
+        logging.error("Unknown operation triggered! Valid operations are: {0}".format(self.op))
 
     def __load_from_disk(self, args):
         start = time.clock()
-        self.parser.load_from_disk(str(args[0]))
+        success = self.parser.load_from_disk(str(args[0]))
         time_elapsed = time.clock() - start
         logging.info("Loading from {0} took {1}.".format(str(args[0]), time_elapsed))
 
+        if self.callback:
+            self.callback(0x0, success)
+
     def __save_to_disk(self, args):
         start = time.clock()
-        self.parser.save_to_disk(str(args[0]))
+        success = self.parser.save_to_disk(str(args[0]))
         time_elapsed = time.clock() - start
         logging.info("Saving to {0} took {1}.".format(str(args[0]), time_elapsed))
+
+        if self.callback:
+            self.callback(0x1, success)
 
     def __run_on_single_file(self, args):
         proj_root_directory = str(args[0])
@@ -49,12 +55,16 @@ class ClangIndexer():
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(filename, time_elapsed))
 
+        if self.callback:
+            self.callback(0x2, args)
+
     def __run_on_directory(self, args):
         proj_root_directory = str(args[0])
         compiler_args = list(str(args[1]).split())
         logging.info("Indexing a whole project '{0}' ... ".format(proj_root_directory))
 
         # TODO Run this in a separate non-blocking process
+        # TODO Run indexing of each file in separate (parallel) jobs to make it faster?
         # Index each file in project root directory
         start = time.clock()
         self.parser.drop_ast_node_list()
@@ -68,22 +78,31 @@ class ClangIndexer():
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
+        if self.callback:
+            self.callback(0x3, args)
+
     def __drop_single_file(self, args):
         self.parser.drop_ast_node(str(args[0]))
+        if self.callback:
+            self.callback(0x4, args)
 
-    def __drop_all(self, dummy = 0):
+    def __drop_all(self, dummy = None):
         self.parser.drop_ast_node_list()
+        if self.callback:
+            self.callback(0x5, dummy)
 
     def __go_to_definition(self, args):
         cursor = self.parser.get_definition(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
         if cursor:
-            logging.info("go_to_definition() location %s" % str(cursor.location))
+            logging.info('Definition location %s' % str(cursor.location))
 
         if self.callback:
-            self.callback.go_to_definition(cursor, args)
+            self.callback(0x10, cursor.location if cursor else None)
 
     def __find_all_references(self, args):
         references = self.parser.find_all_references(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
-        logging.info("find_all_references():")
         for r in references:
             logging.info("Ref location %s" % str(r))
+
+        if self.callback:
+            self.callback(0x11, references)
