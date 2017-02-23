@@ -15,8 +15,7 @@ class YavideServer():
         self.service = {
             0x0 : SourceCodeModel(self.msg_queue, self.yavide_instance),
             0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance),
-            0x3 : SourceCodeIndexer(self.msg_queue, self.yavide_instance)
+            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance)
         }
         self.service_processes = {}
         self.action = {
