@@ -210,20 +210,30 @@ class ClangParser():
         return references
 
     def save_to_disk(self, root_dir):
-        for filename, tunit in self.tunits.iteritems():
-            directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            logging.info('save_to_disk(): File = ' + os.path.join(root_dir, filename[1:len(filename)]))
-            tunit.save(os.path.join(root_dir, filename[1:len(filename)]))
+        try:
+            for filename, tunit in self.tunits.iteritems():
+                directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                logging.info('save_to_disk(): File = ' + os.path.join(root_dir, filename[1:len(filename)]))
+                tunit.save(os.path.join(root_dir, filename[1:len(filename)]))
+        except:
+            logging.error(sys.exc_info()[0])
+            return False
+        return True
 
     def load_from_disk(self, root_dir):
-        self.tunits.clear()
-        for dirpath, dirs, files in os.walk(root_dir):
-            for file in files:
-                full_path = os.path.join(dirpath, file)
-                logging.info('load_from_disk(): Full file path = ' + full_path)
-                self.tunits[full_path[len(root_dir):]] = self.index.read(full_path)
+        try:
+            self.tunits.clear()
+            for dirpath, dirs, files in os.walk(root_dir):
+                for file in files:
+                    full_path = os.path.join(dirpath, file)
+                    logging.info('load_from_disk(): Full file path = ' + full_path)
+                    self.tunits[full_path[len(root_dir):]] = self.index.read(full_path)
+        except:
+            logging.error(sys.exc_info()[0])
+            return False
+        return True
 
     def drop_ast_node(self, filename):
         if filename in self.tunits:
