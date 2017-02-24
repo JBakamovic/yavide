@@ -98,11 +98,8 @@ class ClangParser():
             return self.tunits[filename].diagnostics
         return None
 
-    def build_ast_node_list(self, original_filename):
-        if original_filename in self.tunits:
-            self.__visit_all_nodes(self.tunits[original_filename].cursor, original_filename)
-            return self.tunits[original_filename].ast_node_list
-        return []
+    def traverse(self, cursor, client_data, client_visitor):
+        traverse(cursor, client_data, client_visitor)
 
     def get_ast_node_id(self, cursor):
         # We have to handle (at least) two different situations when libclang API will not give us enough details about the given cursor directly:
@@ -217,7 +214,7 @@ class ClangParser():
                 directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                logging.info('save_to_disk(): File = ' + os.path.join(root_dir, filename[1:len(filename)]))
+                logging.info('save_to_disk(): File = ' + filename)
                 tunit.save(os.path.join(root_dir, filename[1:len(filename)]))
         except:
             logging.error(sys.exc_info()[0])
