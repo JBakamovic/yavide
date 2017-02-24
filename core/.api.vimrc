@@ -973,7 +973,7 @@ function! Y_SrcCodeModel_Start()
     if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
         call Y_SrcCodeIndexer_LoadFromDisk()
     else
-        call Y_SrcCodeIndexer_RunOnProject()
+        call Y_SrcCodeIndexer_RunOnDirectory()
     endif
 endfunction
 
@@ -1277,6 +1277,18 @@ function! Y_SrcCodeIndexer_LoadFromDisk()
     endif
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_LoadFromDiskCompleted()
+" Description:  Loading previously saved indexing results from the disk completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_LoadFromDiskCompleted(success)
+    if a:success == 0
+        echoerr 'Loading already existing indexing results failed. Will start re-indexing the whole project again ...'
+        call Y_SrcCodeIndexer_RunOnDirectory()
+    endif
+endfunction
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_SaveToDisk()
 " Description:  Save indexing results to the disk.
@@ -1285,6 +1297,17 @@ endfunction
 function! Y_SrcCodeIndexer_SaveToDisk()
     if g:project_service_src_code_model['services']['indexer']['enabled']
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory . '/' . g:project_indexer_directory])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_SaveToDiskCompleted()
+" Description:  Saving indexing results to the disk completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_SaveToDiskCompleted(success)
+    if a:success == 0
+        echoerr 'Saving indexing results to the disk failed.'
     endif
 endfunction
 
@@ -1300,14 +1323,32 @@ function! Y_SrcCodeIndexer_RunOnSingleFile(filename)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_RunOnProject()
-" Description:  Runs indexer on a whole project starting from root directory.
+" Function:     Y_SrcCodeIndexer_RunOnSingleFileCompleted()
+" Description:  Running indexer on a single file completed.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_RunOnProject()
+function! Y_SrcCodeIndexer_RunOnSingleFileCompleted()
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_RunOnDirectory()
+" Description:  Runs indexer on a whole directory.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_RunOnDirectory()
     if g:project_service_src_code_model['services']['indexer']['enabled']
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, g:project_root_directory, g:project_compiler_args])
     endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_RunOnDirectoryCompleted()
+" Description:  Running indexer on a directory completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_RunOnDirectoryCompleted()
+    :echo 'Indexing run on ' . g:project_root_directory . ' completed.'
+    call Y_SrcCodeIndexer_SaveToDisk()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1322,6 +1363,14 @@ function! Y_SrcCodeIndexer_DropSingleFile(filename)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropSingleFileCompleted()
+" Description:  Dropping single file from indexing results completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropSingleFileCompleted()
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_DropAll()
 " Description:  Drops all of the indices from the indexer.
 " Dependency:
@@ -1330,6 +1379,14 @@ function! Y_SrcCodeIndexer_DropAll()
     if g:project_service_src_code_model['services']['indexer']['enabled']
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x5])
     endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAllCompleted()
+" Description:  Dropping all indices from indexing results completed.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAllCompleted()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1350,6 +1407,13 @@ function! Y_SrcCodeIndexer_GoToDefinition()
     endif
 endfunction
 
+function! Y_SrcCodeIndexer_GoToDefinitionCompleted(filename, line, column, offset)
+    if a:filename != ''
+        execute('edit ' . a:filename)
+        call cursor(a:line, a:column)
+    endif
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_FindAllReferences()
 " Description:  Finds project-wide references of a symbol under the cursor.
@@ -1366,6 +1430,11 @@ function! Y_SrcCodeIndexer_FindAllReferences()
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x11, l:current_bufname, l:contents_filename, line('.'), col('.')])
     endif
+endfunction
+
+function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
+    call setqflist(a:references, 'r')
+    redraw
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
