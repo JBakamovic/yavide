@@ -2,8 +2,10 @@ import sys
 import argparse
 import logging
 import time
+import collections
 from common.yavide_utils import YavideUtils
 from services.parser.ast_node_identifier import ASTNodeId
+from services.parser.clang_parser import ChildVisitResult
 from services.parser.ctags_parser import CtagsTokenizer
 
 class VimSyntaxGenerator:
@@ -12,33 +14,41 @@ class VimSyntaxGenerator:
         self.output_syntax_file = output_syntax_file
 
     def __call__(self, clang_parser, args):
-        start = time.clock()
+        def visitor(ast_node, ast_parent_node, client_data):
+            if ast_node.location.file and ast_node.location.file.name == str(args[0]):  # we're only interested in symbols from given file
+                ast_node_id = client_data.clang_parser.get_ast_node_id(ast_node)
+                if ast_node_id != ASTNodeId.getUnsupportedId():
+                    highlight_rule = VimSyntaxGenerator.__tag_id_to_vim_syntax_group(ast_node_id) + " " + client_data.clang_parser.get_ast_node_name(ast_node)
+                    client_data.vim_syntax_element.append(
+                        "call matchaddpos('" +
+                        str(VimSyntaxGenerator.__tag_id_to_vim_syntax_group(ast_node_id)) +
+                        "', [[" +
+                        str(client_data.clang_parser.get_ast_node_line(ast_node)) +
+                        ", " +
+                        str(client_data.clang_parser.get_ast_node_column(ast_node)) +
+                        ", " +
+                        str(len(client_data.clang_parser.get_ast_node_name(ast_node))) +
+                        "]], -1)" +
+                        "\n"
+                    )
+                else:
+                    logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(
+                            ast_node.location.line, ast_node.location.column,
+                            ast_node.kind, client_data.clang_parser.get_ast_node_name(ast_node)
+                        )
+                    )
+            return ChildVisitResult.RECURSE.value  # we're interested in all descendants
+
+        # Fetch the translation unit
+        tu = clang_parser.get_translation_unit(str(args[1]))
+        if tu is None:
+            return
 
         # Build Vim syntax highlight rules
+        start = time.clock()
         vim_syntax_element = ['call clearmatches()\n']
-        ast_node_list = clang_parser.build_ast_node_list(str(args[1]))
-        for ast_node in ast_node_list:
-            ast_node_id = clang_parser.get_ast_node_id(ast_node)
-            if ast_node_id != ASTNodeId.getUnsupportedId():
-                highlight_rule = self.__tag_id_to_vim_syntax_group(ast_node_id) + " " + clang_parser.get_ast_node_name(ast_node)
-                vim_syntax_element.append(
-                    "call matchaddpos('" +
-                    str(self.__tag_id_to_vim_syntax_group(ast_node_id)) +
-                    "', [[" +
-                    str(clang_parser.get_ast_node_line(ast_node)) +
-                    ", " +
-                    str(clang_parser.get_ast_node_column(ast_node)) +
-                    ", " +
-                    str(len(clang_parser.get_ast_node_name(ast_node))) +
-                    "]], -1)" +
-                    "\n"
-                )
-            else:
-                logging.debug("Unsupported token id: [{0}, {1}]: {2} '{3}'".format(
-                        ast_node.location.line, ast_node.location.column,
-                        ast_node.kind, clang_parser.get_ast_node_name(ast_node)
-                    )
-                )
+        client_data = collections.namedtuple('client_data', ['clang_parser', 'vim_syntax_element'])
+        clang_parser.traverse(tu.cursor, client_data(clang_parser, vim_syntax_element), visitor)
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w", 0)
@@ -68,7 +78,7 @@ class VimSyntaxGenerator:
             vim_highlight_rules = set()
             for line in tags_db:
                 if not tokenizer.is_header(line):
-                    highlight_rule = self.__tag_id_to_vim_syntax_group(tokenizer.get_token_id(line)) + " " + tokenizer.get_token_name(line)
+                    highlight_rule = VimSyntaxGenerator.__tag_id_to_vim_syntax_group(tokenizer.get_token_id(line)) + " " + tokenizer.get_token_name(line)
                     vim_highlight_rules.add(highlight_rule)
 
             vim_syntax_element = []
@@ -82,7 +92,8 @@ class VimSyntaxGenerator:
             if tags_db is not None:
                 tags_db.close()
 
-    def __tag_id_to_vim_syntax_group(self, tag_identifier):
+    @staticmethod
+    def __tag_id_to_vim_syntax_group(tag_identifier):
         if tag_identifier == ASTNodeId.getNamespaceId():
             return "yavideCppNamespace"
         if tag_identifier == ASTNodeId.getNamespaceAliasId():
