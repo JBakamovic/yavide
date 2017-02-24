@@ -1,5 +1,6 @@
 import sys
 import os
+import collections
 import logging
 import subprocess
 import clang.cindex
@@ -82,11 +83,6 @@ class ClangParser():
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
-
-            # Inject new TU data members (list of AST nodes for given TU, member which points to the file content)
-            self.tunits[original_filename].ast_node_list = []
-            self.tunits[original_filename].contents_filename = contents_filename
-
         except:
             logging.error(sys.exc_info()[0])
 
@@ -188,6 +184,11 @@ class ClangParser():
         return cursor.get_definition()
 
     def find_all_references(self, original_filename, contents_filename, line, column):
+        def visitor(ast_node, ast_parent_node, client_data):
+            if ast_node.spelling == client_data.cursor.spelling:
+                client_data.references.append(ast_node.location)
+            return ChildVisitResult.RECURSE.value
+
         if original_filename not in self.tunits:
             return []
 
@@ -202,13 +203,9 @@ class ClangParser():
                  )
 
         references = []
+        client_data = collections.namedtuple('client_data', ['cursor', 'references'])
         for filename, tunit in self.tunits.iteritems():
-            # TODO Replace this with direct AST traversal but only visiting
-            # nodes of the same type (something else as well?) as original cursor
-            self.__visit_all_nodes(tunit.cursor, filename)
-            for ast_node in tunit.ast_node_list:
-                if ast_node.spelling == cursor.spelling:
-                    references.append(ast_node.location)
+            self.traverse(tunit.cursor, client_data(cursor, references), visitor)
         return references
 
     def save_to_disk(self, root_dir):
@@ -233,8 +230,6 @@ class ClangParser():
                     original_filename = indexing_result_path[len(root_dir):]
                     logging.info('load_from_disk(): Filename = ' + original_filename)
                     self.tunits[original_filename] = self.index.read(indexing_result_path)
-                    self.tunits[original_filename].ast_node_list = []
-                    self.tunits[original_filename].contents_filename = original_filename
         except:
             logging.error(sys.exc_info()[0])
             return False
