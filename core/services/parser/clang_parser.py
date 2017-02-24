@@ -92,6 +92,9 @@ class ClangParser():
 
         logging.info("tunits: " + str(self.tunits))
 
+    def get_translation_unit(self, filename):
+        return self.tunits.get(filename, None)
+
     def get_diagnostics(self, filename):
         if filename in self.tunits:
             logging.info("get_diagnostics() for " + filename + " tunit: " + str(self.tunits[filename]))
