@@ -235,11 +235,11 @@ class ClangParser():
             return False
         return True
 
-    def drop_ast_node(self, filename):
+    def drop_translation_unit(self, filename):
         if filename in self.tunits:
             del self.tunits[filename]
 
-    def drop_ast_node_list(self):
+    def drop_all_translation_units(self):
         self.tunits.clear()
 
     def dump_tokens(self, cursor):
