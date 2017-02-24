@@ -16,7 +16,7 @@ class VimSyntaxGenerator:
 
         # Build Vim syntax highlight rules
         vim_syntax_element = ['call clearmatches()\n']
-        ast_node_list = clang_parser.get_ast_node_list(str(args[1]))
+        ast_node_list = clang_parser.build_ast_node_list(str(args[1]))
         for ast_node in ast_node_list:
             ast_node_id = clang_parser.get_ast_node_id(ast_node)
             if ast_node_id != ASTNodeId.getUnsupportedId():
