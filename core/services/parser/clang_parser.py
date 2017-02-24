@@ -83,11 +83,9 @@ class ClangParser():
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
 
-            # Inject new TU data member (list of AST nodes for given TU)
+            # Inject new TU data members (list of AST nodes for given TU, member which points to the file content)
             self.tunits[original_filename].ast_node_list = []
-
-            # Recursively visit all nodes
-            self.__visit_all_nodes(self.tunits[original_filename].cursor, original_filename, contents_filename)
+            self.tunits[original_filename].contents_filename = contents_filename
 
         except:
             logging.error(sys.exc_info()[0])
@@ -100,9 +98,10 @@ class ClangParser():
             return self.tunits[filename].diagnostics
         return None
 
-    def get_ast_node_list(self, filename):
-        if filename in self.tunits:
-            return self.tunits[filename].ast_node_list
+    def build_ast_node_list(self, original_filename):
+        if original_filename in self.tunits:
+            self.__visit_all_nodes(self.tunits[original_filename].cursor, original_filename)
+            return self.tunits[original_filename].ast_node_list
         return []
 
     def get_ast_node_id(self, cursor):
@@ -203,7 +202,10 @@ class ClangParser():
                  )
 
         references = []
-        for tunit in self.tunits.itervalues():
+        for filename, tunit in self.tunits.iteritems():
+            # TODO Replace this with direct AST traversal but only visiting
+            # nodes of the same type (something else as well?) as original cursor
+            self.__visit_all_nodes(tunit.cursor, filename)
             for ast_node in tunit.ast_node_list:
                 if ast_node.spelling == cursor.spelling:
                     references.append(ast_node.location)
@@ -227,9 +229,12 @@ class ClangParser():
             self.tunits.clear()
             for dirpath, dirs, files in os.walk(root_dir):
                 for file in files:
-                    full_path = os.path.join(dirpath, file)
-                    logging.info('load_from_disk(): Full file path = ' + full_path)
-                    self.tunits[full_path[len(root_dir):]] = self.index.read(full_path)
+                    indexing_result_path = os.path.join(dirpath, file)
+                    original_filename = indexing_result_path[len(root_dir):]
+                    logging.info('load_from_disk(): Filename = ' + original_filename)
+                    self.tunits[original_filename] = self.index.read(indexing_result_path)
+                    self.tunits[original_filename].ast_node_list = []
+                    self.tunits[original_filename].contents_filename = original_filename
         except:
             logging.error(sys.exc_info()[0])
             return False
@@ -295,11 +300,11 @@ class ClangParser():
                 ('%-40s' % str(cursor.referenced.lexical_parent.spelling) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-') +
                 ('%-40s' % str(cursor.referenced.lexical_parent.kind) if (cursor.referenced and cursor.referenced.lexical_parent) else '%-40s' % '-'))
 
-    def __visit_all_nodes(self, node, original_filename, contents_filename):
+    def __visit_all_nodes(self, node, original_filename):
         for n in node.get_children():
-            if n.location.file and n.location.file.name == contents_filename:
+            if n.location.file and n.location.file.name == self.tunits[original_filename].contents_filename:
                 self.tunits[original_filename].ast_node_list.append(n)
-                self.__visit_all_nodes(n, original_filename, contents_filename)
+                self.__visit_all_nodes(n, original_filename)
 
     @staticmethod
     def __extract_dependent_type_kind(cursor):
