@@ -24,16 +24,16 @@ def default_visitor(child, parent, client_data):
 
     return ChildVisitResult.CONTINUE.value
 
-def traverse(self, client_data, client_visitor = default_visitor):
+def traverse(cursor, client_data, client_visitor = default_visitor):
     """Traverse AST using the client provided visitor."""
 
     def visitor(child, parent, client_data):
         assert child != clang.cindex.conf.lib.clang_getNullCursor()
-        child._tu = self._tu
+        child._tu = cursor._tu
         child.ast_parent = parent
         return client_visitor(child, parent, client_data)
 
-    return clang.cindex.conf.lib.clang_visitChildren(self, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
+    return clang.cindex.conf.lib.clang_visitChildren(cursor, clang.cindex.callbacks['cursor_visit'](visitor), client_data)
 
 def get_children_patched(self, traversal_type = ChildVisitResult.CONTINUE):
     """
