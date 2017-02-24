@@ -67,7 +67,7 @@ class ClangIndexer():
         # TODO Run indexing of each file in separate (parallel) jobs to make it faster?
         # Index each file in project root directory
         start = time.clock()
-        self.parser.drop_ast_node_list()
+        self.parser.drop_all_translation_units()
         for dirpath, dirs, files in os.walk(proj_root_directory):
             for file in files:
                 name, extension = os.path.splitext(file)
@@ -82,12 +82,12 @@ class ClangIndexer():
             self.callback(0x3, args)
 
     def __drop_single_file(self, args):
-        self.parser.drop_ast_node(str(args[0]))
+        self.parser.drop_translation_unit(str(args[0]))
         if self.callback:
             self.callback(0x4, args)
 
     def __drop_all(self, dummy = None):
-        self.parser.drop_ast_node_list()
+        self.parser.drop_all_translation_units()
         if self.callback:
             self.callback(0x5, dummy)
 
