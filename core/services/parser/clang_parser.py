@@ -264,6 +264,8 @@ class ClangParser():
                     '%-40s' % str(ast_node.kind) +
                     '%-40s' % str(ast_node.type.spelling) +
                     '%-40s' % str(ast_node.type.kind) +
+                    ('%-25s' % ('[' + str(ast_node.type.get_declaration().location.line) + ', ' + str(ast_node.type.get_declaration().location.column) + ']') if (ast_node.type and ast_node.type.get_declaration()) else '%-25s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.get_definition().location.line) + ', ' + str(ast_node.get_definition().location.column) + ']') if (ast_node.get_definition()) else '%-25s' % '-') +
                     ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).spelling) if (ast_node.kind ==
                         clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(ast_node)) else '%-40s' % '-') +
                     ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).kind) if (ast_node.kind ==
@@ -279,21 +281,36 @@ class ClangParser():
                     ('%-40s' % str(ast_node.referenced.semantic_parent.spelling) if (ast_node.referenced and ast_node.referenced.semantic_parent) else '%-40s' % '-') +
                     ('%-40s' % str(ast_node.referenced.semantic_parent.kind) if (ast_node.referenced and ast_node.referenced.semantic_parent) else '%-40s' % '-') +
                     ('%-40s' % str(ast_node.referenced.lexical_parent.spelling) if (ast_node.referenced and ast_node.referenced.lexical_parent) else '%-40s' % '-') +
-                    ('%-40s' % str(ast_node.referenced.lexical_parent.kind) if (ast_node.referenced and ast_node.referenced.lexical_parent) else '%-40s' % '-'))
+                    ('%-40s' % str(ast_node.referenced.lexical_parent.kind) if (ast_node.referenced and ast_node.referenced.lexical_parent) else '%-40s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.referenced.type.get_declaration().location.line) + ', ' + str(ast_node.referenced.type.get_declaration().location.column) + ']')
+                        if (ast_node.referenced and ast_node.referenced.type and ast_node.referenced.type.get_declaration()) else '%-25s' % '-') +
+                    ('%-25s' % ('[' + str(ast_node.referenced.get_definition().location.line) + ', ' + str(ast_node.referenced.get_definition().location.column) + ']')
+                        if (ast_node.referenced and ast_node.referenced.get_definition()) else '%-25s' % '-')
+                )
 
             return ChildVisitResult.RECURSE.value
 
 
         if filename in self.tunits:
-            logging.debug('%-12s' % '[Line, Col]' + '%-40s' % 'Spelling' + '%-40s' % 'Kind' + '%-40s' % 'Type.Spelling' +
-                    '%-40s' % 'Type.Kind' +
-                    '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
-                    '%-40s' % 'Referenced.Spelling' + '%-40s' % 'Referenced.Kind' +
-                    '%-40s' % 'Referenced.Type.Spelling' + '%-40s' % 'Referenced.Type.Kind' +
-                    '%-40s' % 'Referenced.ResultType.Spelling' + '%-40s' % 'Referenced.ResultType.Kind' +
-                    '%-40s' % 'Referenced.Canonical.Spelling' + '%-40s' % 'Referenced.Canonical.Kind' +
-                    '%-40s' % 'Referenced.SemanticParent.Spelling' + '%-40s' % 'Referenced.SemanticParent.Kind' +
-                    '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind')
+            logging.debug(
+                '%-12s' % '[Line, Col]' +
+                '%-40s' % 'Spelling' +
+                '%-40s' % 'Kind' +
+                '%-40s' % 'Type.Spelling' +
+                '%-40s' % 'Type.Kind' +
+                '%-25s' % 'Declaration.Location' +
+                '%-25s' % 'Definition.Location' +
+                '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
+                '%-40s' % 'Referenced.Spelling' + '%-40s' % 'Referenced.Kind' +
+                '%-40s' % 'Referenced.Type.Spelling' + '%-40s' % 'Referenced.Type.Kind' +
+                '%-40s' % 'Referenced.ResultType.Spelling' + '%-40s' % 'Referenced.ResultType.Kind' +
+                '%-40s' % 'Referenced.Canonical.Spelling' + '%-40s' % 'Referenced.Canonical.Kind' +
+                '%-40s' % 'Referenced.SemanticParent.Spelling' + '%-40s' % 'Referenced.SemanticParent.Kind' +
+                '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind' +
+                '%-25s' % 'Referenced.Declaration.Location' +
+                '%-25s' % 'Referenced.Definition.Location'
+            )
+
             logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
             self.traverse(self.tunits[filename].cursor, None, visitor)
 
