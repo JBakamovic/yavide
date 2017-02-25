@@ -796,11 +796,11 @@ EOF
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_ServerSendMsg()
-" Description:  Sends message to particular Yavide server background service.
+" Function:     Y_ServerSendServiceRequest()
+" Description:  Sends request to particular server background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerSendMsg(id, payload)
+function! Y_ServerSendServiceRequest(id, payload)
 python << EOF
 from multiprocessing import Queue
 
@@ -976,7 +976,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Run(service_id, args)
     call insert(a:args, a:service_id)
-    call Y_ServerSendMsg(g:project_service_src_code_model['id'], a:args)
+    call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1179,7 +1179,7 @@ function! Y_ProjectBuilder_Run(...)
         endwhile
     endif
     call setqflist([])
-    call Y_ServerSendMsg(g:project_service_project_builder['id'], args)
+    call Y_ServerSendServiceRequest(g:project_service_project_builder['id'], args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1225,7 +1225,7 @@ endfunction
 function! Y_SrcCodeFormatter_Run()
     if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
         let l:current_buffer = expand('%:p')
-        call Y_ServerSendMsg(g:project_service_src_code_formatter['id'], l:current_buffer)
+        call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
     endif
 endfunction
 
