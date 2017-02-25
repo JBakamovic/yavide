@@ -77,12 +77,24 @@ class ClangParser():
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         try:
-            # Parse the translation unit
-            self.tunits[original_filename] = self.index.parse(
-                path = contents_filename,
-                args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
-                options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
-            )
+            if original_filename not in self.tunits:
+                # Parse the translation unit
+                self.tunits[original_filename] = self.index.parse(
+                    path = contents_filename,
+                    args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
+                    options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
+                )
+            else:
+                # TODO Try tunit.reparse() if it has been already parsed
+                f1 = self.tunits[original_filename].get_file(original_filename)
+                f2 = self.tunits[original_filename].get_file(contents_filename)
+                if f1:
+                    logging.info('f1 original_filename valid')
+                if f2:
+                    logging.info('f2 contents_filename valid')
+                self.tunits[original_filename].reparse(
+                    unsaved_files = [(original_filename, f2)]
+                )
         except:
             logging.error(sys.exc_info()[0])
 
