@@ -18,9 +18,8 @@ class SourceCodeModel(YavideService):
             0x2 : TypeDeduction(self.parser, VimTypeDeduction(yavide_instance))
         }
 
-    def unknown_service(self):
-        pass
+    def __unknown_service(self, args):
+        logging.error("Unknown service triggered! Valid services are: {0}".format(self.service))
 
-    def run_impl(self, args):
-        self.service.get(int(args[0]), self.unknown_service)(args[1:len(args)])
-
+    def __call__(self, args):
+        self.service.get(int(args[0]), self.__unknown_service)(args[1:len(args)])

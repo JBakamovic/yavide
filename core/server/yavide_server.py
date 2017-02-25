@@ -5,8 +5,8 @@ from multiprocessing import Process, Queue
 from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
-from services.indexer_service import SourceCodeIndexer
 from services.source_code_model_service import SourceCodeModel
+from services.indexer_service import SourceCodeIndexer
 
 class YavideServer():
     def __init__(self, msg_queue, yavide_instance):
@@ -20,78 +20,79 @@ class YavideServer():
         }
         self.service_processes = {}
         self.action = {
-            0xF0 : self.start_all_services,
-            0xF1 : self.start_service,
-            0xF2 : self.run_service,
-            0xFD : self.shutdown_all_services,
-            0xFE : self.shutdown_service,
-            0xFF : self.shutdown_and_exit
+            0xF0 : self.__start_all_services,
+            0xF1 : self.__start_service,
+            0xF2 : self.__send_service_request,
+            0xFD : self.__shutdown_all_services,
+            0xFE : self.__shutdown_service,
+            0xFF : self.__shutdown_and_exit
+            # TODO add runtime debugging switch action
         }
-        self.exit_main_loop = False
+        self.keep_listening = True
         logging.info("Yavide instance: {0}".format(self.yavide_instance))
         logging.info("Registered services: {0}".format(self.service))
         logging.info("Actions: {0}".format(self.action))
 
-    def start_all_services(self, dummyServiceId, dummyPayload):
+    def __start_all_services(self, dummyServiceId, dummyPayload):
         logging.info("Starting all registered services ... {0}".format(self.service))
         for id, svc in self.service.iteritems():
-            p = Process(target=svc.run, name=svc.__class__.__name__)
+            p = Process(target=svc.listen, name=svc.__class__.__name__)
             p.daemon = False
             p.start()
             self.service_processes[id] = p
-            self.service[id].put_msg([0x0, "start_service"])
+            self.service[id].send_startup_request(dummyPayload)
 
-    def start_service(self, serviceId, payload):
+    def __start_service(self, serviceId, payload):
         logging.info("Starting the service with serviceId = {0}. Payload = {1}".format(serviceId, payload))
         if serviceId in self.service:
-            p = Process(target=self.service[serviceId].run)
+            p = Process(target=self.service[serviceId].listen)
             p.daemon = False
             p.start()
             self.service_processes[serviceId] = p
-            self.service[serviceId].put_msg([0x0, payload])
+            self.service[serviceId].send_startup_request(payload)
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def shutdown_all_services(self, dummyServiceId, dummyPayload):
+    def __shutdown_all_services(self, dummyServiceId, dummyPayload):
         logging.info("Shutting down all registered services ... {0}".format(self.service))
         if self.service_processes:
             for id, svc in self.service.iteritems():
-                svc.put_msg([0x1, "shutdown_service"])
+                svc.send_shutdown_request(dummyPayload)
             for svc_id, svc_process in self.service_processes.iteritems():
                 svc_process.join()
-            self.service_processes = {}
+            del self.service_processes
 
-    def shutdown_service(self, serviceId, payload):
+    def __shutdown_service(self, serviceId, payload):
         logging.info("Shutting down the service with serviceId = {0}. Payload = {1}".format(serviceId, payload))
         if serviceId in self.service:
-            self.service[serviceId].put_msg([0x1, "shutdown_service"])
+            self.service[serviceId].send_shutdown_request(payload)
             self.service_processes[serviceId].join()
             del self.service_processes[serviceId]
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def shutdown_and_exit(self, dummyServiceId, dummyPayload):
+    def __shutdown_and_exit(self, dummyServiceId, dummyPayload):
         logging.info("Shutting down the Yavide server ...")
-        self.shutdown_all_services(dummyServiceId, dummyPayload)
-        self.exit_main_loop = True
+        self.__shutdown_all_services(dummyServiceId, dummyPayload)
+        self.keep_listening = False
 
-    def run_service(self, serviceId, payload):
+    def __send_service_request(self, serviceId, payload):
         logging.info("Triggering service with serviceId = {0}. Payload = {1}".format(serviceId, payload))
         if serviceId in self.service:
-            self.service[serviceId].put_msg([0x2, payload])
+            self.service[serviceId].send_request(payload)
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def unknown_action(self, serviceId, payload):
+    def __unknown_action(self, serviceId, payload):
         logging.error("Unknown action triggered! Valid actions are: {0}".format(self.action))
         return
 
-    def run(self):
-        while self.exit_main_loop is False:
+    def listen(self):
+        while self.keep_listening is True:
             logging.info("Listening on a request ...")
             payload = self.msg_queue.get()
             logging.info("Request received. Payload = {0}".format(payload))
-            self.action.get(int(payload[0]), self.unknown_action)(int(payload[1]), payload[2])
+            self.action.get(int(payload[0]), self.__unknown_action)(int(payload[1]), payload[2])
         logging.info("Yavide server shut down.")
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -102,15 +103,15 @@ def catch_unhandled_exceptions():
     sys.excepthook = handle_exception
 
     # But sys.excepthook does not work anymore within multi-threaded/multi-process environment (see https://bugs.python.org/issue1230540)
-    # So what we can do is to override the YavideService.run() implementation so it includes try-catch block with exceptions
+    # So what we can do is to override the YavideService.listen() implementation so it includes try-catch block with exceptions
     # being forwarded to the sys.excepthook function.
-    run_original = YavideService.run
-    def run(self):
+    run_original = YavideService.listen
+    def listen(self):
         try:
             run_original(self)
         except:
             sys.excepthook(*sys.exc_info())
-    YavideService.run = run
+    YavideService.listen = listen
 
 def yavide_server_run(msg_queue, yavide_instance):
     # Setup catching unhandled exceptions
@@ -124,7 +125,7 @@ def yavide_server_run(msg_queue, yavide_instance):
 
     # Run
     try:
-        YavideServer(msg_queue, yavide_instance).run()
+        YavideServer(msg_queue, yavide_instance).listen()
     except:
         sys.excepthook(*sys.exc_info())
 

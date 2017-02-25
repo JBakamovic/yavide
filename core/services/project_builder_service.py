@@ -7,16 +7,16 @@ from common.yavide_utils import YavideUtils
 
 class ProjectBuilder(YavideService):
     def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance)
+        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook)
         self.build_cmd_dir = ""
         self.build_cmd_output_file = ""
 
-    def startup_hook(self, args):
+    def __startup_hook(self, args):
         self.build_cmd_dir = args[0]
         self.build_cmd_output_file = tempfile.NamedTemporaryFile(prefix='yavide', suffix='build', delete=True)
         logging.info("Args = {0}, build_cmd_output_file = {1}.".format(args, self.build_cmd_output_file.name))
 
-    def run_impl(self, arg):
+    def __call__(self, arg):
         start = time.clock()
         build_cmd = arg[0]
         self.build_cmd_output_file.truncate()
