@@ -1287,7 +1287,7 @@ function! Y_SrcCodeIndexer_LoadFromDiskCompleted(success)
         echoerr 'Loading already existing indexing results failed. Will start re-indexing the whole project again ...'
         call Y_SrcCodeIndexer_RunOnDirectory()
     else
-        echo 'Loading indexing results for ' . g:project_root_directory . ' completed.'
+        echomsg 'Loading indexing results for ' . g:project_root_directory . ' completed.'
     endif
 endfunction
 
@@ -1349,7 +1349,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectoryCompleted()
-    echo 'Indexing run on ' . g:project_root_directory . ' completed.'
+    echomsg 'Indexing run on ' . g:project_root_directory . ' completed.'
     call Y_SrcCodeIndexer_SaveToDisk()
 endfunction
 
