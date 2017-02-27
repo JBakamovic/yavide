@@ -93,7 +93,7 @@ class ClangIndexer():
             self.callback(0x5, dummy)
 
     def __go_to_definition(self, args):
-        cursor = self.parser.get_definition(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
+        cursor = self.parser.get_definition(str(args[0]), int(args[1]), int(args[2]))
         if cursor:
             logging.info('Definition location %s' % str(cursor.location))
 
@@ -101,7 +101,7 @@ class ClangIndexer():
             self.callback(0x10, cursor.location if cursor else None)
 
     def __find_all_references(self, args):
-        references = self.parser.find_all_references(str(args[0]), str(args[1]), int(args[2]), int(args[3]))
+        references = self.parser.find_all_references(str(args[0]), int(args[1]), int(args[2]))
         for r in references:
             logging.info("Ref location %s" % str(r))
 
