@@ -15,7 +15,7 @@ class VimSyntaxGenerator:
 
     def __call__(self, clang_parser, args):
         def visitor(ast_node, ast_parent_node, client_data):
-            if ast_node.location.file and ast_node.location.file.name == str(args[0]):  # we're only interested in symbols from given file
+            if ast_node.location.file and ast_node.location.file.name == tu.spelling:  # we're only interested in symbols from associated translation unit
                 ast_node_id = client_data.clang_parser.get_ast_node_id(ast_node)
                 if ast_node_id != ASTNodeId.getUnsupportedId():
                     highlight_rule = VimSyntaxGenerator.__tag_id_to_vim_syntax_group(ast_node_id) + " " + client_data.clang_parser.get_ast_node_name(ast_node)
@@ -40,7 +40,7 @@ class VimSyntaxGenerator:
             return ChildVisitResult.RECURSE.value  # we're interested in all descendants
 
         # Fetch the translation unit
-        tu = clang_parser.get_translation_unit(str(args[1]))
+        tu = clang_parser.get_translation_unit(str(args[0]))
         if tu is None:
             return
 
@@ -56,13 +56,13 @@ class VimSyntaxGenerator:
         time_elapsed = time.clock() - start
 
         # Apply newly generated syntax rules
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[1]) + "'" + ", '" + self.output_syntax_file + "')")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[0]) + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
-        clang_parser.dump_ast_nodes(str(args[1]))
+        clang_parser.dump_ast_nodes(str(args[0]))
 
         # Log how long generating Vim syntax file took
-        logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[1]), time_elapsed))
+        logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[0]), time_elapsed))
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags

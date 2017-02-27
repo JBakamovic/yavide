@@ -44,16 +44,17 @@ class ClangIndexer():
 
     def __run_on_single_file(self, args):
         proj_root_directory = str(args[0])
-        filename = str(args[1])
-        compiler_args = list(str(args[2]).split())
-        logging.info("Indexing a single file '{0}' ... ".format(filename))
+        contents_filename = str(args[1])
+        original_filename = str(args[2])
+        compiler_args = list(str(args[3]).split())
+        logging.info("Indexing a single file '{0}' ... ".format(original_filename))
 
         # TODO Run this in a separate non-blocking process
         # Index a single file
         start = time.clock()
-        self.parser.run(filename, filename, compiler_args, proj_root_directory)
+        self.parser.run(contents_filename, original_filename, compiler_args, proj_root_directory)
         time_elapsed = time.clock() - start
-        logging.info("Indexing {0} took {1}.".format(filename, time_elapsed))
+        logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
         if self.callback:
             self.callback(0x2, args)
