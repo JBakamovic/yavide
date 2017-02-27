@@ -1045,9 +1045,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeDiagnostics_Run()
     if g:project_service_src_code_model['services']['diagnostics']['enabled']
-        let l:current_bufnr = bufnr('%')
-        let l:current_bufname = expand('%:p')
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:current_bufname, l:current_bufnr])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [expand('%:p')])
     endif
 endfunction
 
