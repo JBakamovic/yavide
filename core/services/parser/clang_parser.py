@@ -168,35 +168,35 @@ class ClangParser():
                  )
         return cursor.type.spelling
 
-    def get_definition(self, original_filename, contents_filename, line, column):
-        if original_filename not in self.tunits:
+    def get_definition(self, filename, line, column):
+        if filename not in self.tunits:
             return None
 
         cursor = clang.cindex.Cursor.from_location(
-                    self.tunits[original_filename],
+                    self.tunits[filename],
                     clang.cindex.SourceLocation.from_position(
-                        self.tunits[original_filename],
-                        clang.cindex.File.from_name(self.tunits[original_filename], contents_filename),
+                        self.tunits[filename],
+                        clang.cindex.File.from_name(self.tunits[filename], self.tunits[filename].spelling),
                         line,
                         column
                     )
                  )
         return cursor.get_definition()
 
-    def find_all_references(self, original_filename, contents_filename, line, column):
+    def find_all_references(self, filename, line, column):
         def visitor(ast_node, ast_parent_node, client_data):
             if ast_node.spelling == client_data.cursor.spelling:
                 client_data.references.append(ast_node.location)
             return ChildVisitResult.RECURSE.value
 
-        if original_filename not in self.tunits:
+        if filename not in self.tunits:
             return []
 
         cursor = clang.cindex.Cursor.from_location(
-                    self.tunits[original_filename],
+                    self.tunits[filename],
                     clang.cindex.SourceLocation.from_position(
-                        self.tunits[original_filename],
-                        clang.cindex.File.from_name(self.tunits[original_filename], contents_filename),
+                        self.tunits[filename],
+                        clang.cindex.File.from_name(self.tunits[filename], self.tunits[filename].spelling),
                         line,
                         column
                     )
