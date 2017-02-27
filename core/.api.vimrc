@@ -1299,17 +1299,6 @@ function! Y_SrcCodeIndexer_RunOnSingleFile()
         if getbufvar(bufnr('%'), '&modified')
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
-python << EOF
-import vim
-import os
-# Append additional include path to the compiler args which points to the parent directory of current buffer.
-#   * This needs to be done because we will be doing analysis on tmp file which is outside the project directory.
-#     By doing this, we might invalidate header includes for that particular file and therefore trigger unnecessary
-#     Clang parsing errors.
-#   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-#     potentially would not play well with other tools (indexer, version control, etc.).
-vim.command("let l:compiler_args .= '" + " -I" + os.path.dirname(vim.eval("l:current_buffer")) + "'")
-EOF
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
     endif
