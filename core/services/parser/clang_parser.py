@@ -151,22 +151,22 @@ class ClangParser():
             return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
-    def map_source_location_to_type(self, original_filename, contents_filename, line, column):
-        logging.info("Mapping source location to type for " + str(original_filename))
+    def map_source_location_to_cursor(self, filename, line, column):
+        logging.info("Mapping source location to type for " + str(filename))
 
-        if original_filename not in self.tunits:
+        if filename not in self.tunits:
             return ''
 
         cursor = clang.cindex.Cursor.from_location(
-                    self.tunits[original_filename],
+                    self.tunits[filename],
                     clang.cindex.SourceLocation.from_position(
-                        self.tunits[original_filename],
-                        clang.cindex.File.from_name(self.tunits[original_filename], contents_filename),
+                        self.tunits[filename],
+                        clang.cindex.File.from_name(self.tunits[filename], self.tunits[filename].spelling),
                         line,
                         column
                     )
                  )
-        return cursor.type.spelling
+        return cursor
 
     def get_definition(self, filename, line, column):
         if filename not in self.tunits:
