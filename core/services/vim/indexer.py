@@ -39,21 +39,25 @@ class VimIndexer():
     def __drop_all(self, args):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_DropAllCompleted()")
 
-    def __go_to_definition(self, location):
+    def __go_to_definition(self, args):
+        filename = args[0]
+        location = args[1]
         if location:
-            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + str(location.file) + "', " + str(location.line) + ", " + str(location.column) + ", " + str(location.offset) + ")")
+            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + filename + "', " + str(location.line) + ", " + str(location.column) + ", " + str(location.offset) + ")")
         else:
             YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('', 0, 0, 0")
 
-    def __find_all_references(self, references):
+    def __find_all_references(self, args):
+        filename = args[0]
+        references = args[1]
         quickfix_list = []
         for location in references:
             quickfix_list.append(
-                "{'filename': '" + str(location.file) + "', " +
+                "{'filename': '" + filename + "', " +
                 "'lnum': '" + str(location.line) + "', " +
                 "'col': '" + str(location.column) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(location.file) + "'}"
+                "'text': '" + filename + "'}"
             )
 
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r"") + ")")

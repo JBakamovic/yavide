@@ -98,7 +98,7 @@ class ClangIndexer():
             logging.info('Definition location %s' % str(cursor.location))
 
         if self.callback:
-            self.callback(0x10, cursor.location if cursor else None)
+            self.callback(0x10, [args[0], cursor.location if cursor else None])
 
     def __find_all_references(self, args):
         references = self.parser.find_all_references(str(args[0]), int(args[1]), int(args[2]))
@@ -106,4 +106,4 @@ class ClangIndexer():
             logging.info("Ref location %s" % str(r))
 
         if self.callback:
-            self.callback(0x11, references)
+            self.callback(0x11, [args[0], references])
