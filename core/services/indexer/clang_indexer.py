@@ -46,13 +46,22 @@ class ClangIndexer():
         proj_root_directory = str(args[0])
         contents_filename = str(args[1])
         original_filename = str(args[2])
-        compiler_args = list(str(args[3]).split())
+        compiler_args = str(args[3])
         logging.info("Indexing a single file '{0}' ... ".format(original_filename))
+
+        # Append additional include path to the compiler args which points to the parent directory of current buffer.
+        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
+        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
+        #     unnecessary Clang parsing errors.
+        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+        #     potentially would not play well with other tools (indexer, version control, etc.).
+        if contents_filename != original_filename:
+            compiler_args += ' -I' + os.path.dirname(original_filename)
 
         # TODO Run this in a separate non-blocking process
         # Index a single file
         start = time.clock()
-        self.parser.run(contents_filename, original_filename, compiler_args, proj_root_directory)
+        self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
