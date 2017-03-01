@@ -185,8 +185,11 @@ class ClangParser():
 
     def find_all_references(self, filename, line, column):
         def visitor(ast_node, ast_parent_node, client_data):
-            if ast_node.spelling == client_data.cursor.spelling:
-                client_data.references.append(ast_node.location)
+            if (ast_node.location.file and ast_node.location.file.name == filename):  # we are not interested in symbols which got into this TU via includes
+                node = ast_node.referenced if ast_node.referenced else ast_node
+                if node.spelling == client_data.cursor.spelling:
+                    if node.get_usr() == client_data.cursor.get_usr():
+                        client_data.references.append(ast_node.location)
             return ChildVisitResult.RECURSE.value
 
         if filename not in self.tunits:
@@ -205,7 +208,7 @@ class ClangParser():
         references = []
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
         for filename, tunit in self.tunits.iteritems():
-            self.traverse(tunit.cursor, client_data(cursor, references), visitor)
+            self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
     def save_to_disk(self, root_dir):
@@ -266,6 +269,7 @@ class ClangParser():
                     '%-40s' % str(ast_node.type.kind) +
                     ('%-25s' % ('[' + str(ast_node.type.get_declaration().location.line) + ', ' + str(ast_node.type.get_declaration().location.column) + ']') if (ast_node.type and ast_node.type.get_declaration()) else '%-25s' % '-') +
                     ('%-25s' % ('[' + str(ast_node.get_definition().location.line) + ', ' + str(ast_node.get_definition().location.column) + ']') if (ast_node.get_definition()) else '%-25s' % '-') +
+                    '%-40s' % str(ast_node.get_usr()) +
                     ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).spelling) if (ast_node.kind ==
                         clang.cindex.CursorKind.OVERLOADED_DECL_REF and ClangParser.__get_num_overloaded_decls(ast_node)) else '%-40s' % '-') +
                     ('%-40s' % str(ClangParser.__get_overloaded_decl(ast_node, 0).kind) if (ast_node.kind ==
@@ -285,7 +289,8 @@ class ClangParser():
                     ('%-25s' % ('[' + str(ast_node.referenced.type.get_declaration().location.line) + ', ' + str(ast_node.referenced.type.get_declaration().location.column) + ']')
                         if (ast_node.referenced and ast_node.referenced.type and ast_node.referenced.type.get_declaration()) else '%-25s' % '-') +
                     ('%-25s' % ('[' + str(ast_node.referenced.get_definition().location.line) + ', ' + str(ast_node.referenced.get_definition().location.column) + ']')
-                        if (ast_node.referenced and ast_node.referenced.get_definition()) else '%-25s' % '-')
+                        if (ast_node.referenced and ast_node.referenced.get_definition()) else '%-25s' % '-') +
+                    ('%-40s' % str(ast_node.referenced.get_usr()) if ast_node.referenced else '%-40s' % '-')
                 )
 
             return ChildVisitResult.RECURSE.value
@@ -300,6 +305,7 @@ class ClangParser():
                 '%-40s' % 'Type.Kind' +
                 '%-25s' % 'Declaration.Location' +
                 '%-25s' % 'Definition.Location' +
+                '%-40s' % 'USR' +
                 '%-40s' % 'OverloadedDecl' + '%-40s' % 'NumOverloadedDecls' +
                 '%-40s' % 'Referenced.Spelling' + '%-40s' % 'Referenced.Kind' +
                 '%-40s' % 'Referenced.Type.Spelling' + '%-40s' % 'Referenced.Type.Kind' +
@@ -308,7 +314,8 @@ class ClangParser():
                 '%-40s' % 'Referenced.SemanticParent.Spelling' + '%-40s' % 'Referenced.SemanticParent.Kind' +
                 '%-40s' % 'Referenced.LexicalParent.Spelling' + '%-40s' % 'Referenced.LexicalParent.Kind' +
                 '%-25s' % 'Referenced.Declaration.Location' +
-                '%-25s' % 'Referenced.Definition.Location'
+                '%-25s' % 'Referenced.Definition.Location' +
+                '%-25s' % 'Referenced.USR'
             )
 
             logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
