@@ -58,6 +58,52 @@ New version provides more functionality (i.e. AST parent node) which is needed i
 """
 clang.cindex.Cursor.get_children = get_children_patched
 
+class ImmutableSourceLocation():
+    """
+    Reason of existance of this class is because clang.cindex.SourceLocation is not designed to be hashable.
+    """
+
+    def __init__(self, source_location):
+        self.source_location = source_location
+
+    @property
+    def file(self):
+        """Get the file represented by this source location."""
+        return self.source_location.file
+
+    @property
+    def line(self):
+        """Get the line represented by this source location."""
+        return self.source_location.line
+
+    @property
+    def column(self):
+        """Get the column represented by this source location."""
+        return self.source_location.column
+
+    @property
+    def offset(self):
+        """Get the file offset represented by this source location."""
+        return self.source_location.offset
+
+    def __eq__(self, other):
+        return self.source_location.__eq__(other.source_location)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.source_location.file.name) ^ hash(self.source_location.line) ^ hash(self.source_location.column) ^ hash(self.source_location.offset)
+
+    def __repr__(self):
+        if self.source_location.file:
+            filename = self.source_location.file.name
+        else:
+            filename = None
+        return "<ImmutableSourceLocation file %r, line %r, column %r>" % (
+            filename, self.source_location.line, self.source_location.column)
+
+
 def get_system_includes():
     output = subprocess.Popen(["g++", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     pattern = ["#include <...> search starts here:", "End of search list."]
@@ -189,7 +235,33 @@ class ClangParser():
                 node = ast_node.referenced if ast_node.referenced else ast_node
                 if node.spelling == client_data.cursor.spelling:
                     if node.get_usr() == client_data.cursor.get_usr():
-                        client_data.references.append(ast_node.location)
+                        #
+                        # At this point we can still get false positives. I.e.
+                        #   * Multiple cursors with the same spelling and with the
+                        #     same USR pointing to the same location.
+                        #       * I.e. Parsing 'foobar()' will result in:
+                        #           (1) CALL_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
+                        #           (2) UNEXPOSED_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
+                        #           (3) DECL_REF_EXPR with spelling set to 'foobar' and location set to location of 'foobar'
+                        #         which will obviously give us 3 duplicates and right now I don't see any other easy way
+                        #         eliminating those but to use set() with hashable SourceLocation's.
+                        #
+                        #   * Multiple cursors with the same spelling and with the
+                        #     same USR pointing to different locations but not all
+                        #     of them really being relevant.
+                        #       * I.e. Parsing 's.foobar()' will result in:
+                        #           (1) CALL_EXPR with spelling set to 'foobar' and location set to location of 's',
+                        #           (2) MEMBER_REF_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
+                        #           (3) DECL_REF_EXPR with spelling set to 's' and location set to location of 's'
+                        #       which will give us 2 duplicates, (1) & (2), and in this case we have to be able to identify
+                        #       the ones which are not really the match. This we can do by tokenizing the cursor and trying to
+                        #       see if token spelling at the given location still matches the spelling we are looking for.
+                        #
+                        for token in ast_node.get_tokens():
+                            if ast_node.location == token.extent.start:
+                                if node.spelling == token.spelling:
+                                    client_data.references.add(ImmutableSourceLocation(ast_node.location))
+                                break
             return ChildVisitResult.RECURSE.value
 
         if filename not in self.tunits:
@@ -205,7 +277,7 @@ class ClangParser():
                     )
                  )
 
-        references = []
+        references = set()
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
         for filename, tunit in self.tunits.iteritems():
             self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
