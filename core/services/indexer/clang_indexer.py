@@ -105,6 +105,8 @@ class ClangIndexer():
         cursor = self.parser.get_definition(str(args[0]), int(args[1]), int(args[2]))
         if cursor:
             logging.info('Definition location %s' % str(cursor.location))
+        else:
+            logging.info('No definition found.')
 
         if self.callback:
             self.callback(0x10, cursor.location if cursor else None)
