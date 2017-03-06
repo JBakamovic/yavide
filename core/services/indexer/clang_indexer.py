@@ -110,7 +110,10 @@ class ClangIndexer():
             self.callback(0x10, cursor.location if cursor else None)
 
     def __find_all_references(self, args):
+        start = time.clock()
         references = self.parser.find_all_references(str(args[0]), int(args[1]), int(args[2]))
+        time_elapsed = time.clock() - start
+        logging.info("Find all references of [{0}, {1}] in {2} took {3}.".format(args[1], args[2], args[0], time_elapsed))
         for r in references:
             logging.info("Ref location %s" % str(r))
 
