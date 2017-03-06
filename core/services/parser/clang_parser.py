@@ -290,7 +290,7 @@ class ClangParser():
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 logging.info('save_to_disk(): File = ' + filename)
-                tunit.save(os.path.join(root_dir, filename[1:len(filename)]))
+                tunit.save(os.path.join(root_dir, filename[1:len(filename)] + '.ast'))
         except:
             logging.error(sys.exc_info()[0])
             return False
@@ -301,10 +301,12 @@ class ClangParser():
             self.tunits.clear()
             for dirpath, dirs, files in os.walk(root_dir):
                 for file in files:
-                    indexing_result_path = os.path.join(dirpath, file)
-                    original_filename = indexing_result_path[len(root_dir):]
-                    logging.info('load_from_disk(): Filename = ' + original_filename)
-                    self.tunits[original_filename] = self.index.read(indexing_result_path)
+                    name, extension = os.path.splitext(file)
+                    if extension == '.ast':
+                        parsing_result_filename = os.path.join(dirpath, file)
+                        original_filename = parsing_result_filename[len(root_dir):-len('.ast')]
+                        logging.info('load_from_disk(): File = ' + original_filename)
+                        self.tunits[original_filename] = self.index.read(parsing_result_filename)
         except:
             logging.error(sys.exc_info()[0])
             return False
