@@ -8,10 +8,10 @@
 * [FAQ](#faq)
 
 # Changes
-* 12th of February, 2016
+* 12th of February, 2017
     * Implemented [type deduction](docs/services_framework.md#type-deduction) service.
         * A mouse cursor hover over source code will give details about the underlying constructs (i.e. data types, function signatures, etc.).
-* 10th of February, 2016
+* 10th of February, 2017
     * Implemented Clang-based [fixits & diagnostics](docs/services_framework.md#fixits-and-diagnostics) service.
     * Implemented mechanism which enables sharing the same AST within multiple services:
         * E.g. Once the AST is built, semantic syntax highlighting and Clang fixits services
@@ -19,7 +19,7 @@
         * This will be especially important when more heavy-weight Clang-based services will
           come into play, such as indexer and auto-completion engine.
     * Refactored server-side code to decouple editor-specific integrations from the core implementation of services.
-* 19th of January, 2016
+* 19th of January, 2017
     * Polished some rough edges around syntax highlighting:
         * Implemented support for handling a set of overloaded functions or function templates (CursorKind.OVERLOADED_DECL_REF expressions)
         * Implemented support for handling dependent types (TypeKind.DEPENDENT expressions)
