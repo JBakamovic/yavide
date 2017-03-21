@@ -59,6 +59,10 @@ class ClangIndexer():
             compiler_args += ' -I' + os.path.dirname(original_filename)
 
         # TODO Run this in a separate non-blocking process
+        # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
+        #       * Problem:
+        #           * File we are indexing might be a header which is included in another translation unit
+        #           * We would need a TU dependency tree to update influenced translation units as well
         # Index a single file
         start = time.clock()
         self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
@@ -73,6 +77,15 @@ class ClangIndexer():
         compiler_args = list(str(args[1]).split())
         logging.info("Indexing a whole project '{0}' ... ".format(proj_root_directory))
 
+        # TODO High RAM consumption:
+        #        1. After successful completion, RAM usage stays quite high (5GB for cppcheck)
+        #        2. But when we load results on load_from_disk(), RAM usage is marginally lower!
+        #      Valgrind does not report _any_ memory leaks for the 1st case as
+        #      one may have expected. It only reports 'still reachable' blocks but whose size
+        #      is nowhere near to the
+        #      occupied RAM (MBs vs GBs). This implies that parse()'ing all over
+        #      and over again results in small runtime artifacts consuming
+        # TODO Utilize malloc_trim(0) to swap the memory back to the OS
         # TODO Run this in a separate non-blocking process
         # TODO Run indexing of each file in separate (parallel) jobs to make it faster?
         # Index each file in project root directory
