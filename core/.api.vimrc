@@ -56,6 +56,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Deinit()
+    " TODO Close project if any is opened. We must not miss the things which we usually do when closing projects (i.e. saving indexing results)
     " Shutdown Yavide server background service
     call Y_ServerStop()
 endfunction
@@ -1308,6 +1309,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnSingleFileCompleted()
+    " TODO Y_SrcCodeIndexer_SaveToDiskSingle()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
