@@ -355,8 +355,10 @@ class ClangParser():
 
                 logging.debug(
                     '%-12s' % ('[' + str(ast_node.location.line) + ', ' + str(ast_node.location.column) + ']') +
+                    '%-25s' % ('[' + str(ast_node.extent.start.line) + ', ' + str(ast_node.extent.start.column) + ']:[' + str(ast_node.extent.end.line) + ', ' + str(ast_node.extent.end.column) + ']') +
                     '%-40s' % str(ast_node.spelling) +
                     '%-40s' % str(ast_node.kind) +
+                    '%-40s' % str(ast_parent_node.kind) +
                     '%-40s' % str(ast_node.type.spelling) +
                     '%-40s' % str(ast_node.type.kind) +
                     ('%-25s' % ('[' + str(ast_node.type.get_declaration().location.line) + ', ' + str(ast_node.type.get_declaration().location.column) + ']') if (ast_node.type and ast_node.type.get_declaration()) else '%-25s' % '-') +
@@ -391,8 +393,10 @@ class ClangParser():
         if filename in self.tunits:
             logging.debug(
                 '%-12s' % '[Line, Col]' +
+                '%-25s' % 'Extent' +
                 '%-40s' % 'Spelling' +
                 '%-40s' % 'Kind' +
+                '%-40s' % 'Parent.Kind' +
                 '%-40s' % 'Type.Spelling' +
                 '%-40s' % 'Type.Kind' +
                 '%-25s' % 'Declaration.Location' +
