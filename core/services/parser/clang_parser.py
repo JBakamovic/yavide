@@ -5,6 +5,7 @@ import logging
 import subprocess
 import clang.cindex
 from services.parser.ast_node_identifier import ASTNodeId
+from pympler import asizeof
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
     """
@@ -132,6 +133,7 @@ class ClangParser():
         except:
             logging.error(sys.exc_info()[0])
 
+        logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
         logging.info("tunits: " + str(self.tunits))
 
     def get_translation_unit(self, filename):
@@ -299,6 +301,7 @@ class ClangParser():
 
     def save_to_disk(self, root_dir):
         try:
+            logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
             for filename, tunit in self.tunits.iteritems():
                 directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
                 if not os.path.exists(directory):
@@ -321,6 +324,7 @@ class ClangParser():
                         original_filename = parsing_result_filename[len(root_dir):-len('.ast')]
                         logging.info('load_from_disk(): File = ' + original_filename)
                         self.tunits[original_filename] = self.index.read(parsing_result_filename)
+            logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
         except:
             logging.error(sys.exc_info()[0])
             return False
