@@ -8,7 +8,7 @@ SYSTEM_PACKAGE_MANAGER=""
 SYSTEM_PACKAGE_TYPE=""
 SYSTEM_PACKAGE_SET=""
 YAVIDE_INSTALL_DIR_DEFAULT="/opt"
-
+PIP_INSTALL_CMD="pip install"
 #####################################################################################################
 # Helper functions
 #####################################################################################################
@@ -43,6 +43,7 @@ guess_system_package_manager(){
         SYSTEM_PACKAGE_TYPE="ebuild"
         SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
         SYSTEM_PACKAGE_MANAGER_UPDATE="emerge --sync"
+        PIP_INSTALL_CMD="pip  install --user "
     fi
 
     if [ $SYSTEM_PACKAGE_TYPE == "rpm" ]; then
@@ -164,7 +165,7 @@ stty $stty_orig     # restore terminal setting.
 #####################################################################################################
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL $SYSTEM_PACKAGE_SET
-echo "$passwd" | sudo -S pip install $PIP_PACKAGE_SET
+echo "$passwd" | sudo -S  $PIP_INSTALL_CMD $PIP_PACKAGE_SET
 
 mkdir -p $HOME/.fonts && git clone https://github.com/Lokaltog/powerline-fonts.git $HOME/.fonts
 fc-cache -vf $HOME/.fonts
