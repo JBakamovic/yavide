@@ -37,7 +37,8 @@ class VimSyntaxGenerator:
                             ast_node.kind, client_data.clang_parser.get_ast_node_name(ast_node)
                         )
                     )
-            return ChildVisitResult.RECURSE.value  # we're interested in all descendants
+                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
         # Fetch the translation unit
         tu = clang_parser.get_translation_unit(str(args[0]))
