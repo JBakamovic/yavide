@@ -973,8 +973,10 @@ function! Y_SrcCodeModel_Start()
 
     " TODO Make this happen on SrcCodeModel_StartCallback()
     if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
+        echomsg 'Loading indexer results from disk ...'
         call Y_SrcCodeIndexer_LoadFromDisk()
     else
+        echomsg 'Running indexer on a directory ...'
         call Y_SrcCodeIndexer_RunOnDirectory()
     endif
 endfunction
