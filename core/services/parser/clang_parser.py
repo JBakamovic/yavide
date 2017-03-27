@@ -387,8 +387,8 @@ class ClangParser():
                         if (ast_node.referenced and ast_node.referenced.get_definition()) else '%-25s' % '-') +
                     ('%-40s' % str(ast_node.referenced.get_usr()) if ast_node.referenced else '%-40s' % '-')
                 )
-
-            return ChildVisitResult.RECURSE.value
+                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
 
         if filename in self.tunits:
