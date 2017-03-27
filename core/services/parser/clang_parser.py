@@ -274,7 +274,8 @@ class ClangParser():
                                 if node.spelling == token.spelling:
                                     client_data.references.add(ImmutableSourceLocation(ast_node.location))
                                 break
-            return ChildVisitResult.RECURSE.value
+                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
         if filename not in self.tunits:
             return []
