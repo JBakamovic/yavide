@@ -5,6 +5,7 @@ import logging
 import subprocess
 import clang.cindex
 from services.parser.ast_node_identifier import ASTNodeId
+from ctypes import cdll
 from pympler import asizeof
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
@@ -337,6 +338,14 @@ class ClangParser():
 
     def drop_all_translation_units(self):
         self.tunits.clear()
+
+        # Swap the freed' memory back to the OS. Parsing many translation units tend to
+        # consume a big chunk of memory. In order to minimize the system memory footprint 
+        # we will try to swap it back.
+        try:
+            cdll.LoadLibrary("libc.so.6").malloc_trim(0)
+        except:
+            logging.error(sys.exc_info()[0])
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
