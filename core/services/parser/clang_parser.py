@@ -230,7 +230,12 @@ class ClangParser():
                         column
                     )
                  )
-        return cursor.get_definition()
+
+        cur = cursor.referenced if cursor.referenced else cursor
+        if cur.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF:
+            if ClangParser.__get_num_overloaded_decls(cur):
+                return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
+        return cur.get_definition()
 
     def find_all_references(self, filename, line, column):
         # TODO Use clang_findReferencesInFile() implementation?
