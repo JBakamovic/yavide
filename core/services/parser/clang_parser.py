@@ -118,6 +118,32 @@ class ClangParser():
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
+    def run_impl(self, contents_filename, original_filename, compiler_args, project_root_directory):
+        logging.info('Filename = {0}'.format(original_filename))
+        logging.info('Contents Filename = {0}'.format(contents_filename))
+        logging.info('Default args = {0}'.format(self.default_args))
+        logging.info('User-provided compiler args = {0}'.format(compiler_args))
+        logging.info('Compiler working-directory = {0}'.format(project_root_directory))
+        try:
+            # Parse the translation unit
+            tunit = self.index.parse(
+                path = contents_filename,
+                args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
+                options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
+            )
+            # Save the parsing results
+            project_root_directory += '/.indexer'
+            directory = os.path.dirname(os.path.join(project_root_directory, original_filename[1:len(original_filename)]))
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            logging.info('save_to_disk(): File = ' + original_filename)
+            tunit.save(os.path.join(project_root_directory, original_filename[1:len(original_filename)] + '.ast'))
+        except:
+            logging.error(sys.exc_info()[0])
+
+        logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+        logging.info("tunits: " + str(self.tunits))
+
     def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
