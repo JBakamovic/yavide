@@ -97,12 +97,13 @@ class ClangIndexer():
                 if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
                     full_path = os.path.join(dirpath, file)
                     logging.info("Indexing ... {0}".format(full_path))
-                    self.parser.run(full_path, full_path, compiler_args, proj_root_directory)
+                    self.parser.run_impl(full_path, full_path, compiler_args, proj_root_directory)
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
-        if self.callback:
-            self.callback(id, args)
+        self.parser.load_from_disk(proj_root_directory + '/.indexer')
+        #if self.callback:
+        #    self.callback(id, args)
 
     def __drop_single_file(self, id, args):
         self.parser.drop_translation_unit(str(args[0]))
