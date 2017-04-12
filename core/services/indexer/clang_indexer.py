@@ -7,10 +7,10 @@ class ClangIndexer():
     def __init__(self, parser, callback = None):
         self.parser = parser
         self.callback = callback
+        self.indexer_directory_name = '.indexer'
+        self.indexer_output_extension = '.ast'
         self.op = {
-            0x0 : self.__load_from_disk,
-            0x1 : self.__save_to_disk,
-            0x2 : self.__run_on_single_file,
+            0x2 : self.__run_on_single_file, # TODO decrement the ID's
             0x3 : self.__run_on_directory,
             0x4 : self.__drop_single_file,
             0x5 : self.__drop_all,
@@ -24,30 +24,20 @@ class ClangIndexer():
     def __unknown_op(self, id, args):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
-    def __load_from_disk(self, id, args):
+    def __load_from_directory(self, root_directory):
         start = time.clock()
-        success = self.parser.load_from_disk(str(args[0]))
+        success = self.parser.load_from_directory(root_directory)
         time_elapsed = time.clock() - start
-        logging.info("Loading from {0} took {1}.".format(str(args[0]), time_elapsed))
+        logging.info("Loading from {0} took {1}.".format(root_directory, time_elapsed))
 
-        if self.callback:
-            self.callback(id, success)
-
-    def __save_to_disk(self, id, args):
+    def __save_to_directory(self, root_directory):
         start = time.clock()
-        success = self.parser.save_to_disk(str(args[0]))
+        success = self.parser.save_to_directory(root_directory)
         time_elapsed = time.clock() - start
-        logging.info("Saving to {0} took {1}.".format(str(args[0]), time_elapsed))
+        logging.info("Saving to {0} took {1}.".format(root_directory, time_elapsed))
 
-        if self.callback:
-            self.callback(id, success)
-
-    def __run_on_single_file(self, id, args):
-        proj_root_directory = str(args[0])
-        contents_filename = str(args[1])
-        original_filename = str(args[2])
-        compiler_args = str(args[3])
-        logging.info("Indexing a single file '{0}' ... ".format(original_filename))
+    def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
+        logging.info("Indexing a file '{0}' ... ".format(original_filename))
 
         # Append additional include path to the compiler args which points to the parent directory of current buffer.
         #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
@@ -63,23 +53,43 @@ class ClangIndexer():
         #       * Problem:
         #           * File we are indexing might be a header which is included in another translation unit
         #           * We would need a TU dependency tree to update influenced translation units as well
+
         # Index a single file
         start = time.clock()
-        self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
+        tunit = self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
+        if contents_filename == original_filename:
+            tunit_path = os.path.join(
+                proj_root_directory,
+                self.indexer_directory_name,
+                original_filename[1:len(original_filename)]
+            )
+            tunit_path += self.indexer_output_extension
+            tunit_parent_directory = os.path.dirname(tunit_path)
+            if not os.path.exists(tunit_parent_directory):
+                os.makedirs(tunit_parent_directory)
+            self.parser.save_tunit(tunit, tunit_path)
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
+    def __run_on_single_file(self, id, args):
+        proj_root_directory = str(args[0])
+        contents_filename = str(args[1])
+        original_filename = str(args[2])
+        compiler_args = str(args[3])
+
+        self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
         if self.callback:
             self.callback(id, args)
 
     def __run_on_directory(self, id, args):
         proj_root_directory = str(args[0])
-        compiler_args = list(str(args[1]).split())
-        logging.info("Indexing a whole project '{0}' ... ".format(proj_root_directory))
+        compiler_args = str(args[1])
+
+        self.parser.drop_all_translation_units()
 
         # TODO High RAM consumption:
         #        1. After successful completion, RAM usage stays quite high (5GB for cppcheck)
-        #        2. But when we load results on load_from_disk(), RAM usage is marginally lower!
+        #        2. But when we load results on load_from_directory(), RAM usage is marginally lower!
         #      Valgrind does not report _any_ memory leaks for the 1st case as
         #      one may have expected. It only reports 'still reachable' blocks but whose size
         #      is nowhere near to the
@@ -88,22 +98,26 @@ class ClangIndexer():
         # TODO Utilize malloc_trim(0) to swap the memory back to the OS
         # TODO Run this in a separate non-blocking process
         # TODO Run indexing of each file in separate (parallel) jobs to make it faster?
-        # Index each file in project root directory
-        start = time.clock()
-        self.parser.drop_all_translation_units()
-        for dirpath, dirs, files in os.walk(proj_root_directory):
-            for file in files:
-                name, extension = os.path.splitext(file)
-                if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
-                    full_path = os.path.join(dirpath, file)
-                    logging.info("Indexing ... {0}".format(full_path))
-                    self.parser.run_impl(full_path, full_path, compiler_args, proj_root_directory)
-        time_elapsed = time.clock() - start
-        logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
-        self.parser.load_from_disk(proj_root_directory + '/.indexer')
-        #if self.callback:
-        #    self.callback(id, args)
+        # Index each file in project root directory
+        indexer_directory_full_path = os.path.join(proj_root_directory, self.indexer_directory_name)
+        if not os.path.exists(indexer_directory_full_path):
+            logging.info("Starting to index whole directory '{0}' ... ".format(proj_root_directory))
+            start = time.clock()
+            for dirpath, dirs, files in os.walk(proj_root_directory):
+                for file in files:
+                    name, extension = os.path.splitext(file)
+                    if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
+                        filename = os.path.join(dirpath, file)
+                        self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
+            time_elapsed = time.clock() - start
+            logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
+
+        logging.info("Loading indexer results ... '{0}'.".format(indexer_directory_full_path))
+        self.__load_from_directory(indexer_directory_full_path)
+
+        if self.callback:
+            self.callback(id, args)
 
     def __drop_single_file(self, id, args):
         self.parser.drop_translation_unit(str(args[0]))
