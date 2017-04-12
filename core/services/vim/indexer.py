@@ -5,8 +5,8 @@ class VimIndexer():
     def __init__(self, yavide_instance):
         self.yavide_instance = yavide_instance
         self.op = {
-            0x0 : self.__load_from_disk,
-            0x1 : self.__save_to_disk,
+            #0x0 : self.__load_from_disk,
+            #0x1 : self.__save_to_disk,
             0x2 : self.__run_on_single_file,
             0x3 : self.__run_on_directory,
             0x4 : self.__drop_single_file,
@@ -21,11 +21,11 @@ class VimIndexer():
     def __unknown_op(self, args):
         logging.error("Unknown operation triggered! Valid operations are: {0}".format(self.op))
 
-    def __load_from_disk(self, success):
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_LoadFromDiskCompleted(" + str(int(success)) + ")")
+    #def __load_from_disk(self, success):
+    #    YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_LoadFromDiskCompleted(" + str(int(success)) + ")")
 
-    def __save_to_disk(self, success):
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_SaveToDiskCompleted(" + str(int(success)) + ")")
+    #def __save_to_disk(self, success):
+    #    YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_SaveToDiskCompleted(" + str(int(success)) + ")")
 
     def __run_on_single_file(self, args):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_RunOnSingleFileCompleted()")

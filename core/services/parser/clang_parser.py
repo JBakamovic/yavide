@@ -150,9 +150,11 @@ class ClangParser():
         logging.info('Default args = {0}'.format(self.default_args))
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
+        tunit = None
         try:
             # Parse the translation unit
-            self.tunits[original_filename] = self.index.parse(
+            #self.tunits[original_filename] = self.index.parse(
+            tunit = self.index.parse(
                 path = contents_filename,
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
@@ -162,6 +164,8 @@ class ClangParser():
 
         logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
         logging.info("tunits: " + str(self.tunits))
+
+        return tunit
 
     def get_translation_unit(self, filename):
         return self.tunits.get(filename, None)
@@ -332,35 +336,42 @@ class ClangParser():
             self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
-    def save_to_disk(self, root_dir):
+    def save_to_directory(self, root_dir):
         try:
             logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
             for filename, tunit in self.tunits.iteritems():
                 directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                logging.info('save_to_disk(): File = ' + filename)
+                logging.info('save_to_directory(): File = ' + filename)
                 tunit.save(os.path.join(root_dir, filename[1:len(filename)] + '.ast'))
         except:
             logging.error(sys.exc_info()[0])
             return False
         return True
 
-    def load_from_disk(self, root_dir):
-        try:
-            self.tunits.clear()
-            for dirpath, dirs, files in os.walk(root_dir):
-                for file in files:
-                    name, extension = os.path.splitext(file)
-                    if extension == '.ast':
-                        parsing_result_filename = os.path.join(dirpath, file)
-                        original_filename = parsing_result_filename[len(root_dir):-len('.ast')]
-                        logging.info('load_from_disk(): File = ' + original_filename)
+    def save_tunit(self, tunit, tunit_path):
+        logging.info('save_tunit(): Path = ' + tunit_path)
+        tunit.save(tunit_path)
+
+    def load_from_directory(self, root_dir):
+        #try:
+        self.tunits.clear()
+        for dirpath, dirs, files in os.walk(root_dir):
+            for file in files:
+                name, extension = os.path.splitext(file)
+                if extension == '.ast':
+                    parsing_result_filename = os.path.join(dirpath, file)
+                    original_filename = parsing_result_filename[len(root_dir):-len('.ast')]
+                    logging.info('load_from_directory(): File = ' + original_filename)
+                    try:
                         self.tunits[original_filename] = self.index.read(parsing_result_filename)
-            logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-        except:
-            logging.error(sys.exc_info()[0])
-            return False
+                        logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+                    except:
+                        logging.error(sys.exc_info()[0])
+        #except:
+        #    logging.error(sys.exc_info()[0])
+        #    return False
         return True
 
     def drop_translation_unit(self, filename):
