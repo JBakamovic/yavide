@@ -972,13 +972,13 @@ function! Y_SrcCodeModel_Start()
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
 
     " TODO Make this happen on SrcCodeModel_StartCallback()
-    if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
-        echomsg 'Loading indexer results from disk ...'
-        call Y_SrcCodeIndexer_LoadFromDisk()
-    else
-        echomsg 'Running indexer on a directory ...'
-        call Y_SrcCodeIndexer_RunOnDirectory()
-    endif
+    "if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
+    "    echomsg 'Loading indexer results from disk ...'
+    "    call Y_SrcCodeIndexer_LoadFromDisk()
+    "else
+    echomsg 'Starting indexer ...'
+    call Y_SrcCodeIndexer_RunOnDirectory()
+    "endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -987,7 +987,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Stop()
-    call Y_SrcCodeIndexer_SaveToDisk()
+    "call Y_SrcCodeIndexer_SaveToDisk()
     call Y_SrcCodeIndexer_DropAll()
     call Y_ServerStopService(g:project_service_src_code_model['id'])
 endfunction
@@ -1257,7 +1257,7 @@ endfunction
 function! Y_SrcCodeIndexer_LoadFromDiskCompleted(success)
     if a:success == 0
         echoerr 'Loading already existing indexing results failed. Will start re-indexing the whole project again ...'
-        call Y_SrcCodeIndexer_RunOnDirectory()
+        "call Y_SrcCodeIndexer_RunOnDirectory()
     else
         echomsg 'Loading indexing results for ' . g:project_root_directory . ' completed.'
     endif
@@ -1332,7 +1332,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectoryCompleted()
     echomsg 'Indexing run on ' . g:project_root_directory . ' completed.'
-    call Y_SrcCodeIndexer_SaveToDisk()
+    "call Y_SrcCodeIndexer_SaveToDisk()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
