@@ -9,6 +9,7 @@ class ClangIndexer():
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
+        self.tunits = {}
         self.op = {
             0x2 : self.__run_on_single_file, # TODO decrement the ID's
             0x3 : self.__run_on_directory,
@@ -26,7 +27,19 @@ class ClangIndexer():
 
     def __load_from_directory(self, root_directory):
         start = time.clock()
-        success = self.parser.load_from_directory(root_directory)
+        self.tunits.clear()
+        for dirpath, dirs, files in os.walk(root_directory):
+            for file in files:
+                name, extension = os.path.splitext(file)
+                if extension == self.indexer_output_extension:
+                    parsing_result_filename = os.path.join(dirpath, file)
+                    tunit_filename = parsing_result_filename[len(root_directory):-len(self.indexer_output_extension)]
+                    logging.info('load_from_directory(): File = ' + tunit_filename)
+                    try:
+                        self.tunits[tunit_filename] = self.parser.load_tunit(parsing_result_filename)
+                        #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+                    except:
+                        logging.error(sys.exc_info()[0])
         time_elapsed = time.clock() - start
         logging.info("Loading from {0} took {1}.".format(root_directory, time_elapsed))
 
@@ -78,6 +91,9 @@ class ClangIndexer():
         compiler_args = str(args[3])
 
         self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
+
+        # TODO Load freshly parsed tunit into memory
+
         if self.callback:
             self.callback(id, args)
 
