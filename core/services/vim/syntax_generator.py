@@ -13,7 +13,7 @@ class VimSyntaxGenerator:
         self.yavide_instance = yavide_instance
         self.output_syntax_file = output_syntax_file
 
-    def __call__(self, clang_parser, args):
+    def __call__(self, tu, clang_parser, args):
         def visitor(ast_node, ast_parent_node, client_data):
             if ast_node.location.file and ast_node.location.file.name == tu.spelling:  # we're only interested in symbols from associated translation unit
                 ast_node_id = client_data.clang_parser.get_ast_node_id(ast_node)
@@ -41,8 +41,9 @@ class VimSyntaxGenerator:
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
         # Fetch the translation unit
-        tu = clang_parser.get_translation_unit(str(args[0]))
+        #tu = clang_parser.get_translation_unit(str(args[0]))
         if tu is None:
+            logging.info("TranslationUnit is not available!")
             return
 
         # Build Vim syntax highlight rules

@@ -13,12 +13,13 @@ from services.vim.type_deduction import VimTypeDeduction
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
-        self.parser = ClangParser()
+        self.parser = ClangParser() # TODO remove
+        self.indexer = ClangIndexer(VimIndexer(yavide_instance))
         self.service = {
-            0x0 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
+            0x0 : SyntaxHighlighter(self.indexer, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
             0x1 : Diagnostics(self.parser, VimQuickFixDiagnostics(yavide_instance)),
             0x2 : TypeDeduction(self.parser, VimTypeDeduction(yavide_instance)),
-            0x3 : ClangIndexer(self.parser, VimIndexer(yavide_instance))
+            0x3 : self.indexer
         }
 
     def __unknown_service(self, args):
