@@ -1,12 +1,14 @@
 import logging
 import time
 import os
+import sys
 from ctypes import cdll
+from services.parser.clang_parser import ClangParser
 
 
 class ClangIndexer():
-    def __init__(self, parser, callback = None):
-        self.parser = parser
+    def __init__(self, callback = None):
+        self.parser = ClangParser()
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
@@ -19,6 +21,14 @@ class ClangIndexer():
             0x10 : self.__go_to_definition,
             0x11 : self.__find_all_references
         }
+
+    def get_tunit(self, filename):
+        logging.info("Trying to fetch {0} tunit.".format(filename))
+        logging.info("Available tunits: {0}".format(self.tunits))
+        return self.tunits.get(filename, None)
+
+    def get_parser(self):
+        return self.parser
 
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
@@ -110,6 +120,9 @@ class ClangIndexer():
                     original_filename,
                     os.path.join(proj_root_directory, self.indexer_directory_name, original_filename) + self.indexer_output_extension
                 )
+            else:
+                # We will skip AST serialization to the disk for temporary files.
+                self.tunits[original_filename] = tunit
 
         if self.callback:
             self.callback(id, args)
