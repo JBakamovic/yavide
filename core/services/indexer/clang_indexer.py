@@ -27,11 +27,12 @@ class ClangIndexer():
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
     def __load_single(self, tunit_filename, full_path):
-            try:
-                self.tunits[tunit_filename] = self.parser.load_tunit(full_path)
-                #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-            except:
-                logging.error(sys.exc_info()[0])
+        logging.info("Loading tunit {0} from {1}.".format(tunit_filename, full_path))
+        try:
+            self.tunits[tunit_filename] = self.parser.load_tunit(full_path)
+            #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+        except:
+            logging.error(sys.exc_info()[0])
 
     def __load_from_directory(self, indexer_directory):
         start = time.clock()
@@ -40,7 +41,8 @@ class ClangIndexer():
             for file in files:
                 name, extension = os.path.splitext(file)
                 if extension == self.indexer_output_extension:
-                    tunit_filename = file[len(indexer_directory):-len(self.indexer_output_extension)]
+                    tunit_filename = os.path.join(dirpath, file)[len(indexer_directory):-len(self.indexer_output_extension)]
+                    logging.info("tunit_filename = {0}, file = {1}".format(tunit_filename, file))
                     self.__load_single(tunit_filename, os.path.join(dirpath, file))
         time_elapsed = time.clock() - start
         logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
