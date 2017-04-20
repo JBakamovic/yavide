@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+from ctypes import cdll
 
 
 class ClangIndexer():
@@ -25,29 +26,42 @@ class ClangIndexer():
     def __unknown_op(self, id, args):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
-    def __load_from_directory(self, root_directory):
+    def __load_single(self, tunit_filename, full_path):
+            try:
+                self.tunits[tunit_filename] = self.parser.load_tunit(full_path)
+                #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+            except:
+                logging.error(sys.exc_info()[0])
+
+    def __load_from_directory(self, indexer_directory):
         start = time.clock()
         self.tunits.clear()
-        for dirpath, dirs, files in os.walk(root_directory):
+        for dirpath, dirs, files in os.walk(indexer_directory):
             for file in files:
                 name, extension = os.path.splitext(file)
                 if extension == self.indexer_output_extension:
-                    parsing_result_filename = os.path.join(dirpath, file)
-                    tunit_filename = parsing_result_filename[len(root_directory):-len(self.indexer_output_extension)]
-                    logging.info('load_from_directory(): File = ' + tunit_filename)
-                    try:
-                        self.tunits[tunit_filename] = self.parser.load_tunit(parsing_result_filename)
-                        #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-                    except:
-                        logging.error(sys.exc_info()[0])
+                    tunit_filename = file[len(indexer_directory):-len(self.indexer_output_extension)]
+                    self.__load_single(tunit_filename, os.path.join(dirpath, file))
         time_elapsed = time.clock() - start
-        logging.info("Loading from {0} took {1}.".format(root_directory, time_elapsed))
+        logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
 
-    def __save_to_directory(self, root_directory):
+    def __save_single(self, tunit, tunit_filename, dest_directory):
+        tunit_full_path = os.path.join(dest_directory, tunit_filename[1:len(tunit_filename)])
+        parent_dir = os.path.dirname(tunit_full_path)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        try:
+            self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
+        except:
+            logging.error(sys.exc_info()[0])
+
+    def __save_to_directory(self, indexer_directory):
         start = time.clock()
-        success = self.parser.save_to_directory(root_directory)
+        #logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+        for tunit_filename, tunit in self.tunits.iteritems():
+            self.__save_single(tunit, tunit_filename, indexer_directory)
         time_elapsed = time.clock() - start
-        logging.info("Saving to {0} took {1}.".format(root_directory, time_elapsed))
+        logging.info("Saving to {0} took {1}.".format(indexer_directory, time_elapsed))
 
     def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
         logging.info("Indexing a file '{0}' ... ".format(original_filename))
@@ -70,19 +84,10 @@ class ClangIndexer():
         # Index a single file
         start = time.clock()
         tunit = self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
-        if contents_filename == original_filename:
-            tunit_path = os.path.join(
-                proj_root_directory,
-                self.indexer_directory_name,
-                original_filename[1:len(original_filename)]
-            )
-            tunit_path += self.indexer_output_extension
-            tunit_parent_directory = os.path.dirname(tunit_path)
-            if not os.path.exists(tunit_parent_directory):
-                os.makedirs(tunit_parent_directory)
-            self.parser.save_tunit(tunit, tunit_path)
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
+
+        return tunit
 
     def __run_on_single_file(self, id, args):
         proj_root_directory = str(args[0])
@@ -90,9 +95,19 @@ class ClangIndexer():
         original_filename = str(args[2])
         compiler_args = str(args[3])
 
-        self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
+        # Index a file
+        tunit = self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
 
-        # TODO Load freshly parsed tunit into memory
+        if tunit is not None:
+            if contents_filename == original_filename:
+                # Serialize the indexing results to the disk
+                self.__save_single(tunit, original_filename, os.path.join(proj_root_directory, self.indexer_directory_name))
+
+                # Load indexing result from disk
+                self.__load_single(
+                    original_filename,
+                    os.path.join(proj_root_directory, self.indexer_directory_name, original_filename) + self.indexer_output_extension
+                )
 
         if self.callback:
             self.callback(id, args)
@@ -101,7 +116,7 @@ class ClangIndexer():
         proj_root_directory = str(args[0])
         compiler_args = str(args[1])
 
-        self.parser.drop_all_translation_units()
+        self.tunits.clear()
 
         # TODO High RAM consumption:
         #        1. After successful completion, RAM usage stays quite high (5GB for cppcheck)
@@ -125,7 +140,11 @@ class ClangIndexer():
                     name, extension = os.path.splitext(file)
                     if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
                         filename = os.path.join(dirpath, file)
-                        self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
+                        tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
+                        if tunit is not None:
+                            # Serialize the indexing results to the disk
+                            self.__save_single(tunit, filename, indexer_directory_full_path)
+
             time_elapsed = time.clock() - start
             logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
 
@@ -136,12 +155,23 @@ class ClangIndexer():
             self.callback(id, args)
 
     def __drop_single_file(self, id, args):
-        self.parser.drop_translation_unit(str(args[0]))
+        filename = str(args[0])
+        if filename in self.tunits:
+            del self.tunits[filename]
         if self.callback:
             self.callback(id, args)
 
     def __drop_all(self, id, dummy = None):
-        self.parser.drop_all_translation_units()
+        self.tunits.clear()
+
+        # Swap the freed' memory back to the OS. Parsing many translation units tend to
+        # consume a big chunk of memory. In order to minimize the system memory footprint
+        # we will try to swap it back.
+        try:
+            cdll.LoadLibrary("libc.so.6").malloc_trim(0)
+        except:
+            logging.error(sys.exc_info()[0])
+
         if self.callback:
             self.callback(id, dummy)
 

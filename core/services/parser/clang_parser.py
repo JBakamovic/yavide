@@ -310,20 +310,6 @@ class ClangParser():
             self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
-    def save_to_directory(self, root_dir):
-        try:
-            logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-            for filename, tunit in self.tunits.iteritems():
-                directory = os.path.dirname(os.path.join(root_dir, filename[1:len(filename)]))
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-                logging.info('save_to_directory(): File = ' + filename)
-                tunit.save(os.path.join(root_dir, filename[1:len(filename)] + '.ast'))
-        except:
-            logging.error(sys.exc_info()[0])
-            return False
-        return True
-
     def save_tunit(self, tunit, tunit_path):
         logging.info('save_tunit(): Path = ' + tunit_path)
         tunit.save(tunit_path)
@@ -331,40 +317,6 @@ class ClangParser():
     def load_tunit(self, tunit_path):
         logging.info('load_tunit(): Path = ' + tunit_path)
         return self.index.read(tunit_path)
-
-    def load_from_directory(self, root_dir):
-        #try:
-        for dirpath, dirs, files in os.walk(root_dir):
-            for file in files:
-                name, extension = os.path.splitext(file)
-                if extension == '.ast':
-                    parsing_result_filename = os.path.join(dirpath, file)
-                    original_filename = parsing_result_filename[len(root_dir):-len('.ast')]
-                    logging.info('load_from_directory(): File = ' + original_filename)
-                    try:
-                        self.tunits[original_filename] = self.index.read(parsing_result_filename)
-                        logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-                    except:
-                        logging.error(sys.exc_info()[0])
-        #except:
-        #    logging.error(sys.exc_info()[0])
-        #    return False
-        return True
-
-    def drop_translation_unit(self, filename):
-        if filename in self.tunits:
-            del self.tunits[filename]
-
-    def drop_all_translation_units(self):
-        self.tunits.clear()
-
-        # Swap the freed' memory back to the OS. Parsing many translation units tend to
-        # consume a big chunk of memory. In order to minimize the system memory footprint 
-        # we will try to swap it back.
-        try:
-            cdll.LoadLibrary("libc.so.6").malloc_trim(0)
-        except:
-            logging.error(sys.exc_info()[0])
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
