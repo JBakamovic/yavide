@@ -37,7 +37,7 @@ class ClangIndexer():
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
-        self.tunits = {}
+        self.tunit_pool = TUnitPool()
         self.op = {
             0x2 : self.__run_on_single_file, # TODO decrement the ID's
             0x3 : self.__run_on_directory,
@@ -64,14 +64,14 @@ class ClangIndexer():
     def __load_single(self, tunit_filename, full_path):
         logging.info("Loading tunit {0} from {1}.".format(tunit_filename, full_path))
         try:
-            self.tunits[tunit_filename] = self.parser.load_tunit(full_path)
-            #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
+            self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
+            #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunit_pool)))
         except:
             logging.error(sys.exc_info()[0])
 
     def __load_from_directory(self, indexer_directory):
         start = time.clock()
-        self.tunits.clear()
+        self.tunit_pool.clear()
         for dirpath, dirs, files in os.walk(indexer_directory):
             for file in files:
                 name, extension = os.path.splitext(file)
@@ -94,8 +94,8 @@ class ClangIndexer():
 
     def __save_to_directory(self, indexer_directory):
         start = time.clock()
-        #logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-        for tunit_filename, tunit in self.tunits.iteritems():
+        #logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunit_pool)))
+        for tunit_filename, tunit in self.tunit_pool:
             self.__save_single(tunit, tunit_filename, indexer_directory)
         time_elapsed = time.clock() - start
         logging.info("Saving to {0} took {1}.".format(indexer_directory, time_elapsed))
@@ -147,7 +147,7 @@ class ClangIndexer():
                 )
             else:
                 # We will skip AST serialization to the disk for temporary files.
-                self.tunits[original_filename] = tunit
+                self.tunit_pool[original_filename] = tunit
 
         if self.callback:
             self.callback(id, args)
@@ -156,7 +156,7 @@ class ClangIndexer():
         proj_root_directory = str(args[0])
         compiler_args = str(args[1])
 
-        self.tunits.clear()
+        self.tunit_pool.clear()
 
         # TODO High RAM consumption:
         #        1. After successful completion, RAM usage stays quite high (5GB for cppcheck)
@@ -195,14 +195,12 @@ class ClangIndexer():
             self.callback(id, args)
 
     def __drop_single_file(self, id, args):
-        filename = str(args[0])
-        if filename in self.tunits:
-            del self.tunits[filename]
+        self.tunit_pool.drop(str(args[0]))
         if self.callback:
             self.callback(id, args)
 
     def __drop_all(self, id, dummy = None):
-        self.tunits.clear()
+        self.tunit_pool.clear()
 
         # Swap the freed' memory back to the OS. Parsing many translation units tend to
         # consume a big chunk of memory. In order to minimize the system memory footprint
