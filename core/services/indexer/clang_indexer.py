@@ -32,8 +32,8 @@ class TUnitPool():
         return self.tunits.iteritems()
 
 class ClangIndexer():
-    def __init__(self, callback = None):
-        self.parser = ClangParser()
+    def __init__(self, parser, callback = None):
+        self.parser = parser
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
@@ -46,14 +46,6 @@ class ClangIndexer():
             0x10 : self.__go_to_definition,
             0x11 : self.__find_all_references
         }
-
-    def get_tunit(self, filename):
-        logging.info("Trying to fetch {0} tunit.".format(filename))
-        logging.info("Available tunits: {0}".format(self.tunits))
-        return self.tunits.get(filename, None)
-
-    def get_parser(self):
-        return self.parser
 
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
