@@ -5,6 +5,31 @@ import sys
 from ctypes import cdll
 from services.parser.clang_parser import ClangParser
 
+class TUnitPool():
+    def __init__(self):
+        self.tunits = {}
+
+    def get(self, filename):
+        return self.tunits.get(filename, None)
+
+    def set(self, filename, tunit):
+        self.tunits[filename] = tunit
+
+    def drop(self, filename):
+        if filename in self.tunits:
+            del self.tunits[filename]
+
+    def clear(self):
+        self.tunits.clear()
+
+    def __setitem__(self, key, item):
+        self.tunits[key] = item
+
+    def __getitem__(self, key):
+        return self.tunits.get(key, None)
+
+    def __iter__(self):
+        return self.tunits.iteritems()
 
 class ClangIndexer():
     def __init__(self, callback = None):
