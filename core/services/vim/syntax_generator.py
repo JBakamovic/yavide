@@ -41,7 +41,6 @@ class VimSyntaxGenerator:
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
         # Fetch the translation unit
-        #tu = clang_parser.get_translation_unit(str(args[0]))
         if tu is None:
             logging.info("TranslationUnit is not available!")
             return
