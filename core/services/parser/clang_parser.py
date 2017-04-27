@@ -240,7 +240,7 @@ class ClangParser():
                 return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
         return cur.get_definition()
 
-    def find_all_references(self, filename, line, column):
+    def find_all_references(self, tunit_pool, tunit, line, column):
         # TODO Use clang_findReferencesInFile() implementation?
         # TODO Why does the memory consumption grow when searching over many TU's?
         #       * Looks like as if there were no indexer results pre-loaded?
@@ -252,7 +252,7 @@ class ClangParser():
         # TODO Second query (on different symbol?) does not increase RAM usage?!
         #       * Memory from previous step gets reused
         def visitor(ast_node, ast_parent_node, client_data):
-            if (ast_node.location.file and ast_node.location.file.name == filename):  # we are not interested in symbols which got into this TU via includes
+            if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
                 node = ast_node.referenced if ast_node.referenced else ast_node
                 if node.spelling == client_data.cursor.spelling:
                     if node.get_usr() == client_data.cursor.get_usr():
@@ -286,14 +286,14 @@ class ClangParser():
                 return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
-        if filename not in self.tunits:
+        if not tunit:
             return []
 
         cursor = clang.cindex.Cursor.from_location(
-                    self.tunits[filename],
+                    tunit,
                     clang.cindex.SourceLocation.from_position(
-                        self.tunits[filename],
-                        clang.cindex.File.from_name(self.tunits[filename], self.tunits[filename].spelling),
+                        tunit,
+                        clang.cindex.File.from_name(tunit, tunit.spelling),
                         line,
                         column
                     )
@@ -305,7 +305,7 @@ class ClangParser():
         #           3. Non-searchable items?
         references = set()
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
-        for filename, tunit in self.tunits.iteritems():
+        for filename, tunit in tunit_pool:
             self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
