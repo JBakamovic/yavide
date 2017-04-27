@@ -144,10 +144,10 @@ class ClangParser():
     def get_translation_unit(self, filename):
         return self.tunits.get(filename, None)
 
-    def get_diagnostics(self, filename):
-        if filename in self.tunits:
-            logging.info("get_diagnostics() for " + filename + " tunit: " + str(self.tunits[filename]))
-            return self.tunits[filename].diagnostics
+    def get_diagnostics(self, tunit):
+        if tunit:
+            logging.info("get_diagnostics() for {0}".format(tunit.spelling))
+            return tunit.diagnostics
         return None
 
     def traverse(self, cursor, client_data, client_visitor):
