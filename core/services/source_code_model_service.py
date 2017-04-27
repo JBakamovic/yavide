@@ -17,7 +17,7 @@ class SourceCodeModel(YavideService):
         self.indexer = ClangIndexer(self.parser, VimIndexer(yavide_instance))
         self.service = {
             0x0 : SyntaxHighlighter(self.indexer.tunit_pool, self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
-            0x1 : Diagnostics(self.parser, VimQuickFixDiagnostics(yavide_instance)),
+            0x1 : Diagnostics(self.indexer.tunit_pool, self.parser, VimQuickFixDiagnostics(yavide_instance)),
             0x2 : TypeDeduction(self.parser, VimTypeDeduction(yavide_instance)),
             0x3 : self.indexer
         }
