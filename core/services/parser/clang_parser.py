@@ -5,8 +5,6 @@ import logging
 import subprocess
 import clang.cindex
 from services.parser.ast_node_identifier import ASTNodeId
-from ctypes import cdll
-from pympler import asizeof
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
     """
@@ -114,7 +112,6 @@ def get_system_includes():
 
 class ClangParser():
     def __init__(self):
-        self.tunits = {}
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
@@ -127,7 +124,6 @@ class ClangParser():
         tunit = None
         try:
             # Parse the translation unit
-            #self.tunits[original_filename] = self.index.parse(
             tunit = self.index.parse(
                 path = contents_filename,
                 args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
@@ -135,14 +131,7 @@ class ClangParser():
             )
         except:
             logging.error(sys.exc_info()[0])
-
-        logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunits)))
-        logging.info("tunits: " + str(self.tunits))
-
         return tunit
-
-    def get_translation_unit(self, filename):
-        return self.tunits.get(filename, None)
 
     def get_diagnostics(self, tunit):
         if tunit:
@@ -327,9 +316,9 @@ class ClangParser():
                 'Token.Cursor.Extent %-25s' % ('[' + str(token.cursor.extent.start.line) + ', ' + str(token.cursor.extent.start.column) + ']:[' + str(token.cursor.extent.end.line) + ', ' + str(token.cursor.extent.end.column) + ']') +
                 'Cursor.Extent %-25s' % ('[' + str(cursor.extent.start.line) + ', ' + str(cursor.extent.start.column) + ']:[' + str(cursor.extent.end.line) + ', ' + str(cursor.extent.end.column) + ']'))
 
-    def dump_ast_nodes(self, filename):
+    def dump_ast_nodes(self, tunit):
         def visitor(ast_node, ast_parent_node, client_data):
-            if ast_node.location.file and ast_node.location.file.name == filename:  # we're only interested in symbols from given file
+            if ast_node.location.file and ast_node.location.file.name == tunit.spelling:  # we're only interested in symbols from given file
                 # if ast_node.kind in [clang.cindex.CursorKind.CALL_EXPR, clang.cindex.CursorKind.MEMBER_REF_EXPR]:
                 #    self.dump_tokens(ast_node)
 
@@ -370,7 +359,7 @@ class ClangParser():
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
 
-        if filename in self.tunits:
+        if tunit:
             logging.debug(
                 '%-12s' % '[Line, Col]' +
                 '%-25s' % 'Extent' +
@@ -395,7 +384,7 @@ class ClangParser():
             )
 
             logging.debug('----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
-            self.traverse(self.tunits[filename].cursor, None, visitor)
+            self.traverse(tunit.cursor, None, visitor)
 
     @staticmethod
     def __extract_dependent_type_kind(cursor):
