@@ -220,15 +220,15 @@ class ClangParser():
                  )
         return cursor
 
-    def get_definition(self, filename, line, column):
-        if filename not in self.tunits:
+    def get_definition(self, tunit, line, column):
+        if not tunit:
             return None
 
         cursor = clang.cindex.Cursor.from_location(
-                    self.tunits[filename],
+                    tunit,
                     clang.cindex.SourceLocation.from_position(
-                        self.tunits[filename],
-                        clang.cindex.File.from_name(self.tunits[filename], self.tunits[filename].spelling),
+                        tunit,
+                        clang.cindex.File.from_name(tunit, tunit.spelling),
                         line,
                         column
                     )
