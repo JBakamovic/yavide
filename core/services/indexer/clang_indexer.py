@@ -206,7 +206,7 @@ class ClangIndexer():
             self.callback(id, dummy)
 
     def __go_to_definition(self, id, args):
-        cursor = self.parser.get_definition(str(args[0]), int(args[1]), int(args[2]))
+        cursor = self.parser.get_definition(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         if cursor:
             logging.info('Definition location %s' % str(cursor.location))
         else:
