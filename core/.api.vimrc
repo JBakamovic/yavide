@@ -971,14 +971,8 @@ function! Y_SrcCodeModel_Start()
     endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
 
-    " TODO Make this happen on SrcCodeModel_StartCallback()
-    "if isdirectory(g:project_root_directory . '/' . g:project_indexer_directory)
-    "    echomsg 'Loading indexer results from disk ...'
-    "    call Y_SrcCodeIndexer_LoadFromDisk()
-    "else
     echomsg 'Starting indexer ...'
     call Y_SrcCodeIndexer_RunOnDirectory()
-    "endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1239,53 +1233,6 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_LoadFromDisk()
-" Description:  Load previously saved indexing results from the disk.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_LoadFromDisk()
-    if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory . '/' . g:project_indexer_directory])
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_LoadFromDiskCompleted()
-" Description:  Loading previously saved indexing results from the disk completed.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_LoadFromDiskCompleted(success)
-    if a:success == 0
-        echoerr 'Loading already existing indexing results failed. Will start re-indexing the whole project again ...'
-        "call Y_SrcCodeIndexer_RunOnDirectory()
-    else
-        echomsg 'Loading indexing results for ' . g:project_root_directory . ' completed.'
-    endif
-endfunction
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_SaveToDisk()
-" Description:  Save indexing results to the disk.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_SaveToDisk()
-    if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory . '/' . g:project_indexer_directory])
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_SaveToDiskCompleted()
-" Description:  Saving indexing results to the disk completed.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_SaveToDiskCompleted(success)
-    if a:success == 0
-        echoerr 'Saving indexing results to the disk failed.'
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_RunOnSingleFile()
 " Description:  Runs indexer on a single file.
 " Dependency:
@@ -1301,7 +1248,7 @@ function! Y_SrcCodeIndexer_RunOnSingleFile()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
     endif
 endfunction
 
@@ -1311,7 +1258,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnSingleFileCompleted()
-    " TODO Y_SrcCodeIndexer_SaveToDiskSingle()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1321,7 +1267,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectory()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, g:project_root_directory, g:project_compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory, g:project_compiler_args])
     endif
 endfunction
 
@@ -1342,7 +1288,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_DropSingleFile(filename)
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x4, a:filename])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x2, a:filename])
     endif
 endfunction
 
@@ -1361,7 +1307,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_DropAll()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x5])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3])
     endif
 endfunction
 

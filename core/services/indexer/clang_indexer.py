@@ -39,10 +39,10 @@ class ClangIndexer():
         self.indexer_output_extension = '.ast'
         self.tunit_pool = TUnitPool()
         self.op = {
-            0x2 : self.__run_on_single_file, # TODO decrement the ID's
-            0x3 : self.__run_on_directory,
-            0x4 : self.__drop_single_file,
-            0x5 : self.__drop_all,
+            0x0 : self.__run_on_single_file,
+            0x1 : self.__run_on_directory,
+            0x2 : self.__drop_single_file,
+            0x3 : self.__drop_all,
             0x10 : self.__go_to_definition,
             0x11 : self.__find_all_references
         }
