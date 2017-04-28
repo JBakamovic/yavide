@@ -32,8 +32,8 @@ class TUnitPool():
         return self.tunits.iteritems()
 
 class ClangIndexer():
-    def __init__(self, parser, callback = None):
-        self.parser = parser
+    def __init__(self, callback = None):
+        self.parser = ClangParser()
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
