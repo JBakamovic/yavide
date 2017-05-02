@@ -54,10 +54,8 @@ class ClangIndexer():
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
     def __load_single(self, tunit_filename, full_path):
-        logging.info("Loading tunit {0} from {1}.".format(tunit_filename, full_path))
         try:
             self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
-            #logging.info('TUnits load_from_disk() memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunit_pool)))
         except:
             logging.error(sys.exc_info()[0])
 
@@ -69,7 +67,6 @@ class ClangIndexer():
                 name, extension = os.path.splitext(file)
                 if extension == self.indexer_output_extension:
                     tunit_filename = os.path.join(dirpath, file)[len(indexer_directory):-len(self.indexer_output_extension)]
-                    logging.info("tunit_filename = {0}, file = {1}".format(tunit_filename, file))
                     self.__load_single(tunit_filename, os.path.join(dirpath, file))
         time_elapsed = time.clock() - start
         logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
@@ -83,14 +80,6 @@ class ClangIndexer():
             self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
         except:
             logging.error(sys.exc_info()[0])
-
-    def __save_to_directory(self, indexer_directory):
-        start = time.clock()
-        #logging.info('TUnits memory consumption (pympler) = ' + str(asizeof.asizeof(self.tunit_pool)))
-        for tunit_filename, tunit in self.tunit_pool:
-            self.__save_single(tunit, tunit_filename, indexer_directory)
-        time_elapsed = time.clock() - start
-        logging.info("Saving to {0} took {1}.".format(indexer_directory, time_elapsed))
 
     def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
         logging.info("Indexing a file '{0}' ... ".format(original_filename))
@@ -111,7 +100,7 @@ class ClangIndexer():
 
         # Index a single file
         start = time.clock()
-        tunit = self.parser.run(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
+        tunit = self.parser.parse(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
@@ -236,7 +225,7 @@ class ClangIndexer():
     def __go_to_definition(self, id, args):
         cursor = self.parser.get_definition(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         if cursor:
-            logging.info('Definition location %s' % str(cursor.location))
+            logging.info('Definition location {0}'.format(str(cursor.location)))
         else:
             logging.info('No definition found.')
 
@@ -247,9 +236,7 @@ class ClangIndexer():
         start = time.clock()
         references = self.parser.find_all_references(self.tunit_pool, self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         time_elapsed = time.clock() - start
-        logging.info("Find all references of [{0}, {1}] in {2} took {3}.".format(args[1], args[2], args[0], time_elapsed))
-        for r in references:
-            logging.info("Ref location %s" % str(r))
+        logging.info("Find all references operation took {0}.".format(time_elapsed))
 
         if self.callback:
             self.callback(id, references)

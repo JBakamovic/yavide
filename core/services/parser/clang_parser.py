@@ -115,7 +115,7 @@ class ClangParser():
         self.index = clang.cindex.Index.create()
         self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
 
-    def run(self, contents_filename, original_filename, compiler_args, project_root_directory):
+    def parse(self, contents_filename, original_filename, compiler_args, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
         logging.info('Default args = {0}'.format(self.default_args))
@@ -134,10 +134,11 @@ class ClangParser():
         return tunit
 
     def get_diagnostics(self, tunit):
-        if tunit:
-            logging.info("get_diagnostics() for {0}".format(tunit.spelling))
-            return tunit.diagnostics
-        return None
+        if not tunit:
+            return None
+
+        logging.info("Fetching diagnostics for {0}".format(tunit.spelling))
+        return tunit.diagnostics
 
     def traverse(self, cursor, client_data, client_visitor):
         traverse(cursor, client_data, client_visitor)
@@ -197,7 +198,7 @@ class ClangParser():
         if not tunit:
             return None
 
-        logging.info("Mapping source location to type for " + str(tunit.spelling))
+        logging.info("Extracting cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
         cursor = clang.cindex.Cursor.from_location(
                     tunit,
                     clang.cindex.SourceLocation.from_position(
@@ -213,6 +214,7 @@ class ClangParser():
         if not tunit:
             return None
 
+        logging.info("Extracting definition of cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
         cursor = clang.cindex.Cursor.from_location(
                     tunit,
                     clang.cindex.SourceLocation.from_position(
@@ -278,6 +280,7 @@ class ClangParser():
         if not tunit:
             return []
 
+        logging.info("Finding all references of cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
         cursor = clang.cindex.Cursor.from_location(
                     tunit,
                     clang.cindex.SourceLocation.from_position(
@@ -299,11 +302,11 @@ class ClangParser():
         return references
 
     def save_tunit(self, tunit, tunit_path):
-        logging.info('save_tunit(): Path = ' + tunit_path)
+        logging.info('Saving tunit to ... {0}'.format(tunit_path))
         tunit.save(tunit_path)
 
     def load_tunit(self, tunit_path):
-        logging.info('load_tunit(): Path = ' + tunit_path)
+        logging.info('Loading tunit from ... {0}'.format(tunit_path))
         return self.index.read(tunit_path)
 
     def dump_tokens(self, cursor):
