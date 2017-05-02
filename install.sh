@@ -9,6 +9,7 @@ SYSTEM_PACKAGE_TYPE=""
 SYSTEM_PACKAGE_SET=""
 YAVIDE_INSTALL_DIR_DEFAULT="/opt"
 PIP_INSTALL_CMD="pip install"
+
 #####################################################################################################
 # Helper functions
 #####################################################################################################
@@ -43,18 +44,18 @@ guess_system_package_manager(){
         SYSTEM_PACKAGE_TYPE="ebuild"
         SYSTEM_PACKAGE_MANAGER_INSTALL="emerge"
         SYSTEM_PACKAGE_MANAGER_UPDATE="emerge --sync"
-        PIP_INSTALL_CMD="pip  install --user "
+        PIP_INSTALL_CMD="pip install --user"
     fi
 
     if [ $SYSTEM_PACKAGE_TYPE == "rpm" ]; then
-        SYSTEM_PACKAGE_SET="gvim ctags cscope git wget pcre-devel libyaml-devel python-pip python-devel clang-devel clang-libs"
+        SYSTEM_PACKAGE_SET="gvim git wget pcre-devel python-pip python-devel clang-devel clang-libs"
     elif [ $SYSTEM_PACKAGE_TYPE == "deb" ]; then
-        SYSTEM_PACKAGE_SET="vim-gnome ctags cscope git wget libpcre3 libpcre3-dev libyaml-dev python-pip python-dev libclang-dev"
+        SYSTEM_PACKAGE_SET="vim-gnome git wget libpcre3 libpcre3-dev python-pip python-dev libclang-dev"
     elif [ $SYSTEM_PACKAGE_TYPE == "archpkg" || $SYSTEM_PACKAGE_TYPE == "ebuild" ]; then
-        SYSTEM_PACKAGE_SET="gvim ctags cscope git wget pcre libyaml python-pip python clang"
+        SYSTEM_PACKAGE_SET="gvim git wget pcre python-pip python clang"
     fi
 
-    PIP_PACKAGE_SET="clang watchdog"
+    PIP_PACKAGE_SET="clang"
 }
 
 print_usage(){
@@ -165,7 +166,7 @@ stty $stty_orig     # restore terminal setting.
 #####################################################################################################
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_UPDATE
 echo "$passwd" | sudo -S $SYSTEM_PACKAGE_MANAGER_INSTALL $SYSTEM_PACKAGE_SET
-echo "$passwd" | sudo -S  $PIP_INSTALL_CMD $PIP_PACKAGE_SET
+echo "$passwd" | sudo -S $PIP_INSTALL_CMD $PIP_PACKAGE_SET
 
 mkdir -p $HOME/.fonts && git clone https://github.com/Lokaltog/powerline-fonts.git $HOME/.fonts
 fc-cache -vf $HOME/.fonts
