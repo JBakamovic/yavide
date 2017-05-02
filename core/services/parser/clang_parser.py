@@ -232,16 +232,24 @@ class ClangParser():
         return cur.get_definition()
 
     def find_all_references(self, tunit_pool, tunit, line, column):
-        # TODO Use clang_findReferencesInFile() implementation?
+        # TODO As of now, this routine is very very slow. See what we can do about it? Some ideas could be to:
+        #       * Traverse the AST tree in a smarter way (i.e. exclude unnecessary descents)
+        #       * Parallelize the visitation
+        #       * Optimize for:
+        #           1. Local-scope (i.e. local variables) -> we need to search only within the current TU
+        #           2. Things which does not make sense to search for (i.e. literals, ...)
+        #           3. ... ?
+        #
         # TODO Why does the memory consumption grow when searching over many TU's?
         #       * Looks like as if there were no indexer results pre-loaded?
         #       * i.e. bigger project as cppcheck (.indexer contents is 1.4GB large)
-        #
         # TODO Why doesn't the memory get freed after completion?
         #       * Memory allocator decides when it will swap the allocated
         #         memory back to the OS
         # TODO Second query (on different symbol?) does not increase RAM usage?!
         #       * Memory from previous step gets reused
+        #
+        # TODO Have a look at clang_findReferencesInFile() implementation
         def visitor(ast_node, ast_parent_node, client_data):
             if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
                 node = ast_node.referenced if ast_node.referenced else ast_node
@@ -291,10 +299,6 @@ class ClangParser():
                     )
                  )
 
-        # TODO Optimize for:
-        #           1. Local variables -> search within current TU
-        #           2. Function parameters -> search within current TU
-        #           3. Non-searchable items?
         references = set()
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
         for filename, tunit in tunit_pool:
