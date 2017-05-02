@@ -56,7 +56,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_Env_Deinit()
-    " TODO Close project if any is opened. We must not miss the things which we usually do when closing projects (i.e. saving indexing results)
     " Shutdown Yavide server background service
     call Y_ServerStop()
 endfunction
@@ -981,7 +980,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Stop()
-    "call Y_SrcCodeIndexer_SaveToDisk()
     call Y_SrcCodeIndexer_DropAll()
     call Y_ServerStopService(g:project_service_src_code_model['id'])
 endfunction
@@ -1278,7 +1276,6 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectoryCompleted()
     echomsg 'Indexing run on ' . g:project_root_directory . ' completed.'
-    "call Y_SrcCodeIndexer_SaveToDisk()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
