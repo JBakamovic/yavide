@@ -53,59 +53,6 @@ class ClangIndexer():
     def __unknown_op(self, id, args):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
-    def __load_single(self, tunit_filename, full_path):
-        try:
-            self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
-        except:
-            logging.error(sys.exc_info()[0])
-
-    def __load_from_directory(self, indexer_directory):
-        start = time.clock()
-        self.tunit_pool.clear()
-        for dirpath, dirs, files in os.walk(indexer_directory):
-            for file in files:
-                name, extension = os.path.splitext(file)
-                if extension == self.indexer_output_extension:
-                    tunit_filename = os.path.join(dirpath, file)[len(indexer_directory):-len(self.indexer_output_extension)]
-                    self.__load_single(tunit_filename, os.path.join(dirpath, file))
-        time_elapsed = time.clock() - start
-        logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
-
-    def __save_single(self, tunit, tunit_filename, dest_directory):
-        tunit_full_path = os.path.join(dest_directory, tunit_filename[1:len(tunit_filename)])
-        parent_dir = os.path.dirname(tunit_full_path)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-        try:
-            self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
-        except:
-            logging.error(sys.exc_info()[0])
-
-    def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
-        logging.info("Indexing a file '{0}' ... ".format(original_filename))
-
-        # Append additional include path to the compiler args which points to the parent directory of current buffer.
-        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
-        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
-        #     unnecessary Clang parsing errors.
-        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-        #     potentially would not play well with other tools (indexer, version control, etc.).
-        if contents_filename != original_filename:
-            compiler_args += ' -I' + os.path.dirname(original_filename)
-
-        # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
-        #       * Problem:
-        #           * File we are indexing might be a header which is included in another translation unit
-        #           * We would need a TU dependency tree to update influenced translation units as well
-
-        # Index a single file
-        start = time.clock()
-        tunit = self.parser.parse(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
-        time_elapsed = time.clock() - start
-        logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
-
-        return tunit
-
     def __run_on_single_file(self, id, args):
         proj_root_directory = str(args[0])
         contents_filename = str(args[1])
@@ -116,17 +63,16 @@ class ClangIndexer():
         tunit = self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
 
         if tunit is not None:
+            # In case we are operating on temporary files (files modified by the user but not yet saved), we don't
+            # want to serialize its AST to the disk. Otherwise, do the serialization and load the results back to RAM.
+            # See 'Note' in __run_on_directory() for more details on why we do it in a flush-then-load-it-back way.
             if contents_filename == original_filename:
-                # Serialize the indexing results to the disk
                 self.__save_single(tunit, original_filename, os.path.join(proj_root_directory, self.indexer_directory_name))
-
-                # Load indexing result from disk
                 self.__load_single(
                     original_filename,
                     os.path.join(proj_root_directory, self.indexer_directory_name, original_filename) + self.indexer_output_extension
                 )
             else:
-                # We will skip AST serialization to the disk for temporary files.
                 self.tunit_pool[original_filename] = tunit
 
         if self.callback:
@@ -191,7 +137,6 @@ class ClangIndexer():
                         filename = os.path.join(dirpath, file)
                         tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
                         if tunit is not None:
-                            # Serialize the indexing results to the disk
                             self.__save_single(tunit, filename, indexer_directory_full_path)
 
             time_elapsed = time.clock() - start
@@ -240,3 +185,56 @@ class ClangIndexer():
 
         if self.callback:
             self.callback(id, references)
+
+    def __load_single(self, tunit_filename, full_path):
+        try:
+            self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
+        except:
+            logging.error(sys.exc_info()[0])
+
+    def __load_from_directory(self, indexer_directory):
+        start = time.clock()
+        self.tunit_pool.clear()
+        for dirpath, dirs, files in os.walk(indexer_directory):
+            for file in files:
+                name, extension = os.path.splitext(file)
+                if extension == self.indexer_output_extension:
+                    tunit_filename = os.path.join(dirpath, file)[len(indexer_directory):-len(self.indexer_output_extension)]
+                    self.__load_single(tunit_filename, os.path.join(dirpath, file))
+        time_elapsed = time.clock() - start
+        logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
+
+    def __save_single(self, tunit, tunit_filename, dest_directory):
+        tunit_full_path = os.path.join(dest_directory, tunit_filename[1:len(tunit_filename)])
+        parent_dir = os.path.dirname(tunit_full_path)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        try:
+            self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
+        except:
+            logging.error(sys.exc_info()[0])
+
+    def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
+        logging.info("Indexing a file '{0}' ... ".format(original_filename))
+
+        # Append additional include path to the compiler args which points to the parent directory of current buffer.
+        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
+        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
+        #     unnecessary Clang parsing errors.
+        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+        #     potentially would not play well with other tools (indexer, version control, etc.).
+        if contents_filename != original_filename:
+            compiler_args += ' -I' + os.path.dirname(original_filename)
+
+        # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
+        #       * Problem:
+        #           * File we are indexing might be a header which is included in another translation unit
+        #           * We would need a TU dependency tree to update influenced translation units as well
+
+        # Index a single file
+        start = time.clock()
+        tunit = self.parser.parse(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
+        time_elapsed = time.clock() - start
+        logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
+
+        return tunit
