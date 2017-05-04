@@ -1,12 +1,36 @@
-import sys
+import copy_reg
 import logging
+import sys
 import tempfile
+import types
 from multiprocessing import Process, Queue
 from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
 from services.indexer_service import SourceCodeIndexer
+
+def _pickle_method(method):
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    if func_name.startswith('__') and not func_name.endswith('__'): # Deal with 'private' functions
+        cls_name = cls.__name__.lstrip('_')
+        func_name = '_' + cls_name + func_name
+    return _unpickle_method, (func_name, obj, cls)
+
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.__mro__:
+        try:
+            func = cls.__dict__[func_name]
+        except KeyError:
+            pass
+        else:
+            break
+    return func.__get__(obj, cls)
+
+# Enable pickling of class methods (required for ClangIndexer() implementation)
+copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 
 class YavideServer():
     def __init__(self, msg_queue, yavide_instance):

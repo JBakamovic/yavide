@@ -15,9 +15,9 @@ class SourceCodeModel(YavideService):
         self.indexer = ClangIndexer(VimIndexer(yavide_instance))
         self.service = {
             0x0 : self.indexer,
-            0x1 : SyntaxHighlighter(self.indexer.tunit_pool, self.indexer.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
-            0x2 : Diagnostics(self.indexer.tunit_pool, self.indexer.parser, VimQuickFixDiagnostics(yavide_instance)),
-            0x3 : TypeDeduction(self.indexer.tunit_pool, self.indexer.parser, VimTypeDeduction(yavide_instance))
+            0x1 : SyntaxHighlighter(self.indexer.tunits, self.indexer.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
+            0x2 : Diagnostics(self.indexer.tunits, self.indexer.parser, VimQuickFixDiagnostics(yavide_instance)),
+            0x3 : TypeDeduction(self.indexer.tunits, self.indexer.parser, VimTypeDeduction(yavide_instance))
         }
 
     def __unknown_service(self, args):
