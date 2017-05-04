@@ -1,7 +1,7 @@
 import logging
 from common.yavide_utils import YavideUtils
 
-class VimIndexer():
+class VimIndexer(object):
     def __init__(self, yavide_instance):
         self.yavide_instance = yavide_instance
         self.op = {

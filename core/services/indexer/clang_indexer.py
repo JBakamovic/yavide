@@ -1,11 +1,19 @@
+import contextlib
+import functools
+import itertools
 import logging
-import time
+import multiprocessing
 import os
 import sys
-from ctypes import cdll
+import time
 from services.parser.clang_parser import ClangParser
 
-class TUnitPool():
+# Declaring 'ClangParser' as global variable is an __unfortunate__ __workaround__ for a limitation which is imposed by
+# inability to pickle objects containing pointers. We have at least one such object and that is 'CIndex' which is
+# contained within a 'ClangParser' class.
+g_clang_parser = ClangParser()
+
+class TUnitPool(object):
     def __init__(self):
         self.tunits = {}
 
@@ -31,12 +39,12 @@ class TUnitPool():
     def __iter__(self):
         return self.tunits.iteritems()
 
-class ClangIndexer():
+class ClangIndexer(object):
     def __init__(self, callback = None):
-        self.parser = ClangParser()
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
+        self.cpu_count = multiprocessing.cpu_count()
         self.tunit_pool = TUnitPool()
         self.op = {
             0x0 : self.__run_on_single_file,
@@ -46,6 +54,14 @@ class ClangIndexer():
             0x10 : self.__go_to_definition,
             0x11 : self.__find_all_references
         }
+
+    @property
+    def parser(self):
+        return g_clang_parser
+
+    @property
+    def tunits(self):
+        return self.tunit_pool
 
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
@@ -124,24 +140,26 @@ class ClangIndexer():
         compiler_args = str(args[1])
 
         self.tunit_pool.clear()
-
-        # TODO Run indexing of each file in separate (parallel) jobs to make it faster?
         indexer_directory_full_path = os.path.join(proj_root_directory, self.indexer_directory_name)
         if not os.path.exists(indexer_directory_full_path):
             logging.info("Starting to index whole directory '{0}' ... ".format(proj_root_directory))
             start = time.clock()
-            for dirpath, dirs, files in os.walk(proj_root_directory):
-                for file in files:
-                    name, extension = os.path.splitext(file)
-                    if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
-                        filename = os.path.join(dirpath, file)
-                        tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
-                        if tunit is not None:
-                            self.__save_single(tunit, filename, indexer_directory_full_path)
-
-            time_elapsed = time.clock() - start
+            with contextlib.closing(multiprocessing.Pool(self.cpu_count)) as pool:
+                walk = os.walk(proj_root_directory)
+                filename_iterable = itertools.chain.from_iterable((os.path.join(root, file) for file in files) for root, dirs, files in walk)
+                pool.map(
+                    functools.partial( # multiprocessing.Pool().map() does not support passing more than 1 arg which is why we are using functools.partial()
+                        self.__run_on_directory_impl,
+                        proj_root_directory,
+                        compiler_args,
+                        indexer_directory_full_path
+                    ),
+                    filename_iterable
+                )
+            pool.close()
+            pool.join()
+            time_elapsed = time.clock() - start # TODO how to count total CPU time, for all processes?
             logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
-
         logging.info("Loading indexer results ... '{0}'.".format(indexer_directory_full_path))
         self.__load_from_directory(indexer_directory_full_path)
 
@@ -178,6 +196,7 @@ class ClangIndexer():
             self.callback(id, cursor.location if cursor else None)
 
     def __find_all_references(self, id, args):
+        # TODO parallelize this as well
         start = time.clock()
         references = self.parser.find_all_references(self.tunit_pool, self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         time_elapsed = time.clock() - start
@@ -238,3 +257,10 @@ class ClangIndexer():
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
         return tunit
+
+    def __run_on_directory_impl(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename):
+        name, extension = os.path.splitext(filename)
+        if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
+            tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
+            if tunit is not None:
+                self.__save_single(tunit, filename, indexer_directory_full_path)
