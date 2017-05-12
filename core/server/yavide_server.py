@@ -8,7 +8,6 @@ from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
-from services.indexer_service import SourceCodeIndexer
 
 def _pickle_method(method):
     func_name = method.im_func.__name__

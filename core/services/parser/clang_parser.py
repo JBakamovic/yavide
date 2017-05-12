@@ -231,7 +231,7 @@ class ClangParser():
                 return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
         return cur.get_definition()
 
-    def find_all_references(self, tunit_pool, tunit, line, column):
+    def find_all_references(self, cursor, tunit):
         # TODO As of now, this routine is very very slow. See what we can do about it? Some ideas could be to:
         #       * Traverse the AST tree in a smarter way (i.e. exclude unnecessary descents)
         #       * Parallelize the visitation
@@ -288,21 +288,10 @@ class ClangParser():
         if not tunit:
             return []
 
-        logging.info("Finding all references of cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
-        cursor = clang.cindex.Cursor.from_location(
-                    tunit,
-                    clang.cindex.SourceLocation.from_position(
-                        tunit,
-                        clang.cindex.File.from_name(tunit, tunit.spelling),
-                        line,
-                        column
-                    )
-                 )
-
+        #logging.info("Finding all references of cursor [{0}, {1}]: {2}.".format(cursor.location.line, cursor.location.column, tunit.spelling))
         references = set()
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
-        for filename, tunit in tunit_pool:
-            self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
+        self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
     def save_tunit(self, tunit, tunit_path):
