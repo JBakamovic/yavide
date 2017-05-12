@@ -13,6 +13,11 @@ from services.parser.clang_parser import ClangParser
 # contained within a 'ClangParser' class.
 g_clang_parser = ClangParser()
 
+# TODO move this to utils
+from itertools import izip_longest
+def slicer(n, iterable, padvalue=None):
+    return izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
+
 class TUnitPool(object):
     def __init__(self):
         self.tunits = {}
@@ -30,11 +35,17 @@ class TUnitPool(object):
     def clear(self):
         self.tunits.clear()
 
+    def __len__(self):
+        return len(self.tunits)
+
     def __setitem__(self, key, item):
-        self.tunits[key] = item
+        self.set(key, item)
 
     def __getitem__(self, key):
-        return self.tunits.get(key, None)
+        return self.get(key)
+
+    def __delitem__(self, filename):
+        self.drop(filename)
 
     def __iter__(self):
         return self.tunits.iteritems()
@@ -196,9 +207,39 @@ class ClangIndexer(object):
             self.callback(id, cursor.location if cursor else None)
 
     def __find_all_references(self, id, args):
-        # TODO parallelize this as well
+        tunit_slice = slicer(len(self.tunit_pool)/self.cpu_count, self.tunit_pool)
+        logging.info("type(tunit_slice) = " + str(type(tunit_slice)))
+        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
+        process_list = []
+        references = []
+        for tunits in tunit_slice:
+            refs = set() # TODO create len(tunit_slice) shared_memory regions
+            p = multiprocessing.Process(target=self.__dispatch, args=(refs, cursor, tunits))
+            p.daemon = False
+            p.start()
+            process_list.append(p)
+        for p in process_list:
+            p.join()
+
+        if self.callback:
+            self.callback(id, references)
+        return
+
         start = time.clock()
-        references = self.parser.find_all_references(self.tunit_pool, self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
+        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
+        if cursor:
+            with contextlib.closing(multiprocessing.Pool(self.cpu_count)) as pool:
+                for filename, tunit in self.tunit_pool:
+                    pool.map(
+                        functools.partial(
+                            self.__find_all_references_impl,
+                            references,
+                            cursor
+                        ),
+                        self.tunit_pool
+                    )
+            pool.close()
+            pool.join()
         time_elapsed = time.clock() - start
         logging.info("Find all references operation took {0}.".format(time_elapsed))
 
@@ -264,3 +305,10 @@ class ClangIndexer(object):
             tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
             if tunit is not None:
                 self.__save_single(tunit, filename, indexer_directory_full_path)
+
+    def __dispatch(self, references, cursor, tunits):
+        for tunit in tunits:
+            references.add(self.__find_all_references_impl(cursor, tunit))
+
+    def __find_all_references_impl(self, cursor, tunit):
+        references = self.parser.find_all_references(cursor, tunit)
