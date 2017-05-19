@@ -1,4 +1,5 @@
 import contextlib
+import ctypes
 import functools
 import itertools
 import logging
@@ -8,6 +9,7 @@ import sys
 import time
 from services.parser.clang_parser import ClangParser
 
+# TODO revert this to be a member of ClangParser (use shared memory)
 # Declaring 'ClangParser' as global variable is an __unfortunate__ __workaround__ for a limitation which is imposed by
 # inability to pickle objects containing pointers. We have at least one such object and that is 'CIndex' which is
 # contained within a 'ClangParser' class.
@@ -15,7 +17,7 @@ g_clang_parser = ClangParser()
 
 # TODO move this to utils
 from itertools import izip_longest
-def slicer(n, iterable, padvalue=None):
+def slice_it(iterable, n, padvalue=None):
     return izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 class TUnitPool(object):
@@ -207,22 +209,30 @@ class ClangIndexer(object):
             self.callback(id, cursor.location if cursor else None)
 
     def __find_all_references(self, id, args):
-        tunit_slice = slicer(len(self.tunit_pool)/self.cpu_count, self.tunit_pool)
-        logging.info("type(tunit_slice) = " + str(type(tunit_slice)))
+        tunit_slices = slice_it(self.tunit_pool, len(self.tunit_pool)/self.cpu_count)
         cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
-        process_list = []
-        references = []
-        for tunits in tunit_slice:
-            refs = set() # TODO create len(tunit_slice) shared_memory regions
-            p = multiprocessing.Process(target=self.__dispatch, args=(refs, cursor, tunits))
-            p.daemon = False
-            p.start()
-            process_list.append(p)
-        for p in process_list:
-            p.join()
+        #source_location_arr = multiprocessing.Array(CTypeSourceLocation, len(self.tunit_pool)/self.cpu_count)
+        manager = multiprocessing.Manager()
+        L = manager.list()
+        logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(self.tunit_pool))
+        p = multiprocessing.Process(target=self.__dispatch, args=(L, cursor, self.tunit_pool))
+        p.daemon = False
+        p.start()
+        p.join()
 
-        if self.callback:
-            self.callback(id, references)
+        # TODO use cpu_count+1 instances of list and merge them together
+        #process_list = []
+        #for tunit_slice in tunit_slices:
+        #    p = multiprocessing.Process(target=self.__dispatch, args=(lst, cursor, tunit_slice,))
+        #    p.daemon = False
+        #    p.start()
+        #    process_list.append(p)
+        #for p in process_list:
+        #    p.join()
+
+        logging.info('Found references: ' + str(L))
+        #if self.callback:
+        #    self.callback(id, set(lst))
         return
 
         start = time.clock()
@@ -307,8 +317,19 @@ class ClangIndexer(object):
                 self.__save_single(tunit, filename, indexer_directory_full_path)
 
     def __dispatch(self, references, cursor, tunits):
-        for tunit in tunits:
-            references.add(self.__find_all_references_impl(cursor, tunit))
+        logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
+        #references.append('sadsadasda')
+        #references.extend(['sad', 'asd', 'sagfgf'])
+        #return
+        for filename, tunit in tunits:
+            refs = self.parser.find_all_references(cursor, tunit)
+            logging.info('Refs: ' + str(refs))
+            if len(refs):
+                references.extend(refs)
+                #references.extend([1, 2, 3, 4, 5, 6, 7, 8, 9])
+                logging.info('All references: ' + str(references))
+                return
+        logging.info('All references: ' + str(references))
 
     def __find_all_references_impl(self, cursor, tunit):
         references = self.parser.find_all_references(cursor, tunit)

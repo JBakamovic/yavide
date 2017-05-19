@@ -63,45 +63,43 @@ class ImmutableSourceLocation():
     Reason of existance of this class is because clang.cindex.SourceLocation is not designed to be hashable.
     """
 
-    def __init__(self, source_location):
-        self.source_location = source_location
+    def __init__(self, filename, line, column, offset):
+        self.filename = filename
+        self.line = line
+        self.column = column
+        self.offset = offset
 
     @property
-    def file(self):
-        """Get the file represented by this source location."""
-        return self.source_location.file
+    def filename(self):
+        """Get the filename represented by this source location."""
+        return self.filename
 
     @property
     def line(self):
         """Get the line represented by this source location."""
-        return self.source_location.line
+        return self.line
 
     @property
     def column(self):
         """Get the column represented by this source location."""
-        return self.source_location.column
+        return self.column
 
     @property
     def offset(self):
         """Get the file offset represented by this source location."""
-        return self.source_location.offset
+        return self.offset
 
     def __eq__(self, other):
-        return self.source_location.__eq__(other.source_location)
+        return self.filename == other.filename and self.line == other.line and self.column == other.column and self.offset == other.offset
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.source_location.file.name) ^ hash(self.source_location.line) ^ hash(self.source_location.column) ^ hash(self.source_location.offset)
+        return hash(self.filename) ^ hash(self.line) ^ hash(self.column) ^ hash(self.offset)
 
     def __repr__(self):
-        if self.source_location.file:
-            filename = self.source_location.file.name
-        else:
-            filename = None
-        return "<ImmutableSourceLocation file %r, line %r, column %r>" % (
-            filename, self.source_location.line, self.source_location.column)
+        return "<ImmutableSourceLocation file %r, line %r, column %r>" % (self.filename, self.line, self.column)
 
 
 def get_system_includes():
@@ -280,7 +278,8 @@ class ClangParser():
                         for token in ast_node.get_tokens():
                             if ast_node.location == token.extent.start:
                                 if node.spelling == token.spelling:
-                                    client_data.references.add(ImmutableSourceLocation(ast_node.location))
+                                    client_data.references.append(ImmutableSourceLocation(ast_node.location.file.name,
+                                        ast_node.location.line, ast_node.location.column, ast_node.location.offset))
                                 break
                 return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
@@ -289,7 +288,7 @@ class ClangParser():
             return []
 
         #logging.info("Finding all references of cursor [{0}, {1}]: {2}.".format(cursor.location.line, cursor.location.column, tunit.spelling))
-        references = set()
+        references = []
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
         self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
