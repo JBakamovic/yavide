@@ -287,10 +287,10 @@ class ClangParser():
         if not tunit:
             return []
 
-        #logging.info("Finding all references of cursor [{0}, {1}]: {2}.".format(cursor.location.line, cursor.location.column, tunit.spelling))
+        logging.info("Finding all references of cursor [{0}, {1}]: {2}.".format(cursor.location.line, cursor.location.column, tunit.spelling))
         references = []
         client_data = collections.namedtuple('client_data', ['cursor', 'references'])
-        self.traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
+        traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
         return references
 
     def save_tunit(self, tunit, tunit_path):
