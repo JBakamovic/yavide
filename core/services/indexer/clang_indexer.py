@@ -9,12 +9,6 @@ import sys
 import time
 from services.parser.clang_parser import ClangParser
 
-# TODO revert this to be a member of ClangParser (use shared memory)
-# Declaring 'ClangParser' as global variable is an __unfortunate__ __workaround__ for a limitation which is imposed by
-# inability to pickle objects containing pointers. We have at least one such object and that is 'CIndex' which is
-# contained within a 'ClangParser' class.
-g_clang_parser = ClangParser()
-
 # TODO move this to utils
 from itertools import izip_longest
 def slice_it(iterable, n, padvalue=None):
@@ -59,6 +53,7 @@ class ClangIndexer(object):
         self.indexer_output_extension = '.ast'
         self.cpu_count = multiprocessing.cpu_count()
         self.tunit_pool = TUnitPool()
+        self.parser = ClangParser()
         self.op = {
             0x0 : self.__run_on_single_file,
             0x1 : self.__run_on_directory,
@@ -67,10 +62,6 @@ class ClangIndexer(object):
             0x10 : self.__go_to_definition,
             0x11 : self.__find_all_references
         }
-
-    @property
-    def parser(self):
-        return g_clang_parser
 
     @property
     def tunits(self):
@@ -157,20 +148,23 @@ class ClangIndexer(object):
         if not os.path.exists(indexer_directory_full_path):
             logging.info("Starting to index whole directory '{0}' ... ".format(proj_root_directory))
             start = time.clock()
-            with contextlib.closing(multiprocessing.Pool(self.cpu_count)) as pool:
-                walk = os.walk(proj_root_directory)
-                filename_iterable = itertools.chain.from_iterable((os.path.join(root, file) for file in files) for root, dirs, files in walk)
-                pool.map(
-                    functools.partial( # multiprocessing.Pool().map() does not support passing more than 1 arg which is why we are using functools.partial()
-                        self.__run_on_directory_impl,
-                        proj_root_directory,
-                        compiler_args,
-                        indexer_directory_full_path
-                    ),
-                    filename_iterable
-                )
-            pool.close()
-            pool.join()
+            cpp_file_list = []
+            for dirpath, dirs, files in os.walk(proj_root_directory):
+                for file in files:
+                    name, extension = os.path.splitext(file)
+                    if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
+                        cpp_file_list.append(os.path.join(dirpath, file))
+            cpp_file_list_sliced = slice_it(cpp_file_list, len(cpp_file_list)/self.cpu_count)
+
+            process_list = []
+            for slice in cpp_file_list_sliced:
+                p = multiprocessing.Process(target=self.__dispatch_indexing, args=(proj_root_directory, compiler_args, indexer_directory_full_path, slice))
+                process_list.append(p)
+                p.daemon = False
+                p.start()
+            for p in process_list:
+                p.join()
+
             time_elapsed = time.clock() - start # TODO how to count total CPU time, for all processes?
             logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
         logging.info("Loading indexer results ... '{0}'.".format(indexer_directory_full_path))
@@ -295,12 +289,12 @@ class ClangIndexer(object):
 
         return tunit
 
-    def __run_on_directory_impl(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename):
-        name, extension = os.path.splitext(filename)
-        if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
-            tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
-            if tunit is not None:
-                self.__save_single(tunit, filename, indexer_directory_full_path)
+    def __dispatch_indexing(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename_list):
+        for filename in filename_list:
+            if filename is not None:
+                tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
+                if tunit is not None:
+                    self.__save_single(tunit, filename, indexer_directory_full_path)
 
     def __dispatch(self, references, cursor, tunits):
         logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
