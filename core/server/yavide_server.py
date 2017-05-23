@@ -150,7 +150,21 @@ def yavide_server_run(msg_queue, yavide_instance):
     except:
         sys.excepthook(*sys.exc_info())
 
+def test__clang_indexer__find_all_references():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+    line = 27
+    col = 15
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run_on_directory
+    q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find_all_references
+    yavide_server_run(q, 'YAVIDE_DEV')
+
 def main():
+    return test__clang_indexer__find_all_references()
     q = Queue()
     #q.put([0xF0, "start_all_services"])
     q.put([0xF1, 0, "--class --struct --func"])
