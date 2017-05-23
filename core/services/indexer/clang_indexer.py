@@ -209,52 +209,38 @@ class ClangIndexer(object):
             self.callback(id, cursor.location if cursor else None)
 
     def __find_all_references(self, id, args):
+        start = time.clock()
         tunit_slices = slice_it(self.tunit_pool, len(self.tunit_pool)/self.cpu_count)
         cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
-        #source_location_arr = multiprocessing.Array(CTypeSourceLocation, len(self.tunit_pool)/self.cpu_count)
         manager = multiprocessing.Manager()
-        L = manager.list()
-        logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(self.tunit_pool))
-        p = multiprocessing.Process(target=self.__dispatch, args=(L, cursor, self.tunit_pool))
-        p.daemon = False
-        p.start()
-        p.join()
+        references = manager.list()
+        #queue = multiprocessing.Queue()
+        process_list = []
+        #tunit_slices = [[{'a': [1,2,3,4,5,6]}], [{'b': [6,5,4,3,2,1], 'c': [1,3,5,7,9]}], [{'d': [2,4,6,8,10]}]]
+        if cursor:
+            for slice in tunit_slices:
+                #p = multiprocessing.Process(target=self.__dispatch, args=(queue, cursor, slice))
+                p = multiprocessing.Process(target=self.__dispatch, args=(references, cursor, slice))
+                #p = multiprocessing.Process(target=dispatch, args=(references, cursor, slice, self.parser))
+                process_list.append(p)
+                p.daemon = False
+                p.start()
 
-        # TODO use cpu_count+1 instances of list and merge them together
-        #process_list = []
-        #for tunit_slice in tunit_slices:
-        #    p = multiprocessing.Process(target=self.__dispatch, args=(lst, cursor, tunit_slice,))
-        #    p.daemon = False
-        #    p.start()
-        #    process_list.append(p)
-        #for p in process_list:
-        #    p.join()
+        #refs = []
+        #for i in range(len(process_list)):
+        #    refs.extend(references.get())
 
-        logging.info('Found references: ' + str(L))
+        logging.info('len(process_list): ' + str(len(process_list)))
+        for p in process_list:
+            p.join()
+            logging.info('process:' + str(p))
+
+        #logging.info('Found references: ' + str(queue))
+        logging.info('Found references: ' + str(references))
+        time_elapsed = time.clock() - start
+        #logging.info("Find all references operation took {0}.".format(time_elapsed))
         #if self.callback:
         #    self.callback(id, set(lst))
-        return
-
-        start = time.clock()
-        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
-        if cursor:
-            with contextlib.closing(multiprocessing.Pool(self.cpu_count)) as pool:
-                for filename, tunit in self.tunit_pool:
-                    pool.map(
-                        functools.partial(
-                            self.__find_all_references_impl,
-                            references,
-                            cursor
-                        ),
-                        self.tunit_pool
-                    )
-            pool.close()
-            pool.join()
-        time_elapsed = time.clock() - start
-        logging.info("Find all references operation took {0}.".format(time_elapsed))
-
-        if self.callback:
-            self.callback(id, references)
 
     def __load_single(self, tunit_filename, full_path):
         try:
@@ -318,18 +304,16 @@ class ClangIndexer(object):
 
     def __dispatch(self, references, cursor, tunits):
         logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
-        #references.append('sadsadasda')
-        #references.extend(['sad', 'asd', 'sagfgf'])
-        #return
-        for filename, tunit in tunits:
-            refs = self.parser.find_all_references(cursor, tunit)
-            logging.info('Refs: ' + str(refs))
-            if len(refs):
-                references.extend(refs)
-                #references.extend([1, 2, 3, 4, 5, 6, 7, 8, 9])
-                logging.info('All references: ' + str(references))
-                return
-        logging.info('All references: ' + str(references))
+        for item in tunits:
+            if item is not None:
+                logging.info('filename: ' + str(item[0]) + ' tunit: ' + str(item[1]))
+                references.extend(self.parser.find_all_references(cursor, item[1]))
 
-    def __find_all_references_impl(self, cursor, tunit):
-        references = self.parser.find_all_references(cursor, tunit)
+def dispatch(references, cursor, tunits, parser):
+    logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
+    for item in tunits:
+        if item is not None:
+            logging.info('filename: ' + str(item[0]) + ' tunit: ' + str(item[1]))
+            refs = parser.find_all_references(cursor, item[1])
+            logging.info('refs: ' + str(refs))
+            references.extend(refs)
