@@ -821,10 +821,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerSendServiceRequest(id, payload)
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xF2, int(vim.eval('a:id')), vim.eval('a:payload')])
-
 EOF
 endfunction
 
