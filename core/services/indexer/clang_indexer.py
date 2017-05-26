@@ -158,7 +158,7 @@ class ClangIndexer(object):
 
             process_list = []
             for slice in cpp_file_list_sliced:
-                p = multiprocessing.Process(target=self.__dispatch_indexing, args=(proj_root_directory, compiler_args, indexer_directory_full_path, slice))
+                p = multiprocessing.Process(target=self.run_on_directory_impl, args=(proj_root_directory, compiler_args, indexer_directory_full_path, slice))
                 process_list.append(p)
                 p.daemon = False
                 p.start()
@@ -208,28 +208,19 @@ class ClangIndexer(object):
         cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         manager = multiprocessing.Manager()
         references = manager.list()
-        #queue = multiprocessing.Queue()
         process_list = []
-        #tunit_slices = [[{'a': [1,2,3,4,5,6]}], [{'b': [6,5,4,3,2,1], 'c': [1,3,5,7,9]}], [{'d': [2,4,6,8,10]}]]
         if cursor:
             for slice in tunit_slices:
-                #p = multiprocessing.Process(target=self.__dispatch, args=(queue, cursor, slice))
-                p = multiprocessing.Process(target=self.__dispatch, args=(references, cursor, slice))
-                #p = multiprocessing.Process(target=dispatch, args=(references, cursor, slice, self.parser))
+                p = multiprocessing.Process(target=find_all_references_impl, args=(self.parser, references, cursor, slice))
                 process_list.append(p)
                 p.daemon = False
                 p.start()
-
-        #refs = []
-        #for i in range(len(process_list)):
-        #    refs.extend(references.get())
 
         logging.info('len(process_list): ' + str(len(process_list)))
         for p in process_list:
             p.join()
             logging.info('process:' + str(p))
 
-        #logging.info('Found references: ' + str(queue))
         logging.info('Found references: ' + str(references))
         time_elapsed = time.clock() - start
         #logging.info("Find all references operation took {0}.".format(time_elapsed))
@@ -289,25 +280,15 @@ class ClangIndexer(object):
 
         return tunit
 
-    def __dispatch_indexing(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename_list):
+    def run_on_directory_impl(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename_list):
         for filename in filename_list:
             if filename is not None:
                 tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
                 if tunit is not None:
                     self.__save_single(tunit, filename, indexer_directory_full_path)
 
-    def __dispatch(self, references, cursor, tunits):
-        logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
-        for item in tunits:
-            if item is not None:
-                logging.info('filename: ' + str(item[0]) + ' tunit: ' + str(item[1]))
-                references.extend(self.parser.find_all_references(cursor, item[1]))
-
-def dispatch(references, cursor, tunits, parser):
-    logging.info('Here I am ... pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
+def find_all_references_impl(parser, references, cursor, tunits):
+    logging.debug('pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
     for item in tunits:
         if item is not None:
-            logging.info('filename: ' + str(item[0]) + ' tunit: ' + str(item[1]))
-            refs = parser.find_all_references(cursor, item[1])
-            logging.info('refs: ' + str(refs))
-            references.extend(refs)
+            references.extend(parser.find_all_references(cursor, item[1]))
