@@ -159,8 +159,9 @@ def test__clang_indexer__find_all_references():
 
     q = Queue()
     q.put([0xF1, 0, "dummy"])
-    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run_on_directory
-    q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find_all_references
+    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
+    q.put([0xF2, 0, [0x1, filename]])                            # syntax-highlight
+    q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find-all-references
     yavide_server_run(q, 'YAVIDE_DEV')
 
 def main():
