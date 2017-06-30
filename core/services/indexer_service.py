@@ -6,10 +6,10 @@ from common.yavide_utils import YavideUtils
 
 class SourceCodeIndexer(YavideService):
     def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance)
+        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook, self.__shutdown_hook)
         self.src_code_indexer = ""
 
-    def startup_hook(self, args):
+    def __startup_hook(self, args):
         logging.info("Args = {0}.".format(args))
 
         file_types_len = int(args[0])
@@ -33,7 +33,7 @@ class SourceCodeIndexer(YavideService):
         self.src_code_indexer.start()
         logging.info("Indexer started ...")
 
-    def shutdown_hook(self, payload):
+    def __shutdown_hook(self, payload):
         logging.info("Shutting down the indexer ...")
         self.src_code_indexer.stop()
 
