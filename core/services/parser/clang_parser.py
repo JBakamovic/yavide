@@ -63,13 +63,6 @@ def get_system_includes():
     output = str(output)
     return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
 
-# TODO libclang cannot find stdargs.h
-# Build parser arguments
-#parser_args  = []
-#parser_args += self.default_args
-#parser_args += list(str(compiler_args).split()) if compiler_args else ''
-#parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
-
 class CompilerArgs():
     class JSONCompilationDatabase():
         def __init__(self, default_compiler_args, filename):
@@ -90,19 +83,24 @@ class CompilerArgs():
             def eat_compiler_invocation(json_comp_db_command):
                 return json_comp_db_command[1:len(json_comp_db_command)]   # i.e. /usr/bin/c++
 
-            compile_cmds = self.database.getCompileCommands(filename)
+            def cache_compiler_args(args_list):
+                # We need to cache existing compiler args to do our best while
+                # handling files which do not exist in JSON compilation database (i.e. headers)
+                self.cached_compiler_args = list(args_list) # most simplest is to create a copy of current ones
+
+            compiler_args = []
+            compile_cmds  = self.database.getCompileCommands(filename)
             if compile_cmds:
-                compiler_args = []
                 for arg in compile_cmds[0].arguments:
                     compiler_args.append(arg)
                 compiler_args = self.default_compiler_args + eat_compiler_invocation(eat_minus_o_compiler_option(eat_minus_c_compiler_option(compiler_args)))
-            else: # probably the header
-                # TODO somehow cache previous results ...
-                #      in case it is a header-only library do what?
-                #compiler_args = self.default_compiler_args this will make a circular reference --> bug!
-                return self.cached_compiler_args
-            self.cached_compiler_args = list(compiler_args)
+                cache_compiler_args(compiler_args)
+            else: # doesn't exist in JSON database, use cached compiler args
+                compiler_args = list(self.cached_compiler_args)
             return compiler_args
+
+            # TODO
+            #   In case it is a header-only library do what?
 
     class CompileFlagsCompilationDatabase():
         def __init__(self, default_compiler_args, filename):
@@ -125,8 +123,18 @@ class CompilerArgs():
         else:
             logging.error('Unsupported way of providing compiler args.')
 
-    def get(self, source_code_filename):
-        return self.database.get(source_code_filename)
+    def get(self, source_code_filename, source_code_is_modified):
+        compiler_args = self.database.get(source_code_filename)
+        if source_code_is_modified:
+            # Append additional include path to the compiler args which points to the parent directory of current buffer.
+            #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
+            #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
+            #     unnecessary Clang parsing errors.
+            #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+            #     potentially would not play well with other tools (indexer, version control, etc.).
+            compiler_args.insert(0, ' -I' + os.path.dirname(source_code_filename))
+        logging.info('Compiler args = ' + str(compiler_args))
+        return compiler_args
 
     def is_json_database(self, compiler_args_filename):
         return os.path.basename(compiler_args_filename) == 'compile_commands.json'
@@ -149,23 +157,11 @@ class ClangParser():
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         tunit = None
 
-        # Append additional include path to the compiler args which points to the parent directory of current buffer.
-        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
-        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
-        #     unnecessary Clang parsing errors.
-        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-        #     potentially would not play well with other tools (indexer, version control, etc.).
-        compiler_args = self.compiler_args.get(original_filename)
-        logging.info('compiler args = ' + str(compiler_args))
-        if contents_filename != original_filename:
-            compiler_args.insert(0, ' -I' + os.path.dirname(original_filename))
-            logging.info('We\'re operating on a temporary file. Modifying compiler args to include current file parent directory = {0}'.format(compiler_args))
-
         try:
             # Parse the translation unit
             tunit = self.index.parse(
                 path = contents_filename,
-                args = compiler_args,
+                args = self.compiler_args.get(original_filename, contents_filename != original_filename),
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
         except:
