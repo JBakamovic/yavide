@@ -7,7 +7,7 @@ class GoToDefinition():
         self.symbol_db = symbol_db
         self.callback = callback
 
-    def __call__(self, proj_root_directory, compiler_args, args):
+    def __call__(self, proj_root_directory, args):
         contents_filename = str(args[0])
         original_filename = str(args[1])
         line              = int(args[2])
@@ -18,7 +18,7 @@ class GoToDefinition():
             cursor = self.parser.get_cursor(
                         self.parser.parse(
                             contents_filename, original_filename,
-                            compiler_args, proj_root_directory
+                            proj_root_directory
                         ),
                         line, column
                     )

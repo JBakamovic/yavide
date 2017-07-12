@@ -151,7 +151,7 @@ class ClangParser():
         logging.info("Setting up compiler args with '{0}'".format(compiler_args_filename))
         self.compiler_args.set(compiler_args_filename)
 
-    def parse(self, contents_filename, original_filename, compiler_args, project_root_directory):
+    def parse(self, contents_filename, original_filename, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))

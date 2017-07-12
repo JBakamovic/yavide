@@ -18,7 +18,6 @@ from services.vim.go_to_include import VimGoToInclude
 class SourceCodeModel(YavideService):
     def __init__(self, yavide_instance):
         YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback)
-        self.compiler_args = None
         self.project_root_directory = None
         self.parser = ClangParser()
         self.clang_indexer = ClangIndexer(self.parser, VimIndexer(yavide_instance))
@@ -36,10 +35,10 @@ class SourceCodeModel(YavideService):
 
     def __startup_callback(self, args):
         self.project_root_directory = args[0]
-        self.compiler_args          = args[1]
-        self.parser.set_compiler_args_db(self.compiler_args)
+        compiler_args_filename = args[1]
+        self.parser.set_compiler_args_db(compiler_args_filename)
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StartCompleted()")
-        logging.info("SourceCodeModel configured with: project root directory='{0}', compiler args='{1}'".format(self.project_root_directory, self.compiler_args))
+        logging.info("SourceCodeModel configured with: project root directory='{0}', compiler args='{1}'".format(self.project_root_directory, compiler_args_filename))
 
     def __shutdown_callback(self, args):
         reply_with_callback = bool(args)
@@ -47,4 +46,4 @@ class SourceCodeModel(YavideService):
             YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StopCompleted()")
 
     def __call__(self, args):
-        self.service.get(int(args[0]), self.__unknown_service)(self.project_root_directory, self.compiler_args, args[1:len(args)])
+        self.service.get(int(args[0]), self.__unknown_service)(self.project_root_directory, args[1:len(args)])

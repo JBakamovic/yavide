@@ -3,7 +3,7 @@ class TypeDeduction():
         self.parser = parser
         self.callback = callback
 
-    def __call__(self, proj_root_directory, compiler_args, args):
+    def __call__(self, proj_root_directory, args):
         contents_filename = str(args[0])
         original_filename = str(args[1])
         line = int(args[2])
@@ -12,7 +12,6 @@ class TypeDeduction():
         tunit = self.parser.parse(
             contents_filename,
             original_filename,
-            compiler_args,
             proj_root_directory
         )
 
