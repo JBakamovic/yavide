@@ -58,6 +58,40 @@ New version provides more functionality (i.e. AST parent node) which is needed i
 """
 clang.cindex.Cursor.get_children = get_children_patched
 
+
+class TUnitPool(object):
+    def __init__(self):
+        self.tunits = {}
+
+    def get(self, filename):
+        return self.tunits.get(filename, None)
+
+    def set(self, filename, tunit):
+        self.tunits[filename] = tunit
+
+    def drop(self, filename):
+        if filename in self.tunits:
+            del self.tunits[filename]
+
+    def clear(self):
+        self.tunits.clear()
+
+    def __len__(self):
+        return len(self.tunits)
+
+    def __setitem__(self, key, item):
+        self.set(key, item)
+
+    def __getitem__(self, key):
+        return self.get(key)
+
+    def __delitem__(self, filename):
+        self.drop(filename)
+
+    def __iter__(self):
+        return self.tunits.iteritems()
+
+
 class ImmutableSourceLocation():
     """
     Reason of existance of this class is because clang.cindex.SourceLocation is not designed to be hashable.

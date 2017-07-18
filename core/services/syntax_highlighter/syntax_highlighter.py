@@ -9,4 +9,4 @@ class SyntaxHighlighter():
 
     def __call__(self, args):
         if self.callback:
-            self.callback(self.tunit_pool.get(str(args[0])), self.parser, args)
+            self.callback(self.tunit_pool[str(args[0])], self.parser, args)

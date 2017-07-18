@@ -1,12 +1,12 @@
 import logging
-from yavide_service import YavideService
-from syntax_highlighter.syntax_highlighter import SyntaxHighlighter
+from services.yavide_service import YavideService
+from services.syntax_highlighter.syntax_highlighter import SyntaxHighlighter
 from services.vim.syntax_generator import VimSyntaxGenerator
-from diagnostics.diagnostics import Diagnostics
+from services.diagnostics.diagnostics import Diagnostics
 from services.vim.quickfix_diagnostics import VimQuickFixDiagnostics
-from indexer.clang_indexer import ClangIndexer
+from services.indexer.clang_indexer import ClangIndexer
 from services.vim.indexer import VimIndexer
-from type_deduction.type_deduction import TypeDeduction
+from services.type_deduction.type_deduction import TypeDeduction
 from services.vim.type_deduction import VimTypeDeduction
 
 class SourceCodeModel(YavideService):
