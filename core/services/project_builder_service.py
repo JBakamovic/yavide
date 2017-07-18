@@ -2,7 +2,7 @@ import logging
 import subprocess
 import tempfile
 import time
-from yavide_service import YavideService
+from services.yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
 class ProjectBuilder(YavideService):

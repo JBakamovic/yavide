@@ -5,10 +5,6 @@ class TypeDeduction():
         self.callback = callback
 
     def __call__(self, args):
-        filename = str(args[0])
-        line = int(args[1])
-        col = int(args[2])
-        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[filename], line, col)
-
+        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
         if self.callback and cursor and cursor.type:
             self.callback(cursor.type.spelling, args)

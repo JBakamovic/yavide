@@ -7,44 +7,12 @@ import multiprocessing
 import os
 import sys
 import time
-from services.parser.clang_parser import ClangParser
+from services.parser.clang_parser import ClangParser, TUnitPool
 
 # TODO move this to utils
 from itertools import izip_longest
 def slice_it(iterable, n, padvalue=None):
     return izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
-
-class TUnitPool(object):
-    def __init__(self):
-        self.tunits = {}
-
-    def get(self, filename):
-        return self.tunits.get(filename, None)
-
-    def set(self, filename, tunit):
-        self.tunits[filename] = tunit
-
-    def drop(self, filename):
-        if filename in self.tunits:
-            del self.tunits[filename]
-
-    def clear(self):
-        self.tunits.clear()
-
-    def __len__(self):
-        return len(self.tunits)
-
-    def __setitem__(self, key, item):
-        self.set(key, item)
-
-    def __getitem__(self, key):
-        return self.get(key)
-
-    def __delitem__(self, filename):
-        self.drop(filename)
-
-    def __iter__(self):
-        return self.tunits.iteritems()
 
 class ClangIndexer(object):
     def __init__(self, callback = None):
@@ -210,8 +178,8 @@ class ClangIndexer(object):
         references = manager.list()
         process_list = []
         if cursor:
-            for slice in tunit_slices:
-                p = multiprocessing.Process(target=find_all_references_impl, args=(self.parser, references, cursor, slice))
+            for tunits in tunit_slices:
+                p = multiprocessing.Process(target=find_all_references_impl, args=(self.parser, references, cursor, tunits))
                 process_list.append(p)
                 p.daemon = False
                 p.start()

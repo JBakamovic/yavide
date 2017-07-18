@@ -1,6 +1,6 @@
 import logging
 import subprocess
-from yavide_service import YavideService
+from services.yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
 class ClangSourceCodeFormatter(YavideService):
