@@ -154,15 +154,26 @@ class ClangParser():
         logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         tunit = None
+
+        # Append additional include path to the compiler args which points to the parent directory of current buffer.
+        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
+        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
+        #     unnecessary Clang parsing errors.
+        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
+        #     potentially would not play well with other tools (indexer, version control, etc.).
+        if contents_filename != original_filename:
+            compiler_args += ' -I' + os.path.dirname(original_filename)
+            logging.info('We\'re operating on a temporary file. Modifying compiler args to include current file parent directory = {0}'.format(compiler_args))
+
         try:
             # Parse the translation unit
             tunit = self.index.parse(
                 path = contents_filename,
-                args = self.default_args + compiler_args + ['-working-directory=' + project_root_directory],
+                args = self.default_args + list(str(compiler_args).split()) + ['-working-directory=' + project_root_directory],
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
         except:
-            logging.error(sys.exc_info()[0])
+            logging.error(sys.exc_info())
         return tunit
 
     def get_diagnostics(self, tunit):

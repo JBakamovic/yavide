@@ -57,7 +57,7 @@ class VimSyntaxGenerator:
         time_elapsed = time.clock() - start
 
         # Apply newly generated syntax rules
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[0]) + "'" + ", '" + self.output_syntax_file + "')")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeHighlighter_Apply('" + str(args[2]) + "'" + ", '" + self.output_syntax_file + "')")
 
         # Write some debug information
         clang_parser.dump_ast_nodes(tunit)
