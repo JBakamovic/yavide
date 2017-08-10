@@ -174,9 +174,21 @@ def test__clang_syntax_highlighter():
     q.put([0xF2, 0, [0x1, proj_root_dir, filename, filename, compiler_args]]) # syntax-highlight
     yavide_server_run(q, 'YAVIDE_DEV')
 
+def test__clang_diagnostics():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x2, proj_root_dir, filename, filename, compiler_args]]) # diagnostics
+    yavide_server_run(q, 'YAVIDE_DEV')
+
+
 def main():
+    return test__clang_diagnostics()
     return test__clang_syntax_highlighter()
-    #return test__clang_indexer__find_all_references()
+    return test__clang_indexer__find_all_references()
 
     q = Queue()
     #q.put([0xF0, "start_all_services"])
