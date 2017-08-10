@@ -184,8 +184,21 @@ def test__clang_diagnostics():
     q.put([0xF2, 0, [0x2, proj_root_dir, filename, filename, compiler_args]]) # diagnostics
     yavide_server_run(q, 'YAVIDE_DEV')
 
+def test__clang_type_deduction():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+    line = 27
+    col = 15
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x3, proj_root_dir, filename, filename, compiler_args, line, col]]) # type-deduction
+    yavide_server_run(q, 'YAVIDE_DEV')
+
 
 def main():
+    return test__clang_type_deduction()
     return test__clang_diagnostics()
     return test__clang_syntax_highlighter()
     return test__clang_indexer__find_all_references()
