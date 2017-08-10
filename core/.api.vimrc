@@ -1080,7 +1080,16 @@ function! Y_SrcCodeTypeDeduction_Run()
         " In case of non-ordinary buffers, buffer may not even exist on a disk and triggering the service does not
         " any make sense then.
         if getbufvar(v:beval_bufnr, "&buftype") == ''
-            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [fnamemodify(bufname(v:beval_bufnr), ':p'), v:beval_lnum, v:beval_col])
+            let l:current_buffer = fnamemodify(bufname(v:beval_bufnr), ':p')
+            let l:compiler_args = g:project_compiler_args
+
+            " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+            let l:contents_filename = l:current_buffer
+            if getbufvar(bufnr('%'), '&modified')
+                let l:contents_filename = '/tmp/yavideTempBufferContents'
+                call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+            endif
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args, v:beval_lnum, v:beval_col])
         endif
     endif
     return ''
