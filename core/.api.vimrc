@@ -1003,7 +1003,16 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeHighlighter_Run()
     if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [expand('%:p')])
+        let l:current_buffer = expand('%:p')
+        let l:compiler_args = g:project_compiler_args
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
     endif
 endfunction
 

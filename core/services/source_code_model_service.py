@@ -8,16 +8,17 @@ from services.indexer.clang_indexer import ClangIndexer
 from services.vim.indexer import VimIndexer
 from services.type_deduction.type_deduction import TypeDeduction
 from services.vim.type_deduction import VimTypeDeduction
+from services.parser.clang_parser import ClangParser
 
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
         YavideService.__init__(self, server_queue, yavide_instance)
-        self.indexer = ClangIndexer(VimIndexer(yavide_instance))
+        self.parser = ClangParser()
         self.service = {
-            0x0 : self.indexer,
-            0x1 : SyntaxHighlighter(self.indexer.tunits, self.indexer.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
-            0x2 : Diagnostics(self.indexer.tunits, self.indexer.parser, VimQuickFixDiagnostics(yavide_instance)),
-            0x3 : TypeDeduction(self.indexer.tunits, self.indexer.parser, VimTypeDeduction(yavide_instance))
+            0x0 : ClangIndexer(self.parser, VimIndexer(yavide_instance)),
+            0x1 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
+            0x2 : Diagnostics(None, self.parser, VimQuickFixDiagnostics(yavide_instance)),
+            0x3 : TypeDeduction(None, self.parser, VimTypeDeduction(yavide_instance))
         }
 
     def __unknown_service(self, args):

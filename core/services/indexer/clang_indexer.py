@@ -7,7 +7,7 @@ import multiprocessing
 import os
 import sys
 import time
-from services.parser.clang_parser import ClangParser, TUnitPool
+from services.parser.clang_parser import TUnitPool
 
 # TODO move this to utils
 from itertools import izip_longest
@@ -15,13 +15,13 @@ def slice_it(iterable, n, padvalue=None):
     return izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 class ClangIndexer(object):
-    def __init__(self, callback = None):
+    def __init__(self, parser, callback = None):
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
         self.cpu_count = multiprocessing.cpu_count()
         self.tunit_pool = TUnitPool()
-        self.parser = ClangParser()
+        self.parser = parser
         self.op = {
             0x0 : self.__run_on_single_file,
             0x1 : self.__run_on_directory,
@@ -31,9 +31,6 @@ class ClangIndexer(object):
             0x11 : self.__find_all_references
         }
 
-    @property
-    def tunits(self):
-        return self.tunit_pool
 
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
@@ -155,7 +152,7 @@ class ClangIndexer(object):
         try:
             cdll.LoadLibrary("libc.so.6").malloc_trim(0)
         except:
-            logging.error(sys.exc_info()[0])
+            logging.error(sys.exc_info())
 
         if self.callback:
             self.callback(id, dummy)
@@ -199,7 +196,7 @@ class ClangIndexer(object):
         try:
             self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
         except:
-            logging.error(sys.exc_info()[0])
+            logging.error(sys.exc_info())
 
     def __load_from_directory(self, indexer_directory):
         start = time.clock()
@@ -221,7 +218,7 @@ class ClangIndexer(object):
         try:
             self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
         except:
-            logging.error(sys.exc_info()[0])
+            logging.error(sys.exc_info())
 
     def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
         logging.info("Indexing a file '{0}' ... ".format(original_filename))
