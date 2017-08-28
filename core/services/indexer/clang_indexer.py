@@ -5,9 +5,12 @@ import itertools
 import logging
 import multiprocessing
 import os
+import sqlite3
 import sys
 import time
 from services.parser.clang_parser import TUnitPool
+from services.parser.ast_node_identifier import ASTNodeId
+from services.parser.clang_parser import ChildVisitResult
 
 # TODO move this to utils
 from itertools import izip_longest
@@ -16,10 +19,14 @@ def slice_it(iterable, n, padvalue=None):
 
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
+        self.db = sqlite3.connect('index.db')
+        self.db_cursor = self.db.cursor()
         self.callback = callback
         self.indexer_directory_name = '.indexer'
         self.indexer_output_extension = '.ast'
         self.cpu_count = multiprocessing.cpu_count()
+        self.proj_root_directory = None
+        self.compiler_args = None
         self.tunit_pool = TUnitPool()
         self.parser = parser
         self.op = {
@@ -47,7 +54,7 @@ class ClangIndexer(object):
         # Index a file
         tunit = self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
 
-        if tunit is not None:
+        if tunit:
             # In case we are operating on temporary files (files modified by the user but not yet saved), we don't
             # want to serialize its AST to the disk. Otherwise, do the serialization and load the results back to RAM.
             # See 'Note' in __run_on_directory() for more details on why we do it in a flush-then-load-it-back way.
@@ -105,16 +112,17 @@ class ClangIndexer(object):
         #       'Flush-immeditelly-after-parse' approach seems to not be having these issues and has a very low memory
         #       footprint even with the big-size projects.
 
-        proj_root_directory = str(args[0])
-        compiler_args = str(args[1])
+        self.proj_root_directory = str(args[0])
+        self.compiler_args = str(args[1])
 
         self.tunit_pool.clear()
-        indexer_directory_full_path = os.path.join(proj_root_directory, self.indexer_directory_name)
+        indexer_directory_full_path = os.path.join(self.proj_root_directory, self.indexer_directory_name)
         if not os.path.exists(indexer_directory_full_path):
-            logging.info("Starting to index whole directory '{0}' ... ".format(proj_root_directory))
+            logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
+            self.db_cursor.execute('CREATE TABLE IF NOT EXISTS functions (filename text, function_name text, line integer, column integer)')
             start = time.clock()
             cpp_file_list = []
-            for dirpath, dirs, files in os.walk(proj_root_directory):
+            for dirpath, dirs, files in os.walk(self.proj_root_directory):
                 for file in files:
                     name, extension = os.path.splitext(file)
                     if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
@@ -123,7 +131,7 @@ class ClangIndexer(object):
 
             process_list = []
             for slice in cpp_file_list_sliced:
-                p = multiprocessing.Process(target=self.run_on_directory_impl, args=(proj_root_directory, compiler_args, indexer_directory_full_path, slice))
+                p = multiprocessing.Process(target=self.run_on_directory_impl, args=(self.proj_root_directory, self.compiler_args, indexer_directory_full_path, slice))
                 process_list.append(p)
                 p.daemon = False
                 p.start()
@@ -131,7 +139,7 @@ class ClangIndexer(object):
                 p.join()
 
             time_elapsed = time.clock() - start # TODO how to count total CPU time, for all processes?
-            logging.info("Indexing {0} took {1}.".format(proj_root_directory, time_elapsed))
+            logging.info("Indexing {0} took {1}.".format(self.proj_root_directory, time_elapsed))
         logging.info("Loading indexer results ... '{0}'.".format(indexer_directory_full_path))
         self.__load_from_directory(indexer_directory_full_path)
 
@@ -169,26 +177,18 @@ class ClangIndexer(object):
 
     def __find_all_references(self, id, args):
         start = time.clock()
-        tunit_slices = slice_it(self.tunit_pool, len(self.tunit_pool)/self.cpu_count)
-        cursor = self.parser.map_source_location_to_cursor(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
-        manager = multiprocessing.Manager()
-        references = manager.list()
-        process_list = []
-        if cursor:
-            for tunits in tunit_slices:
-                p = multiprocessing.Process(target=find_all_references_impl, args=(self.parser, references, cursor, tunits))
-                process_list.append(p)
-                p.daemon = False
-                p.start()
-
-        logging.info('len(process_list): ' + str(len(process_list)))
-        for p in process_list:
-            p.join()
-            logging.info('process:' + str(p))
-
+        references = []
+        tunit = self.parser.parse(str(args[0]), str(args[0]), self.compiler_args, self.proj_root_directory)
+        if tunit:
+            cursor = self.parser.map_source_location_to_cursor(tunit, int(args[1]), int(args[2]))
+            if cursor:
+                name = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
+                logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, name))
+                self.db_cursor.execute("SELECT * FROM functions WHERE function_name='%s'" % name)
+                references.append(self.db_cursor.fetchall())
         logging.info('Found references: ' + str(references))
         time_elapsed = time.clock() - start
-        #logging.info("Find all references operation took {0}.".format(time_elapsed))
+        logging.info("Find all references operation took {0}.".format(time_elapsed))
         #if self.callback:
         #    self.callback(id, set(lst))
 
@@ -221,16 +221,18 @@ class ClangIndexer(object):
             logging.error(sys.exc_info())
 
     def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
-        logging.info("Indexing a file '{0}' ... ".format(original_filename))
+        def visitor(ast_node, ast_parent_node, parser):
+            if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
+                id = parser.get_ast_node_id(ast_node)
+                if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
+                    name = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
+                    line = int(parser.get_ast_node_line(ast_node))
+                    column = int(parser.get_ast_node_column(ast_node))
+                    self.db_cursor.execute('INSERT INTO functions VALUES (?, ?, ?, ?)', (tunit.spelling, name, line, column,))
+                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
-        # Append additional include path to the compiler args which points to the parent directory of current buffer.
-        #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
-        #     directory. By doing this, we might invalidate header includes for that particular file and therefore trigger
-        #     unnecessary Clang parsing errors.
-        #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
-        #     potentially would not play well with other tools (indexer, version control, etc.).
-        if contents_filename != original_filename:
-            compiler_args += ' -I' + os.path.dirname(original_filename)
+        logging.info("Indexing a file '{0}' ... ".format(original_filename))
 
         # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
         #       * Problem:
@@ -239,21 +241,20 @@ class ClangIndexer(object):
 
         # Index a single file
         start = time.clock()
-        tunit = self.parser.parse(contents_filename, original_filename, list(str(compiler_args).split()), proj_root_directory)
+        tunit = self.parser.parse(contents_filename, original_filename, compiler_args, proj_root_directory)
+        if tunit:
+            self.parser.traverse(tunit.cursor, self.parser, visitor)
+            self.db.commit()
         time_elapsed = time.clock() - start
         logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
-        return tunit
-
     def run_on_directory_impl(self, proj_root_directory, compiler_args, indexer_directory_full_path, filename_list):
         for filename in filename_list:
-            if filename is not None:
-                tunit = self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
-                if tunit is not None:
-                    self.__save_single(tunit, filename, indexer_directory_full_path)
+            if filename:
+                self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
 
-def find_all_references_impl(parser, references, cursor, tunits):
+def find_all_references_impl(db_cursor, references, cursor, tunits):
     logging.debug('pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
     for item in tunits:
-        if item is not None:
-            references.extend(parser.find_all_references(cursor, item[1]))
+        if item:
+            references.extend(find_all_references(db_cursor, cursor, item[1]))
