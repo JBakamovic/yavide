@@ -150,6 +150,16 @@ def yavide_server_run(msg_queue, yavide_instance):
     except:
         sys.excepthook(*sys.exc_info())
 
+def test__clang_indexer__run_on_directory():
+    proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
+    compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
+    filename = "/home/jbakamovic/development/projects/cppcheck/lib/astutils.cpp"
+
+    q = Queue()
+    q.put([0xF1, 0, "dummy"])
+    q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
+    yavide_server_run(q, 'YAVIDE_DEV')
+
 def test__clang_indexer__find_all_references():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
     compiler_args = "-I./lib -I./externals/simplecpp -I./tinyxml"
@@ -160,7 +170,6 @@ def test__clang_indexer__find_all_references():
     q = Queue()
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
-    q.put([0xF2, 0, [0x1, proj_root_dir, filename, filename, compiler_args]]) # syntax-highlight
     q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find-all-references
     yavide_server_run(q, 'YAVIDE_DEV')
 
@@ -198,10 +207,11 @@ def test__clang_type_deduction():
 
 
 def main():
+    return test__clang_indexer__find_all_references()
+    return test__clang_indexer__run_on_directory()
     return test__clang_type_deduction()
     return test__clang_diagnostics()
     return test__clang_syntax_highlighter()
-    return test__clang_indexer__find_all_references()
 
     q = Queue()
     #q.put([0xF0, "start_all_services"])
