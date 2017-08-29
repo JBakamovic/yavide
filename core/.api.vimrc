@@ -578,6 +578,25 @@ function! Y_Buffer_StripTrailingWhitespaces()
     call cursor(l, c)
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_Buffer_AutoHighlightToggle()
+" Description:  Highlight all occurences of word under cursor.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_Buffer_AutoHighlightToggle(on)
+    let @/ = ''
+    if a:on
+        augroup auto_highlight
+            au!
+            au CursorHold * let @/ = '\V\<'.escape(expand('<cword>'), '\').'\>'
+        augroup end
+        let &updatetime=g:editor_auto_highlight_word_occurences_after_ms
+    else
+        au! auto_highlight
+        augroup! auto_highlight
+        setl updatetime=4000
+    endif
+endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "

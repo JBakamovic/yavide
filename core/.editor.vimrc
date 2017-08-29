@@ -78,3 +78,7 @@ if (g:editor_use_undo_files == 1)
     endif
 endif
 
+if g:editor_auto_highlight_word_occurences == 1
+    call Y_Buffer_AutoHighlightToggle(v:true)
+endif
+
