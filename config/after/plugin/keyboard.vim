@@ -55,6 +55,8 @@ nnoremap    <S-Tab>             <<
 inoremap    <S-Tab>             <C-D>
 vnoremap    <Tab>               >gv
 vnoremap    <S-Tab>             <gv
+nnoremap    <M-Left>            <C-O>"                                                          Jump back to previous cursor location
+nnoremap    <M-Right>           <C-I>"                                                          Jump to next cursor location
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation
