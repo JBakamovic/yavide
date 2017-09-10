@@ -41,11 +41,11 @@ class VimIndexer(object):
         quickfix_list = []
         for location in references:
             quickfix_list.append(
-                "{'filename': '" + location.file.name + "', " +
-                "'lnum': '" + str(location.line) + "', " +
-                "'col': '" + str(location.column) + "', " +
+                "{'filename': '" + str(location[0]) + "', " +
+                "'lnum': '" + str(location[2]) + "', " +
+                "'col': '" + str(location[3]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + location.file.name + "'}" # TODO Put something more meaningful here, i.e. the whole source code line
+                "'text': '" + str(location[0]) + "'}" # TODO Put something more meaningful here, i.e. the whole source code line
             )
 
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r"") + ")")
