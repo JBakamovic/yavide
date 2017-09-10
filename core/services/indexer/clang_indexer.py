@@ -8,9 +8,9 @@ import os
 import sqlite3
 import sys
 import time
-from services.parser.clang_parser import TUnitPool
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.clang_parser import ChildVisitResult
+from services.parser.clang_parser import ImmutableSourceLocation
 
 # TODO move this to utils
 from itertools import izip_longest
@@ -19,15 +19,13 @@ def slice_it(iterable, n, padvalue=None):
 
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
-        self.db = sqlite3.connect('index.db')
-        self.db_cursor = self.db.cursor()
         self.callback = callback
+        self.db = None
         self.indexer_directory_name = '.indexer'
-        self.indexer_output_extension = '.ast'
+        self.indexer_db_name = 'indexer.db'
         self.cpu_count = multiprocessing.cpu_count()
         self.proj_root_directory = None
         self.compiler_args = None
-        self.tunit_pool = TUnitPool()
         self.parser = parser
         self.op = {
             0x0 : self.__run_on_single_file,
@@ -51,21 +49,10 @@ class ClangIndexer(object):
         original_filename = str(args[2])
         compiler_args = str(args[3])
 
-        # Index a file
-        tunit = self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
+        self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
 
-        if tunit:
-            # In case we are operating on temporary files (files modified by the user but not yet saved), we don't
-            # want to serialize its AST to the disk. Otherwise, do the serialization and load the results back to RAM.
-            # See 'Note' in __run_on_directory() for more details on why we do it in a flush-then-load-it-back way.
-            if contents_filename == original_filename:
-                self.__save_single(tunit, original_filename, os.path.join(proj_root_directory, self.indexer_directory_name))
-                self.__load_single(
-                    original_filename,
-                    os.path.join(proj_root_directory, self.indexer_directory_name, original_filename) + self.indexer_output_extension
-                )
-            else:
-                self.tunit_pool[original_filename] = tunit
+        if contents_filename == original_filename:
+            self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args)
 
         if self.callback:
             self.callback(id, args)
@@ -115,11 +102,19 @@ class ClangIndexer(object):
         self.proj_root_directory = str(args[0])
         self.compiler_args = str(args[1])
 
-        self.tunit_pool.clear()
-        indexer_directory_full_path = os.path.join(self.proj_root_directory, self.indexer_directory_name)
+        directory_already_indexed = True
+        indexer_directory_full_path = os.path.join(self.proj_root_directory, self.indexer_db_name)
         if not os.path.exists(indexer_directory_full_path):
+            directory_already_indexed = False
+
+        self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
+        if not directory_already_indexed:
             logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
-            self.db_cursor.execute('CREATE TABLE IF NOT EXISTS functions (filename text, function_name text, line integer, column integer)')
+            self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
+            self.db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
+            self.db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
+            symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
+            self.db.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
             start = time.clock()
             cpp_file_list = []
             for dirpath, dirs, files in os.walk(self.proj_root_directory):
@@ -127,46 +122,49 @@ class ClangIndexer(object):
                     name, extension = os.path.splitext(file)
                     if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
                         cpp_file_list.append(os.path.join(dirpath, file))
-            cpp_file_list_sliced = slice_it(cpp_file_list, len(cpp_file_list)/self.cpu_count)
 
-            process_list = []
-            for slice in cpp_file_list_sliced:
-                p = multiprocessing.Process(target=self.run_on_directory_impl, args=(self.proj_root_directory, self.compiler_args, indexer_directory_full_path, slice))
-                process_list.append(p)
-                p.daemon = False
-                p.start()
-            for p in process_list:
-                p.join()
+            self.run_on_directory_impl(self.proj_root_directory, self.compiler_args, indexer_directory_full_path, cpp_file_list)
 
-            time_elapsed = time.clock() - start # TODO how to count total CPU time, for all processes?
+            #cpp_file_list_sliced = slice_it(cpp_file_list, len(cpp_file_list)/self.cpu_count)
+            #process_list = []
+            #for slice in cpp_file_list_sliced:
+            #    p = multiprocessing.Process(target=self.run_on_directory_impl, args=(self.proj_root_directory, self.compiler_args, indexer_directory_full_path, slice))
+            #    process_list.append(p)
+            #    p.daemon = False
+            #    p.start()
+            #for p in process_list:
+            #    p.join()
+            # TODO how to count total CPU time, for all processes?
+
+            time_elapsed = time.clock() - start
             logging.info("Indexing {0} took {1}.".format(self.proj_root_directory, time_elapsed))
-        logging.info("Loading indexer results ... '{0}'.".format(indexer_directory_full_path))
-        self.__load_from_directory(indexer_directory_full_path)
+        else:
+            logging.info("Directory '{0}' already indexed ... ".format(self.proj_root_directory))
 
         if self.callback:
             self.callback(id, args)
 
     def __drop_single_file(self, id, args):
-        self.tunit_pool.drop(str(args[0]))
+        # TODO For each indexer table:
+        #       1. Remove symbols defined from file to be dropped
         if self.callback:
             self.callback(id, args)
 
     def __drop_all(self, id, dummy = None):
-        self.tunit_pool.clear()
-
-        # Swap the freed' memory back to the OS. Parsing many translation units tend to
-        # consume a big chunk of memory. In order to minimize the system memory footprint
-        # we will try to swap it back.
-        try:
-            cdll.LoadLibrary("libc.so.6").malloc_trim(0)
-        except:
-            logging.error(sys.exc_info())
-
+        # TODO Drop data from all tables
         if self.callback:
             self.callback(id, dummy)
 
     def __go_to_definition(self, id, args):
-        cursor = self.parser.get_definition(self.tunit_pool[str(args[0])], int(args[1]), int(args[2]))
+        cursor = self.parser.get_definition(
+            self.parser.parse(
+                str(args[0]),
+                str(args[0]),
+                self.compiler_args,
+                self.proj_root_directory
+            ),
+            int(args[1]), int(args[2])
+        )
         if cursor:
             logging.info('Definition location {0}'.format(str(cursor.location)))
         else:
@@ -182,53 +180,52 @@ class ClangIndexer(object):
         if tunit:
             cursor = self.parser.map_source_location_to_cursor(tunit, int(args[1]), int(args[2]))
             if cursor:
-                name = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
-                logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, name))
-                self.db_cursor.execute("SELECT * FROM functions WHERE function_name='%s'" % name)
-                references.append(self.db_cursor.fetchall())
+                logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, cursor.displayname))
+                usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
+                ast_node_id = self.parser.get_ast_node_id(cursor)
+                if ast_node_id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
+                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                elif ast_node_id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
+                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                elif ast_node_id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
+                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                elif ast_node_id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
+                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                else:
+                    query_result = None
+
+                if query_result:
+                    for row in query_result:
+                        references.append((row[0], row[1], row[2], row[3]))
+                        logging.debug('row: ' + str(row))
+
         logging.info('Found references: ' + str(references))
         time_elapsed = time.clock() - start
         logging.info("Find all references operation took {0}.".format(time_elapsed))
-        #if self.callback:
-        #    self.callback(id, set(lst))
 
-    def __load_single(self, tunit_filename, full_path):
-        try:
-            self.tunit_pool[tunit_filename] = self.parser.load_tunit(full_path)
-        except:
-            logging.error(sys.exc_info())
-
-    def __load_from_directory(self, indexer_directory):
-        start = time.clock()
-        self.tunit_pool.clear()
-        for dirpath, dirs, files in os.walk(indexer_directory):
-            for file in files:
-                name, extension = os.path.splitext(file)
-                if extension == self.indexer_output_extension:
-                    tunit_filename = os.path.join(dirpath, file)[len(indexer_directory):-len(self.indexer_output_extension)]
-                    self.__load_single(tunit_filename, os.path.join(dirpath, file))
-        time_elapsed = time.clock() - start
-        logging.info("Loading from {0} took {1}.".format(indexer_directory, time_elapsed))
-
-    def __save_single(self, tunit, tunit_filename, dest_directory):
-        tunit_full_path = os.path.join(dest_directory, tunit_filename[1:len(tunit_filename)])
-        parent_dir = os.path.dirname(tunit_full_path)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-        try:
-            self.parser.save_tunit(tunit, tunit_full_path + self.indexer_output_extension)
-        except:
-            logging.error(sys.exc_info())
+        if self.callback:
+            self.callback(id, references)
 
     def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args):
         def visitor(ast_node, ast_parent_node, parser):
             if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
                 id = parser.get_ast_node_id(ast_node)
-                if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    name = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
-                    line = int(parser.get_ast_node_line(ast_node))
-                    column = int(parser.get_ast_node_column(ast_node))
-                    self.db_cursor.execute('INSERT INTO functions VALUES (?, ?, ?, ?)', (tunit.spelling, name, line, column,))
+                usr = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
+                line = int(parser.get_ast_node_line(ast_node))
+                column = int(parser.get_ast_node_column(ast_node))
+                try:
+                    if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
+                        self.db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 1,))
+                    elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
+                        self.db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 3,))
+                    elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
+                        self.db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 2,))
+                    elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
+                        self.db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 4,))
+                    else:
+                        pass
+                except sqlite3.IntegrityError:
+                    pass
                 return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
@@ -243,6 +240,7 @@ class ClangIndexer(object):
         start = time.clock()
         tunit = self.parser.parse(contents_filename, original_filename, compiler_args, proj_root_directory)
         if tunit:
+            self.db.cursor().execute('DELETE FROM symbol WHERE filename=?', (tunit.spelling,))
             self.parser.traverse(tunit.cursor, self.parser, visitor)
             self.db.commit()
         time_elapsed = time.clock() - start
@@ -253,8 +251,3 @@ class ClangIndexer(object):
             if filename:
                 self.__index_single_file(proj_root_directory, filename, filename, compiler_args)
 
-def find_all_references_impl(db_cursor, references, cursor, tunits):
-    logging.debug('pid=' + str(os.getpid()) + ' tunits: ' + str(tunits))
-    for item in tunits:
-        if item:
-            references.extend(find_all_references(db_cursor, cursor, item[1]))
