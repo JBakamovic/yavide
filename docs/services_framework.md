@@ -88,7 +88,7 @@ Example how configuration might look like is:
 
 ### Diagnostics
 
-If you don't see what you expected, then there are certainly some errors (semantic, parsing, ...) for which you can get a hint if you have look at the `QuickFix` buffer. 
+If you don't see what you expected, then there are certainly some errors (semantic, parsing, ...) for which you can get a hint if you have look at the corresponding `location-list` window (i.e. use `:lopen`).
 You need to have [`Diagnostic`](#fixits-and-diagnostics) service enabled.
 
 ### Vim quirks
@@ -112,7 +112,7 @@ so we will have to apply some workarounds which will make this happen (very soon
 ## Fixits and diagnostics
 
 Clang is known for its [expressive diagnostics and fix-it hints](https://clang.llvm.org/diagnostics.html) that it can provide as a feedback without going to the compilation stage.
-This feature is now made available and integrated into the Vim `QuickFix` buffer which will be continuously displaying such information for current buffer.
+This feature is now made available and integrated into the Vim `location-list` which will be holding such information for each window you have opened. In order to get `location-list` one shall use standard Vim commands to manipulate with it (i.e. `:lopen` to open location list for current window you are at).
 
 If you find it too intrusive or redundant you can always turn it off. See [How to enable/disable service](#how-to-enabledisable-service).
 
