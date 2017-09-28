@@ -1068,7 +1068,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeDiagnostics_Apply(diagnostics)
-    call setqflist(a:diagnostics, 'r')
+    call setloclist(0, a:diagnostics, 'r')
     redraw
 endfunction
 
