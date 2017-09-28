@@ -21,5 +21,5 @@ class Diagnostics():
 
         if tunit is not None:
             diagnostics_iter = self.parser.get_diagnostics(tunit)
-            if self.callback and diagnostics_iter:
+            if self.callback:
                 self.callback(diagnostics_iter, args)
