@@ -1,18 +1,16 @@
-import contextlib
-import ctypes
-import functools
-import glob
 import itertools
 import logging
 import multiprocessing
 import os
+import shlex
+import subprocess
 import sqlite3
 import sys
 import time
 import tempfile
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.clang_parser import ChildVisitResult
-from services.parser.clang_parser import ImmutableSourceLocation
+from services.parser.clang_parser import ClangParser
 
 # TODO move this to utils
 from itertools import izip_longest
@@ -54,7 +52,7 @@ class ClangIndexer(object):
         self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
 
         if contents_filename == original_filename:
-            self.__index_single_file(proj_root_directory, contents_filename, original_filename, compiler_args, self.db)
+            index_single_file(self.parser, proj_root_directory, contents_filename, original_filename, compiler_args, self.db)
 
         if self.callback:
             self.callback(id, args)
@@ -104,11 +102,13 @@ class ClangIndexer(object):
         self.proj_root_directory = str(args[0])
         self.compiler_args = str(args[1])
 
+        # Do not run indexer on whole directory if we already did it
         directory_already_indexed = True
         indexer_directory_full_path = os.path.join(self.proj_root_directory, self.indexer_db_name)
         if not os.path.exists(indexer_directory_full_path):
             directory_already_indexed = False
 
+        # Otherwise, index the whole directory
         self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
         if not directory_already_indexed:
             logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
@@ -125,22 +125,60 @@ class ClangIndexer(object):
                     if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
                         cpp_file_list.append(os.path.join(dirpath, file))
 
-            #self.run_on_directory_impl(self.proj_root_directory, self.compiler_args, cpp_file_list)
+            # We will need a full path to 'clang_index.py' script
+            this_script_directory = os.path.dirname(os.path.realpath(__file__))
+            clang_index_script = os.path.join(this_script_directory, 'clang_index.py')
 
-            cpp_file_list_sliced = slice_it(cpp_file_list, len(cpp_file_list)/self.cpu_count)
+            # We will also need to setup a correct PYTHONPATH in order to run 'clang_index.py' script from another process(es)
+            my_env = os.environ.copy()
+            my_env["PYTHONPATH"] = os.path.dirname(os.path.dirname(this_script_directory))
+
             process_list = []
-            for slice in cpp_file_list_sliced:
-                p = multiprocessing.Process(target=self.run_on_directory_impl, args=(self.proj_root_directory, self.compiler_args, slice, tempfile))
-                process_list.append(p)
-                p.daemon = False
-                p.start()
-            for p in process_list:
-                p.join()
+            tmp_db_list = []
 
-            # Merge the db's into a single one
-            dbs_to_merge = glob.glob(os.path.join(self.proj_root_directory, '*.indexer.db'))
-            logging.info('about to start merging the databases ... ' + str(dbs_to_merge))
-            for db in dbs_to_merge:
+            # We will slice the input file list into a number of chunks which corresponds to the amount of available CPU cores
+            how_many_chunks = len(cpp_file_list)/self.cpu_count
+
+            # Now we are able to parallelize the indexing operation across different CPU cores
+            for cpp_file_list_chunk in slice_it(cpp_file_list, how_many_chunks):
+                # 'slice_it()' utility function may return None's as part of the slice (to fill up the slice up to the given length)
+                chunk_with_no_none_items = ', '.join(item for item in cpp_file_list_chunk if item)
+
+                # Each subprocess will get an empty DB file to record indexing results into it
+                handle, tmp_db = tempfile.mkstemp(suffix='.indexer.db', dir=self.proj_root_directory)
+
+                # Start indexing a given chunk in a new subprocess
+                #   Note: Running and handling subprocesses as following, and not via multiprocessing.Process module,
+                #         is done intentionally and more or less it served as a (very ugly) workaround because of several reasons:
+                #           (1) 'libclang' is not made thread safe which is why we want to utilize it from different
+                #               processes (e.g. each process will get its own instance of 'libclang')
+                #           (2) Python bindings for 'libclang' implement some sort of module caching mechanism which basically
+                #               contradicts with the intent from (1)
+                #           (3) Point (2) seems to be a Pythonic way of implementing modules which basically obscures
+                #               the way how different instances of libraries (modules?) across different processes
+                #               should behave
+                #           (4) Python does have a way to handle such situations (module reloading) but seems that it
+                #               works only for the simplest cases which is unfortunally not the case here
+                #           (5) Creating a new process via subprocess.Popen interface and running the indexing operation
+                #               from another Python script ('clang_index.py') is the only way how I managed to get it
+                #               working correctly (each process will get their own instance of library)
+                cmd = "python2 " + clang_index_script + " --project_root_directory='" \
+                    + self.proj_root_directory + "' --compiler_args='" + self.compiler_args + "' --filename_list='" \
+                    + chunk_with_no_none_items + "' --output_db_filename='" + tmp_db + "' " + "--log_file='" + \
+                    logging.getLoggerClass().root.handlers[0].baseFilename + "'"
+                p = subprocess.Popen(shlex.split(cmd), env=my_env)
+
+                # Store handles to subprocesses and corresponding DB files so we can handle them later on
+                process_list.append(p)
+                tmp_db_list.append((handle, tmp_db))
+
+            # Wait subprocesses to finish with their work
+            for p in process_list:
+                p.wait()
+
+            # Merge the results of indexing operations (each process created a single indexing DB)
+            logging.info('about to start merging the databases ... ' + str(tmp_db_list))
+            for handle, db in tmp_db_list:
                 conn = sqlite3.connect(db)
                 query_result = conn.execute('SELECT * FROM symbol')
                 if query_result:
@@ -148,8 +186,8 @@ class ClangIndexer(object):
                         self.db.execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (row[0], row[1], row[2], row[3], row[4],))
                 self.db.commit()
                 conn.close()
-
-            # TODO clean-up temporary files
+                os.close(handle)
+                os.remove(db)
 
             # TODO how to count total CPU time, for all processes?
             time_elapsed = time.clock() - start
@@ -157,8 +195,8 @@ class ClangIndexer(object):
         else:
             logging.info("Directory '{0}' already indexed ... ".format(self.proj_root_directory))
 
-        #if self.callback:
-        #    self.callback(id, args)
+        if self.callback:
+            self.callback(id, args)
 
     def __drop_single_file(self, id, args):
         # TODO For each indexer table:
@@ -222,56 +260,58 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, references)
 
-    def __index_single_file(self, proj_root_directory, contents_filename, original_filename, compiler_args, db):
-        def visitor(ast_node, ast_parent_node, parser):
-            if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
-                id = parser.get_ast_node_id(ast_node)
-                usr = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
-                line = int(parser.get_ast_node_line(ast_node))
-                column = int(parser.get_ast_node_column(ast_node))
-                try:
-                    if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                        db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 1,))
-                    elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                        db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 3,))
-                    elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                        db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 2,))
-                    elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                        db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 4,))
-                    else:
-                        pass
-                except sqlite3.IntegrityError:
+
+def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):
+    db = sqlite3.connect(output_db_filename)
+    db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
+    db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
+    symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
+    db.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
+
+    parser = ClangParser()
+    for filename in filename_list:
+        index_single_file(parser, proj_root_directory, filename, filename, compiler_args, db)
+    db.close()
+
+
+def index_single_file(parser, proj_root_directory, contents_filename, original_filename, compiler_args, db):
+    def visitor(ast_node, ast_parent_node, parser):
+        if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
+            id = parser.get_ast_node_id(ast_node)
+            usr = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
+            line = int(parser.get_ast_node_line(ast_node))
+            column = int(parser.get_ast_node_column(ast_node))
+            try:
+                if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
+                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 1,))
+                elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
+                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 3,))
+                elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
+                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 2,))
+                elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
+                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 4,))
+                else:
                     pass
-                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
-            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
+            except sqlite3.IntegrityError:
+                pass
+            return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
+        return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
-        logging.info("Indexing a file '{0}' ... ".format(original_filename))
+    logging.info("Indexing a file '{0}' ... ".format(original_filename))
 
-        # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
-        #       * Problem:
-        #           * File we are indexing might be a header which is included in another translation unit
-        #           * We would need a TU dependency tree to update influenced translation units as well
+    # TODO Indexing a single file does not guarantee us we'll have up-to-date AST's
+    #       * Problem:
+    #           * File we are indexing might be a header which is included in another translation unit
+    #           * We would need a TU dependency tree to update influenced translation units as well
 
-        # Index a single file
-        start = time.clock()
-        tunit = self.parser.parse(contents_filename, original_filename, compiler_args, proj_root_directory)
-        if tunit:
-            # TODO only if executed from index_single_file()
-            #db.cursor().execute('DELETE FROM symbol WHERE filename=?', (tunit.spelling,))
-            self.parser.traverse(tunit.cursor, self.parser, visitor)
-            db.commit()
-        time_elapsed = time.clock() - start
-        logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
-
-    def run_on_directory_impl(self, proj_root_directory, compiler_args, filename_list, tempfile):
-        handle, tmpfilename = tempfile.mkstemp(suffix='.indexer.db', dir=self.proj_root_directory)
-        db = sqlite3.connect(tmpfilename)
-        db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
-        db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
-        symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
-        db.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)   
-        for filename in filename_list:
-            if filename:
-                self.__index_single_file(proj_root_directory, filename, filename, compiler_args, db)
-        db.close()
+    # Index a single file
+    start = time.clock()
+    tunit = parser.parse(contents_filename, original_filename, str(compiler_args), proj_root_directory)
+    if tunit:
+        # TODO only if executed from index_single_file()
+        #db.cursor().execute('DELETE FROM symbol WHERE filename=?', (tunit.spelling,))
+        parser.traverse(tunit.cursor, parser, visitor)
+        db.commit()
+    time_elapsed = time.clock() - start
+    logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
