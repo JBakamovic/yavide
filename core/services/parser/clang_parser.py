@@ -176,25 +176,15 @@ class ClangParser():
         return cursor
 
     def get_definition(self, tunit, line, column):
-        if not tunit:
-            return None
-
         logging.info("Extracting definition of cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
-        cursor = clang.cindex.Cursor.from_location(
-                    tunit,
-                    clang.cindex.SourceLocation.from_position(
-                        tunit,
-                        clang.cindex.File.from_name(tunit, tunit.spelling),
-                        line,
-                        column
-                    )
-                 )
-
-        cur = cursor.referenced if cursor.referenced else cursor
-        if cur.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF:
-            if ClangParser.__get_num_overloaded_decls(cur):
-                return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
-        return cur.get_definition()
+        cursor = self.get_cursor(tunit, line, column)
+        if cursor:
+            cur = cursor.referenced if cursor.referenced else cursor
+            if cur.kind == clang.cindex.CursorKind.OVERLOADED_DECL_REF:
+                if ClangParser.__get_num_overloaded_decls(cur):
+                    return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
+            return cur.get_definition()
+        return None
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
