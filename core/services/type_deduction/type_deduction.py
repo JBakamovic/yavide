@@ -18,7 +18,10 @@ class TypeDeduction():
             project_root_directory
         )
 
-        if tunit is not None:
+        if self.callback:
             cursor = self.parser.map_source_location_to_cursor(tunit, line, column)
-            if self.callback and cursor and cursor.type:
+            if cursor and cursor.type:
                 self.callback(cursor.type.spelling, args)
+            else:
+                self.callback('', args)
+
