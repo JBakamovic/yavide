@@ -1,9 +1,7 @@
+import clang.cindex
+import logging
 import sys
 import os
-import collections
-import logging
-import subprocess
-import clang.cindex
 from services.parser.ast_node_identifier import ASTNodeId
 
 class ChildVisitResult(clang.cindex.BaseEnumeration):
@@ -58,85 +56,8 @@ New version provides more functionality (i.e. AST parent node) which is needed i
 """
 clang.cindex.Cursor.get_children = get_children_patched
 
-
-class TUnitPool(object):
-    def __init__(self):
-        self.tunits = {}
-
-    def get(self, filename):
-        return self.tunits.get(filename, None)
-
-    def set(self, filename, tunit):
-        self.tunits[filename] = tunit
-
-    def drop(self, filename):
-        if filename in self.tunits:
-            del self.tunits[filename]
-
-    def clear(self):
-        self.tunits.clear()
-
-    def __len__(self):
-        return len(self.tunits)
-
-    def __setitem__(self, key, item):
-        self.set(key, item)
-
-    def __getitem__(self, key):
-        return self.get(key)
-
-    def __delitem__(self, filename):
-        self.drop(filename)
-
-    def __iter__(self):
-        return self.tunits.iteritems()
-
-
-class ImmutableSourceLocation():
-    """
-    Reason of existance of this class is because clang.cindex.SourceLocation is not designed to be hashable.
-    """
-
-    def __init__(self, filename, line, column, offset):
-        self.filename = filename
-        self.line = line
-        self.column = column
-        self.offset = offset
-
-    @property
-    def filename(self):
-        """Get the filename represented by this source location."""
-        return self.filename
-
-    @property
-    def line(self):
-        """Get the line represented by this source location."""
-        return self.line
-
-    @property
-    def column(self):
-        """Get the column represented by this source location."""
-        return self.column
-
-    @property
-    def offset(self):
-        """Get the file offset represented by this source location."""
-        return self.offset
-
-    def __eq__(self, other):
-        return self.filename == other.filename and self.line == other.line and self.column == other.column and self.offset == other.offset
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(self.filename) ^ hash(self.line) ^ hash(self.column) ^ hash(self.offset)
-
-    def __repr__(self):
-        return "<ImmutableSourceLocation file %r, line %r, column %r>" % (self.filename, self.line, self.column)
-
-
 def get_system_includes():
+    import subprocess
     output = subprocess.Popen(["g++", "-v", "-E", "-x", "c++", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     pattern = ["#include <...> search starts here:", "End of search list."]
     output = str(output)
@@ -273,78 +194,6 @@ class ClangParser():
             if ClangParser.__get_num_overloaded_decls(cur):
                 return ClangParser.__get_overloaded_decl(cur, 0).get_definition()
         return cur.get_definition()
-
-    def find_all_references(self, cursor, tunit):
-        # TODO As of now, this routine is very very slow. See what we can do about it? Some ideas could be to:
-        #       * Traverse the AST tree in a smarter way (i.e. exclude unnecessary descents)
-        #       * Parallelize the visitation
-        #       * Optimize for:
-        #           1. Local-scope (i.e. local variables) -> we need to search only within the current TU
-        #           2. Things which does not make sense to search for (i.e. literals, ...)
-        #           3. ... ?
-        #
-        # TODO Why does the memory consumption grow when searching over many TU's?
-        #       * Looks like as if there were no indexer results pre-loaded?
-        #       * i.e. bigger project as cppcheck (.indexer contents is 1.4GB large)
-        # TODO Why doesn't the memory get freed after completion?
-        #       * Memory allocator decides when it will swap the allocated
-        #         memory back to the OS
-        # TODO Second query (on different symbol?) does not increase RAM usage?!
-        #       * Memory from previous step gets reused
-        #
-        # TODO Have a look at clang_findReferencesInFile() implementation
-        def visitor(ast_node, ast_parent_node, client_data):
-            if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
-                node = ast_node.referenced if ast_node.referenced else ast_node
-                if node.spelling == client_data.cursor.spelling:
-                    if node.get_usr() == client_data.cursor.get_usr():
-                        #
-                        # At this point we can still get false positives. I.e.
-                        #   * Multiple cursors with the same spelling and with the
-                        #     same USR pointing to the same location.
-                        #       * I.e. Parsing 'foobar()' will result in:
-                        #           (1) CALL_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
-                        #           (2) UNEXPOSED_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
-                        #           (3) DECL_REF_EXPR with spelling set to 'foobar' and location set to location of 'foobar'
-                        #         which will obviously give us 3 duplicates and right now I don't see any other easy way
-                        #         eliminating those but to use set() with hashable SourceLocation's.
-                        #
-                        #   * Multiple cursors with the same spelling and with the
-                        #     same USR pointing to different locations but not all
-                        #     of them really being relevant.
-                        #       * I.e. Parsing 's.foobar()' will result in:
-                        #           (1) CALL_EXPR with spelling set to 'foobar' and location set to location of 's',
-                        #           (2) MEMBER_REF_EXPR with spelling set to 'foobar' and location set to location of 'foobar',
-                        #           (3) DECL_REF_EXPR with spelling set to 's' and location set to location of 's'
-                        #       which will give us 2 duplicates, (1) & (2), and in this case we have to be able to identify
-                        #       the ones which are not really the match. This we can do by tokenizing the cursor and trying to
-                        #       see if token spelling at the given location still matches the spelling we are looking for.
-                        #
-                        for token in ast_node.get_tokens():
-                            if ast_node.location == token.extent.start:
-                                if node.spelling == token.spelling:
-                                    client_data.references.append(ImmutableSourceLocation(ast_node.location.file.name,
-                                        ast_node.location.line, ast_node.location.column, ast_node.location.offset))
-                                break
-                return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
-            return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
-
-        if not tunit:
-            return []
-
-        logging.info("Finding all references of cursor [{0}, {1}]: {2}.".format(cursor.location.line, cursor.location.column, tunit.spelling))
-        references = []
-        client_data = collections.namedtuple('client_data', ['cursor', 'references'])
-        traverse(tunit.cursor, client_data(cursor.referenced if cursor.referenced else cursor, references), visitor)
-        return references
-
-    def save_tunit(self, tunit, tunit_path):
-        logging.info('Saving tunit to ... {0}'.format(tunit_path))
-        tunit.save(tunit_path)
-
-    def load_tunit(self, tunit_path):
-        logging.info('Loading tunit from ... {0}'.format(tunit_path))
-        return self.index.read(tunit_path)
 
     def dump_tokens(self, cursor):
         for token in cursor.get_tokens():
