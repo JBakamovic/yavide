@@ -19,7 +19,9 @@ class Diagnostics():
             project_root_directory
         )
 
-        if tunit is not None:
-            diagnostics_iter = self.parser.get_diagnostics(tunit)
-            if self.callback:
-                self.callback(diagnostics_iter, args)
+        if self.callback:
+            self.callback(
+                self.parser.get_diagnostics(tunit),
+                args
+            )
+
