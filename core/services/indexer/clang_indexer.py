@@ -253,13 +253,11 @@ class ClangIndexer(object):
                         references.append((row[0], row[1], row[2], row[3]))
                         logging.debug('row: ' + str(row))
 
-        logging.info('Found references: ' + str(references))
-        time_elapsed = time.clock() - start
-        logging.info("Find all references operation took {0}.".format(time_elapsed))
+                time_elapsed = time.clock() - start
+                logging.info('Find-all-references operation of {0} took {1}: {2}'.format(cursor.displayname, time_elapsed, str(references)))
 
         if self.callback:
             self.callback(id, references)
-
 
 def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):
     db = sqlite3.connect(output_db_filename)
