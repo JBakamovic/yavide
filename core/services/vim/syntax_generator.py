@@ -1,5 +1,3 @@
-import sys
-import argparse
 import logging
 import time
 import collections
@@ -40,16 +38,12 @@ class VimSyntaxGenerator:
                 return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
             return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling
 
-        # Fetch the translation unit
-        if tunit is None:
-            logging.info("TranslationUnit is not available!")
-            return
-
         # Build Vim syntax highlight rules
         start = time.clock()
         vim_syntax_element = ['call clearmatches()\n']
-        client_data = collections.namedtuple('client_data', ['clang_parser', 'vim_syntax_element'])
-        clang_parser.traverse(tunit.cursor, client_data(clang_parser, vim_syntax_element), visitor)
+        if tunit:
+            client_data = collections.namedtuple('client_data', ['clang_parser', 'vim_syntax_element'])
+            clang_parser.traverse(tunit.cursor, client_data(clang_parser, vim_syntax_element), visitor)
 
         # Write Vim syntax file
         vim_syntax_file = open(self.output_syntax_file, "w", 0)
@@ -63,7 +57,7 @@ class VimSyntaxGenerator:
         clang_parser.dump_ast_nodes(tunit)
 
         # Log how long generating Vim syntax file took
-        logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[0]), time_elapsed))
+        logging.info("Vim syntax generator for '{0}' took {1}.".format(str(args[2]), time_elapsed))
 
     def generate_vim_syntax_file_from_ctags(self, filename):
         # Generate the tags
@@ -137,6 +131,7 @@ class VimSyntaxGenerator:
             return "yavideCppUsingDeclaration"
 
 def main():
+    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("filename",                                                       help="source code file to generate the source code highlighting for")
     parser.add_argument("output_syntax_file",                                             help="resulting Vim syntax file")

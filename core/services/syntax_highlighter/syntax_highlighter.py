@@ -1,6 +1,3 @@
-import logging
-import time
-
 class SyntaxHighlighter():
     def __init__(self, parser, callback = None):
         self.parser = parser
