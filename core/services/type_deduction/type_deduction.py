@@ -19,7 +19,7 @@ class TypeDeduction():
         )
 
         if self.callback:
-            cursor = self.parser.map_source_location_to_cursor(tunit, line, column)
+            cursor = self.parser.get_cursor(tunit, line, column)
             if cursor and cursor.type:
                 self.callback(cursor.type.spelling, args)
             else:

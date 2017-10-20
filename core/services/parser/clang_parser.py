@@ -159,7 +159,7 @@ class ClangParser():
             return ClangParser.__extract_dependent_type_location(cursor).column
         return cursor.location.column
 
-    def map_source_location_to_cursor(self, tunit, line, column):
+    def get_cursor(self, tunit, line, column):
         if not tunit:
             return None
 
