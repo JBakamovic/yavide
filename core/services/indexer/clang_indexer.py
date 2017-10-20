@@ -232,7 +232,7 @@ class ClangIndexer(object):
         references = []
         tunit = self.parser.parse(str(args[0]), str(args[0]), self.compiler_args, self.proj_root_directory)
         if tunit:
-            cursor = self.parser.map_source_location_to_cursor(tunit, int(args[1]), int(args[2]))
+            cursor = self.parser.get_cursor(tunit, int(args[1]), int(args[2]))
             if cursor:
                 logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, cursor.displayname))
                 usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
