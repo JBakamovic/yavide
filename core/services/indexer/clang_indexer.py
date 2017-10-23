@@ -65,7 +65,6 @@ class ClangIndexer(object):
         self.callback = callback
         self.symbol_db_name = '.yavide_index.db'
         self.symbol_db = SymbolDatabase()
-        self.cpu_count = multiprocessing.cpu_count()
         self.proj_root_directory = None
         self.compiler_args = None
         self.parser = parser
@@ -178,7 +177,7 @@ class ClangIndexer(object):
             tmp_db_list = []
 
             # We will slice the input file list into a number of chunks which corresponds to the amount of available CPU cores
-            how_many_chunks = len(cpp_file_list)/self.cpu_count
+            how_many_chunks = len(cpp_file_list) / multiprocessing.cpu_count()
 
             # Now we are able to parallelize the indexing operation across different CPU cores
             for cpp_file_list_chunk in slice_it(cpp_file_list, how_many_chunks):
