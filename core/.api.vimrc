@@ -793,10 +793,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartAllServices()
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xF0, 0xFF, "start_all_services"])
-
 EOF
 endfunction
 
@@ -807,10 +804,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartService(id, payload)
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xF1, vim.eval('a:id'), vim.eval('a:payload')])
-
 EOF
 endfunction
 
@@ -832,10 +826,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStopAllServices()
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xFD, 0xFF, "stop_all_services"])
-
 EOF
 endfunction
 
@@ -846,10 +837,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStopService(id)
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xFE, vim.eval('a:id'), 'stop_service'])
-
 EOF
 endfunction
 
@@ -860,10 +848,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStop()
 python << EOF
-from multiprocessing import Queue
-
 server_queue.put([0xFF, 0xFF, "shutdown_and_exit"])
-
 EOF
 endfunction
 
