@@ -209,7 +209,7 @@ class ClangIndexer(object):
         cursor = self.parser.get_definition(
             self.parser.parse(
                 str(args[0]),
-                str(args[0]),
+                str(args[0]), # TODO make it work on edited files (we need modified here)
                 self.compiler_args,
                 self.proj_root_directory
             ),
