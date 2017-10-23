@@ -939,8 +939,6 @@ function! Y_SrcCodeModel_Start()
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
-
-    echomsg 'Starting indexer ...'
     call Y_SrcCodeIndexer_RunOnDirectory()
 endfunction
 
@@ -950,7 +948,6 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Stop()
-    call Y_SrcCodeIndexer_DropAll()
     call Y_ServerStopService(g:project_service_src_code_model['id'])
 endfunction
 
