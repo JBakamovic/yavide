@@ -109,7 +109,6 @@ class ClangIndexer(object):
 
         # Otherwise, index the whole directory
         if not directory_already_indexed:
-            start = time.clock()
             logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
 
             # Open and initialize the symbol database
@@ -188,9 +187,8 @@ class ClangIndexer(object):
                 os.close(handle)
                 os.remove(db)
 
-            # TODO how to count total CPU time, for all processes?
-            time_elapsed = time.clock() - start
-            logging.info("Indexing {0} took {1}.".format(self.proj_root_directory, time_elapsed))
+            # TODO how to count total CPU time, for all sub-processes?
+            logging.info("Indexing {0} is completed.".format(self.proj_root_directory))
         else:
             logging.info("Directory '{0}' already indexed ... ".format(self.proj_root_directory))
 
