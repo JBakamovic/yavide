@@ -15,6 +15,51 @@ import itertools
 def slice_it(iterable, n, padvalue=None):
     return itertools.izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
+class SymbolDatabase(object):
+    def __init__(self, db_filename = None):
+        if db_filename:
+            self.db_connection = sqlite3.connect(db_filename)
+        else:
+            self.db_connection = None
+
+    def __del__(self):
+        if self.db_connection:
+            self.db_connection.close()
+
+    def open(self, db_filename):
+        if not self.db_connection:
+            self.db_connection = sqlite3.connect(db_filename)
+
+    def close(self):
+        if self.db_connection:
+            self.db_connection.close()
+
+    def get_all(self):
+        # TODO Use generators
+        return self.db_connection.cursor().execute('SELECT * FROM symbol')
+
+    def get_by_id(self, id):
+        return self.db_connection.cursor().execute('SELECT * FROM symbol WHERE usr=?', (id,))
+
+    def insert_single(self, filename, unique_id, line, column, symbol_type):
+        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_type,))
+
+    def flush(self):
+        self.db_connection.commit()
+
+    def delete(self, filename):
+        self.db_connection.cursor().execute('DELETE FROM symbol WHERE filename=?', (filename,))
+
+    def delete_all(self):
+        self.db_connection.cursor().execute('DELETE FROM symbol')
+
+    def create_data_model(self):
+        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
+        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
+        symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
+        self.db_connection.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
+
+
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
         self.callback = callback
