@@ -1,11 +1,9 @@
-import itertools
 import logging
 import multiprocessing
 import os
 import shlex
 import subprocess
 import sqlite3
-import sys
 import time
 import tempfile
 from services.parser.ast_node_identifier import ASTNodeId
@@ -13,9 +11,9 @@ from services.parser.clang_parser import ChildVisitResult
 from services.parser.clang_parser import ClangParser
 
 # TODO move this to utils
-from itertools import izip_longest
+import itertools
 def slice_it(iterable, n, padvalue=None):
-    return izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
+    return itertools.izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
