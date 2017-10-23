@@ -873,33 +873,6 @@ endfunction
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_TextChangedIReset()
-" Description:  Resets variables to initial state.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_TextChangedIReset()
-    let s:y_prev_line = 0
-    let s:y_prev_col  = 0
-    let s:y_prev_char = ''
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeModel_TextChangedI()
-" Description:  A hook for services which are ought to be on 'TextChangedI' event (i.e. semantic highlight as you type).
-"               In order to minimize triggering the services after each and every character typed in, there is a
-"               Y_SrcCodeModel_TextChangedType() function which heuristicly gives us a hint if there was a big enough
-"               change for us to run the services or not.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_TextChangedI()
-    if Y_SrcCodeModel_TextChangedType()
-        call Y_SrcCodeIndexer_RunOnSingleFile()
-        call Y_SrcCodeHighlighter_Run()
-        call Y_SrcCodeDiagnostics_Run()
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeModel_CheckTextChangedType()
 " Description:  Implements simple heuristics to detect what kind of text change has taken place in current buffer.
 "               This is useful if one wants to install handler for 'TextChangedI' events but not necessarily
