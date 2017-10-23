@@ -239,8 +239,7 @@ class ClangIndexer(object):
             self.callback(id, args)
 
     def __drop_single_file(self, id, args):
-        # TODO For each indexer table:
-        #       1. Remove symbols defined from file to be dropped
+        self.symbol_db.delete(filename)
         if self.callback:
             self.callback(id, args)
 
