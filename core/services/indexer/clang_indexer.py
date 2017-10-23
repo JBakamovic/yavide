@@ -63,9 +63,8 @@ class SymbolDatabase(object):
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
         self.callback = callback
-        self.db = None
-        self.indexer_directory_name = '.indexer'
-        self.indexer_db_name = 'indexer.db'
+        self.symbol_db_name = '.yavide_index.db'
+        self.symbol_db = SymbolDatabase()
         self.cpu_count = multiprocessing.cpu_count()
         self.proj_root_directory = None
         self.compiler_args = None
@@ -79,7 +78,6 @@ class ClangIndexer(object):
             0x11 : self.__find_all_references
         }
 
-
     def __call__(self, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
 
@@ -87,15 +85,15 @@ class ClangIndexer(object):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
     def __run_on_single_file(self, id, args):
-        proj_root_directory = str(args[0])
-        contents_filename = str(args[1])
-        original_filename = str(args[2])
-        compiler_args = str(args[3])
+        self.proj_root_directory = str(args[0])
+        contents_filename        = str(args[1])
+        original_filename        = str(args[2])
+        self.compiler_args       = str(args[3])
 
-        self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
-
+        # We don't run indexer on files modified but not saved
         if contents_filename == original_filename:
-            index_single_file(self.parser, proj_root_directory, contents_filename, original_filename, compiler_args, self.db)
+            self.symbol_db.open(os.path.join(self.proj_root_directory, self.symbol_db_name))
+            index_single_file(self.parser, self.proj_root_directory, contents_filename, original_filename, compiler_args, self.symbol_db)
 
         if self.callback:
             self.callback(id, args)
@@ -143,24 +141,24 @@ class ClangIndexer(object):
         #       footprint even with the big-size projects.
 
         self.proj_root_directory = str(args[0])
-        self.compiler_args = str(args[1])
+        self.compiler_args       = str(args[1])
 
         # Do not run indexer on whole directory if we already did it
         directory_already_indexed = True
-        indexer_directory_full_path = os.path.join(self.proj_root_directory, self.indexer_db_name)
-        if not os.path.exists(indexer_directory_full_path):
+        indexer_db = os.path.join(self.proj_root_directory, self.symbol_db_name)
+        if not os.path.exists(indexer_db):
             directory_already_indexed = False
 
         # Otherwise, index the whole directory
-        self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
         if not directory_already_indexed:
-            logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
-            self.db = sqlite3.connect(os.path.join(self.proj_root_directory, self.indexer_db_name))
-            self.db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
-            self.db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
-            symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
-            self.db.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
             start = time.clock()
+            logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
+
+            # Open and initialize the symbol database
+            self.symbol_db.open(indexer_db)
+            self.symbol_db.create_data_model()
+
+            # Build-up a list of source code files from given project directory
             cpp_file_list = []
             for dirpath, dirs, files in os.walk(self.proj_root_directory):
                 for file in files:
@@ -222,13 +220,13 @@ class ClangIndexer(object):
             # Merge the results of indexing operations (each process created a single indexing DB)
             logging.info('about to start merging the databases ... ' + str(tmp_db_list))
             for handle, db in tmp_db_list:
-                conn = sqlite3.connect(db)
-                query_result = conn.execute('SELECT * FROM symbol')
-                if query_result:
-                    for row in query_result:
-                        self.db.execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (row[0], row[1], row[2], row[3], row[4],))
-                self.db.commit()
-                conn.close()
+                tmp_symbol_db = SymbolDatabase(db)
+                symbols = tmp_symbol_db.get_all()
+                if symbols:
+                    for s in symbols:
+                        self.symbol_db.insert_single(s[0], s[1], s[2], s[3], s[4])
+                self.symbol_db.flush()
+                tmp_symbol_db.close()
                 os.close(handle)
                 os.remove(db)
 
@@ -281,20 +279,20 @@ class ClangIndexer(object):
                 usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
                 ast_node_id = self.parser.get_ast_node_id(cursor)
                 if ast_node_id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                    symbols = self.symbol_db.get_by_id(usr)
                 elif ast_node_id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                    symbols = self.symbol_db.get_by_id(usr)
                 elif ast_node_id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                    symbols = self.symbol_db.get_by_id(usr)
                 elif ast_node_id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                    query_result = self.db.cursor().execute("SELECT * FROM symbol WHERE usr=?", (usr,))
+                    symbols = self.symbol_db.get_by_id(usr)
                 else:
-                    query_result = None
+                    symbols = None
 
-                if query_result:
-                    for row in query_result:
-                        references.append((row[0], row[1], row[2], row[3]))
-                        logging.debug('row: ' + str(row))
+                if symbols:
+                    for symbol in symbols:
+                        references.append((symbol[0], symbol[1], symbol[2], symbol[3]))
+                        logging.debug('symbol: ' + str(symbol))
 
                 time_elapsed = time.clock() - start
                 logging.info('Find-all-references operation of {0} took {1}: {2}'.format(cursor.displayname, time_elapsed, str(references)))
@@ -302,20 +300,17 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, references)
 
-def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):
-    db = sqlite3.connect(output_db_filename)
-    db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
-    db.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
-    symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
-    db.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
 
+def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):
+    symbol_db = SymbolDatabase(output_db_filename)
+    symbol_db.create_data_model()
     parser = ClangParser()
     for filename in filename_list:
-        index_single_file(parser, proj_root_directory, filename, filename, compiler_args, db)
-    db.close()
+        index_single_file(parser, proj_root_directory, filename, filename, compiler_args, symbol_db)
+    symbol_db.close()
 
 
-def index_single_file(parser, proj_root_directory, contents_filename, original_filename, compiler_args, db):
+def index_single_file(parser, proj_root_directory, contents_filename, original_filename, compiler_args, symbol_db):
     def visitor(ast_node, ast_parent_node, parser):
         if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
             id = parser.get_ast_node_id(ast_node)
@@ -324,13 +319,13 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
             column = int(parser.get_ast_node_column(ast_node))
             try:
                 if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 1,))
+                    symbol_db.insert_single(tunit.spelling, usr, line, column, 1,)
                 elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 3,))
+                    symbol_db.insert_single(tunit.spelling, usr, line, column, 3,)
                 elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 2,))
+                    symbol_db.insert_single(tunit.spelling, usr, line, column, 2,)
                 elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                    db.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (tunit.spelling, usr, line, column, 4,))
+                    symbol_db.insert_single(tunit.spelling, usr, line, column, 4,)
                 else:
                     pass
             except sqlite3.IntegrityError:
@@ -349,10 +344,9 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
     start = time.clock()
     tunit = parser.parse(contents_filename, original_filename, str(compiler_args), proj_root_directory)
     if tunit:
-        # TODO only if executed from index_single_file()
-        #db.cursor().execute('DELETE FROM symbol WHERE filename=?', (tunit.spelling,))
+        symbol_db.delete(tunit.spelling)
         parser.traverse(tunit.cursor, parser, visitor)
-        db.commit()
+        symbol_db.flush()
     time_elapsed = time.clock() - start
     logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
