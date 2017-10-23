@@ -45,7 +45,7 @@ class VimIndexer(object):
                 "'lnum': '" + str(location[2]) + "', " +
                 "'col': '" + str(location[3]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(location[0]) + "'}" # TODO Put something more meaningful here, i.e. the whole source code line
+                "'text': '" + str(location[0]) + "'}" # TODO Put something more meaningful here, i.e. the corresponding source code line
             )
 
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r"") + ")")
