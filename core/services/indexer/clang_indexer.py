@@ -92,6 +92,7 @@ class ClangIndexer(object):
         # We don't run indexer on files modified but not saved
         if contents_filename == original_filename:
             self.symbol_db.open(os.path.join(self.proj_root_directory, self.symbol_db_name))
+            self.symbol_db.delete(original_filename)
             index_single_file(self.parser, self.proj_root_directory, contents_filename, original_filename, compiler_args, self.symbol_db)
 
         if self.callback:
@@ -294,7 +295,6 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
     start = time.clock()
     tunit = parser.parse(contents_filename, original_filename, str(compiler_args), proj_root_directory)
     if tunit:
-        symbol_db.delete(tunit.spelling)
         parser.traverse(tunit.cursor, parser, visitor)
         symbol_db.flush()
     time_elapsed = time.clock() - start
