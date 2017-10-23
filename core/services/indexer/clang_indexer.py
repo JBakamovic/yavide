@@ -244,7 +244,7 @@ class ClangIndexer(object):
             self.callback(id, args)
 
     def __drop_all(self, id, dummy = None):
-        # TODO Drop data from all tables
+        self.symbol_db.delete_all()
         if self.callback:
             self.callback(id, dummy)
 
