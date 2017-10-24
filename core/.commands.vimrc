@@ -49,6 +49,7 @@
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImplVSplit :call Y_SrcNav_SwitchBetweenHeaderImpl(1)
 :command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                :call Y_SrcCodeIndexer_GoToDefinition()
 :command! -nargs=0 -complete=file YavideSrcNavFindAllReferences             :call Y_SrcCodeIndexer_FindAllReferences()
+:command! -nargs=0 -complete=file YavideSrcNavRebuildIndex                  :call Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
 :command! -nargs=0 -complete=file YavideSrcNavFindGlobalDefinitions         :call Y_SrcNav_FindGlobalDefinitions()
 :command! -nargs=0 -complete=file YavideSrcNavFindAllCallers                :call Y_SrcNav_FindAllCallers()
 :command! -nargs=0 -complete=file YavideSrcNavFindAllCallees                :call Y_SrcNav_FindAllCallees()
