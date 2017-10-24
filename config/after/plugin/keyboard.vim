@@ -55,14 +55,10 @@ nnoremap    <S-Tab>             <<
 inoremap    <S-Tab>             <C-D>
 vnoremap    <Tab>               >gv
 vnoremap    <S-Tab>             <gv
-nnoremap    <M-Left>            <C-O>"                                                          Jump back to previous cursor location
-nnoremap    <M-Right>           <C-I>"                                                          Jump to next cursor location
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap        <F3>                :YavideSrcNavOpenFile<CR>|"                                     Open file under the cursor
-imap        <F3>                <ESC>:YavideSrcNavOpenFile<CR>i|"
 nmap        <F4>                :YavideSrcNavSwitchBetweenHeaderImpl<CR>|"                      Switch between header/source
 imap        <F4>                <ESC>YavideSrcNavSwitchBetweenHeaderImpl<CR>i|"
 nmap        <S-F4>              :YavideSrcNavSwitchBetweenHeaderImplVSplit<CR>|"                Switch between header/source in a vertical split
@@ -75,12 +71,8 @@ nmap        <S-F12>             :vsp <CR>:YavideSrcNavGoToDefinition<CR>|"      
 imap        <S-F12>             :vsp <CR>:YavideSrcNavGoToDefinition<CR>|"
 nmap        <C-\>s              :YavideSrcNavFindAllReferences<CR>|"                            Find all references to the token under the cursor
 nmap        <C-\>r              :YavideSrcNavRebuildIndex<CR>|"                                 Rebuild symbol database index for current project
-nmap        <C-\>g              :YavideSrcNavFindGlobalDefinitions<CR>|"                        Find global definition(s) of token under the cursor
-nmap        <C-\>c              :YavideSrcNavFindAllCallers<CR>|"                               Find all functions calling the function under the cursor
-nmap        <C-\>d              :YavideSrcNavFindAllCallees<CR>|"                               Find all functions called by the function under the cursor
-nmap        <C-\>i              :YavideSrcNavFindAllIncludes<CR>|"                              Find all files that include the filename under the cursor
-nmap        <C-\>t              :YavideSrcNavFindAllInstancesOfText<CR>|"                       Find all instances of the text under cursor
-nmap        <C-\>e              :YavideSrcNavEGrepSearch<CR>|"                                  Search for the word under the cursor using 'egrep'
+nnoremap    <M-Left>            <C-O>"                                                          Jump back to previous cursor location
+nnoremap    <M-Right>           <C-I>"                                                          Jump to next cursor location
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build process
