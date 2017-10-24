@@ -203,10 +203,16 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, args)
 
-    def __drop_all(self, id, dummy = None):
+    def __drop_all(self, id, args):
+        delete_file = bool(args[0])
         self.symbol_db.delete_all()
+        if delete_file:
+            self.symbol_db.close()
+            os.remove(self.symbol_db.filename)
+            logging.info('DB file removed ...')
+
         if self.callback:
-            self.callback(id, dummy)
+            self.callback(id, args)
 
     def __go_to_definition(self, id, args):
         cursor = self.parser.get_definition(
