@@ -245,6 +245,10 @@ class ClangIndexer(object):
         if tunit:
             cursor = self.parser.get_cursor(tunit, int(args[1]), int(args[2]))
             if cursor:
+                # TODO In order to make find-all-references work on edited (and not yet saved) files,
+                #      we would need to manipulate directly with USR. I
+                #      In case of edited files, USR contains a name of a temporary file we serialized
+                #      the contents in and therefore will not match the USR in the database.
                 logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, cursor.displayname))
                 usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
                 ast_node_id = self.parser.get_ast_node_id(cursor)
