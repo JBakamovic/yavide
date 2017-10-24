@@ -1311,7 +1311,15 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_GoToDefinition()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, expand('%:p'), line('.'), col('.')])
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, l:contents_filename, l:current_buffer, line('.'), col('.')])
     endif
 endfunction
 
