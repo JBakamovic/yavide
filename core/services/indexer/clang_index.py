@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     if (args.log_file):
         FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
-        logging.basicConfig(filename=args.log_file, filemode='w', format=FORMAT, level=logging.INFO)
+        logging.basicConfig(filename=args.log_file, filemode='a', format=FORMAT, level=logging.INFO)
 
     services.indexer.clang_indexer.index_file_list(
         args.project_root_directory,
