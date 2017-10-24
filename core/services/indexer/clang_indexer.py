@@ -142,7 +142,7 @@ class ClangIndexer(object):
                 chunk_with_no_none_items = ', '.join(item for item in cpp_file_list_chunk if item)
 
                 # Each subprocess will get an empty DB file to record indexing results into it
-                handle, tmp_db = tempfile.mkstemp(suffix='.indexer.db', dir=proj_root_directory)
+                handle, tmp_db = tempfile.mkstemp(suffix=self.symbol_db_name, dir=proj_root_directory)
 
                 # Start indexing a given chunk in a new subprocess
                 #   Note: Running and handling subprocesses as following, and not via multiprocessing.Process module,
