@@ -31,11 +31,9 @@ class VimIndexer(object):
     def __drop_all(self, args):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_DropAllCompleted()")
 
-    def __go_to_definition(self, location):
-        if location:
-            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + location.file.name + "', " + str(location.line) + ", " + str(location.column) + ", " + str(location.offset) + ")")
-        else:
-            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('', 0, 0, 0")
+    def __go_to_definition(self, args):
+        filename, line, column, offset = args
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + filename + "', " + str(line) + ", " + str(column) + ", " + str(offset) + ")")
 
     def __find_all_references(self, references):
         quickfix_list = []
