@@ -74,8 +74,7 @@ class ClangIndexer(object):
             0x1 : self.__run_on_directory,
             0x2 : self.__drop_single_file,
             0x3 : self.__drop_all,
-            0x10 : self.__go_to_definition,
-            0x11 : self.__find_all_references
+            0x10 : self.__find_all_references
         }
 
     def __call__(self, proj_root_directory, compiler_args, args):
@@ -210,33 +209,6 @@ class ClangIndexer(object):
 
         if self.callback:
             self.callback(id, args)
-
-    def __go_to_definition(self, id, proj_root_directory, compiler_args, args):
-        contents_filename = str(args[0])
-        original_filename = str(args[1])
-        line              = int(args[2])
-        column            = int(args[3])
-
-        cursor = self.parser.get_definition(
-            self.parser.parse(
-                contents_filename,
-                original_filename,
-                compiler_args,
-                proj_root_directory
-            ),
-            line, column
-        )
-
-        if self.callback:
-            if cursor:
-                # We still want to be able to jump to definition (in original but edited file)
-                # eventhough we are operating on edited (and not saved) file
-                filename = cursor.location.file.name if contents_filename == original_filename else original_filename
-                self.callback(id, [filename, cursor.location.line, cursor.location.column, cursor.location.offset])
-                logging.info('Definition location {0}'.format(str(cursor.location)))
-            else:
-                self.callback(id, ['', 0, 0, 0])
-                logging.info('No definition found.')
 
     def __find_all_references(self, id, proj_root_directory, compiler_args, args):
         start = time.clock()

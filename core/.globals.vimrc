@@ -47,7 +47,8 @@ let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'start' 
 \                                                   'indexer'                   : { 'id' : 0, 'enabled' : 1 },
 \                                                   'semantic_syntax_highlight' : { 'id' : 1, 'enabled' : 1 },
 \                                                   'diagnostics'               : { 'id' : 2, 'enabled' : 1 },
-\                                                   'type_deduction'            : { 'id' : 3, 'enabled' : 1 }
+\                                                   'type_deduction'            : { 'id' : 3, 'enabled' : 1 },
+\                                                   'go_to_definition'          : { 'id' : 4, 'enabled' : 1 }
 \                                               }
 \                                            }
 let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }

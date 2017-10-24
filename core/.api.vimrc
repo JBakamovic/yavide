@@ -1058,6 +1058,39 @@ function! Y_SrcCodeTypeDeduction_Apply(deducted_type)
     endif
 endfunction
 
+
+" --------------------------------------------------------------------------------------------------------------------------------------
+"
+"   SOURCE CODE NAVIGATION API
+"
+" --------------------------------------------------------------------------------------------------------------------------------------
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToDefinition()
+" Description:  Jumps to the definition of a symbol under the cursor.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeNavigation_GoToDefinition()
+    if g:project_service_src_code_model['services']['go_to_definition']['enabled']
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_definition']['id'], [l:contents_filename, l:current_buffer, line('.'), col('.')])
+    endif
+endfunction
+
+function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, offset)
+    if a:filename != ''
+        execute('edit ' . a:filename)
+        call cursor(a:line, a:column)
+    endif
+endfunction
+
+
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "   STATIC ANALYSIS API
@@ -1305,39 +1338,13 @@ function! Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeIndexer_GoToDefinition()
-" Description:  Jumps to the definition of a symbol under the cursor.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeIndexer_GoToDefinition()
-    if g:project_service_src_code_model['services']['indexer']['enabled']
-        let l:current_buffer = expand('%:p')
-
-        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
-        let l:contents_filename = l:current_buffer
-        if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
-            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
-        endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, l:contents_filename, l:current_buffer, line('.'), col('.')])
-    endif
-endfunction
-
-function! Y_SrcCodeIndexer_GoToDefinitionCompleted(filename, line, column, offset)
-    if a:filename != ''
-        execute('edit ' . a:filename)
-        call cursor(a:line, a:column)
-    endif
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_FindAllReferences()
 " Description:  Finds project-wide references of a symbol under the cursor.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_FindAllReferences()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x11, expand('%:p'), line('.'), col('.')])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x10, expand('%:p'), line('.'), col('.')])
     endif
 endfunction
 
