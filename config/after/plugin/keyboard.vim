@@ -74,6 +74,7 @@ imap        <C-LeftMouse>       :YavideSrcNavGoToDefinition<CR>|"
 nmap        <S-F12>             :vsp <CR>:YavideSrcNavGoToDefinition<CR>|"                      Goto definition in a vertical split
 imap        <S-F12>             :vsp <CR>:YavideSrcNavGoToDefinition<CR>|"
 nmap        <C-\>s              :YavideSrcNavFindAllReferences<CR>|"                            Find all references to the token under the cursor
+nmap        <C-\>r              :YavideSrcNavRebuildIndex<CR>|"                                 Rebuild symbol database index for current project
 nmap        <C-\>g              :YavideSrcNavFindGlobalDefinitions<CR>|"                        Find global definition(s) of token under the cursor
 nmap        <C-\>c              :YavideSrcNavFindAllCallers<CR>|"                               Find all functions calling the function under the cursor
 nmap        <C-\>d              :YavideSrcNavFindAllCallees<CR>|"                               Find all functions called by the function under the cursor
