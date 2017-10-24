@@ -17,6 +17,7 @@ def slice_it(iterable, n, padvalue=None):
 
 class SymbolDatabase(object):
     def __init__(self, db_filename = None):
+        self.filename = db_filename
         if db_filename:
             self.db_connection = sqlite3.connect(db_filename)
         else:
@@ -29,6 +30,7 @@ class SymbolDatabase(object):
     def open(self, db_filename):
         if not self.db_connection:
             self.db_connection = sqlite3.connect(db_filename)
+            self.filename = db_filename
 
     def close(self):
         if self.db_connection:
