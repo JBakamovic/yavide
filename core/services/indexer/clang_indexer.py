@@ -35,6 +35,7 @@ class SymbolDatabase(object):
     def close(self):
         if self.db_connection:
             self.db_connection.close()
+            self.db_connection = None
 
     def get_all(self):
         # TODO Use generators
