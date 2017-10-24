@@ -1096,6 +1096,30 @@ function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, of
     endif
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeGetAllIncludes_Run()
+    if g:project_service_src_code_model['services']['get_all_includes']['enabled']
+        let l:current_buffer = expand('%:p')
+
+        " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
+        let l:contents_filename = l:current_buffer
+        if getbufvar(bufnr('%'), '&modified')
+            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
+        endif
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['get_all_includes']['id'], [l:contents_filename, l:current_buffer])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeGetAllIncludes_Apply()
+" Description:  Populates the quickfix window with source code diagnostics.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeGetAllIncludes_Apply(includes)
+    call setloclist(0, a:includes, 'r')
+    redraw
+endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
 "

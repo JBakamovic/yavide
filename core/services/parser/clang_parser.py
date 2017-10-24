@@ -111,6 +111,11 @@ class ClangParser():
         logging.info("Fetching diagnostics for {0}: {1}".format(tunit.spelling, diag))
         return diag
 
+    def get_includes(self, tunit):
+        if not tunit:
+            return None
+        return tunit.get_includes()
+
     def traverse(self, cursor, client_data, client_visitor):
         traverse(cursor, client_data, client_visitor)
 
