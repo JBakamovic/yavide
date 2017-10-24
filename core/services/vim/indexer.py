@@ -9,8 +9,7 @@ class VimIndexer(object):
             0x1 : self.__run_on_directory,
             0x2 : self.__drop_single_file,
             0x3 : self.__drop_all,
-            0x10 : self.__go_to_definition,
-            0x11 : self.__find_all_references
+            0x10 : self.__find_all_references
         }
 
     def __call__(self, op_id, args):
@@ -30,10 +29,6 @@ class VimIndexer(object):
 
     def __drop_all(self, args):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_DropAllCompleted()")
-
-    def __go_to_definition(self, args):
-        filename, line, column, offset = args
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + filename + "', " + str(line) + ", " + str(column) + ", " + str(offset) + ")")
 
     def __find_all_references(self, args):
         other_args, cursor_display_name, references = args

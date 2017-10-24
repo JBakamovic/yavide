@@ -46,7 +46,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImpl       :call Y_SrcNav_SwitchBetweenHeaderImpl(0)
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImplVSplit :call Y_SrcNav_SwitchBetweenHeaderImpl(1)
-:command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                :call Y_SrcCodeIndexer_GoToDefinition()
+:command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                :call Y_SrcCodeNavigation_GoToDefinition()
 :command! -nargs=0 -complete=file YavideSrcNavFindAllReferences             :call Y_SrcCodeIndexer_FindAllReferences()
 :command! -nargs=0 -complete=file YavideSrcNavRebuildIndex                  :call Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
 
