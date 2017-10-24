@@ -111,12 +111,14 @@ class ClangIndexer(object):
         if not os.path.exists(indexer_db):
             directory_already_indexed = False
 
+        # We still need to establish the database connection even if we don't go into indexing
+        self.symbol_db.open(indexer_db)
+
         # Otherwise, index the whole directory
         if not directory_already_indexed:
             logging.info("Starting to index whole directory '{0}' ... ".format(self.proj_root_directory))
 
-            # Open and initialize the symbol database
-            self.symbol_db.open(indexer_db)
+            # When creating the symbol db for the first time we need to create a data model for it
             self.symbol_db.create_data_model()
 
             # Build-up a list of source code files from given project directory
