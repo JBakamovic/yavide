@@ -3,11 +3,9 @@ class SyntaxHighlighter():
         self.parser = parser
         self.callback = callback
 
-    def __call__(self, args):
-        project_root_directory = str(args[0])
-        contents_filename = str(args[1])
-        original_filename = str(args[2])
-        compiler_args = str(args[3])
+    def __call__(self, proj_root_directory, compiler_args, args):
+        contents_filename = str(args[0])
+        original_filename = str(args[1])
 
         if self.callback:
             self.callback(
@@ -15,7 +13,7 @@ class SyntaxHighlighter():
                     contents_filename,
                     original_filename,
                     compiler_args,
-                    project_root_directory
+                    proj_root_directory
                 ),
                 self.parser,
                 args
