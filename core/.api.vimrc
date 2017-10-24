@@ -1296,6 +1296,18 @@ function! Y_SrcCodeIndexer_DropAllCompleted()
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
+" Description:  Drops the index database and runs indexer again (aka reindexing operation)
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, v:true])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory, g:project_compiler_args])
+    endif
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeIndexer_GoToDefinition()
 " Description:  Jumps to the definition of a symbol under the cursor.
 " Dependency:
