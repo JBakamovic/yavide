@@ -1283,7 +1283,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_DropAll()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, v:true])
     endif
 endfunction
 
