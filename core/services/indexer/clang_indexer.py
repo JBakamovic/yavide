@@ -240,6 +240,7 @@ class ClangIndexer(object):
 
     def __find_all_references(self, id, proj_root_directory, compiler_args, args):
         start = time.clock()
+        cursor_display_name = ''
         references = []
         tunit = self.parser.parse(str(args[0]), str(args[0]), compiler_args, proj_root_directory)
         if tunit:
@@ -249,7 +250,7 @@ class ClangIndexer(object):
                 #      we would need to manipulate directly with USR. I
                 #      In case of edited files, USR contains a name of a temporary file we serialized
                 #      the contents in and therefore will not match the USR in the database.
-                logging.info("Finding all references of cursor [{0}, {1}]: {2}. name = {3}".format(cursor.location.line, cursor.location.column, tunit.spelling, cursor.displayname))
+                cursor_display_name = cursor.displayname
                 usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
                 ast_node_id = self.parser.get_ast_node_id(cursor)
                 if ast_node_id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
@@ -269,10 +270,10 @@ class ClangIndexer(object):
                         logging.debug('symbol: ' + str(symbol))
 
                 time_elapsed = time.clock() - start
-                logging.info('Find-all-references operation of {0} took {1}: {2}'.format(cursor.displayname, time_elapsed, str(references)))
+                logging.info('Find-all-references operation of {0} [{1}, {2}, {3}] took {4}: {5}'.format(cursor_display_name, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed, str(references)))
 
         if self.callback:
-            self.callback(id, references)
+            self.callback(id, [args, cursor_display_name, references])
 
 
 def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):

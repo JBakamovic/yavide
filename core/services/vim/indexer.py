@@ -35,15 +35,16 @@ class VimIndexer(object):
         filename, line, column, offset = args
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_GoToDefinitionCompleted('" + filename + "', " + str(line) + ", " + str(column) + ", " + str(offset) + ")")
 
-    def __find_all_references(self, references):
+    def __find_all_references(self, args):
+        other_args, cursor_display_name, references = args
         quickfix_list = []
-        for location in references:
+        for ref in references:
             quickfix_list.append(
-                "{'filename': '" + str(location[0]) + "', " +
-                "'lnum': '" + str(location[2]) + "', " +
-                "'col': '" + str(location[3]) + "', " +
+                "{'filename': '" + str(ref[0]) + "', " +
+                "'lnum': '" + str(ref[2]) + "', " +
+                "'col': '" + str(ref[3]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(location[0]) + "'}" # TODO Put something more meaningful here, i.e. the corresponding source code line
+                "'text': '" + str(cursor_display_name) + "'}" # TODO Put something more meaningful here, i.e. the corresponding source code line
             )
 
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r"") + ")")
