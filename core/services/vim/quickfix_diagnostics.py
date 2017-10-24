@@ -31,7 +31,7 @@ class VimQuickFixDiagnostics():
         if diagnostics_iter:
             for d in diagnostics_iter:
                 diagnostics.append(
-                    "{'filename': '" + str(args[2]) + "', " +
+                    "{'filename': '" + str(args[1]) + "', " +
                     "'lnum': '" + str(d.location.line) + "', " +
                     "'col': '" + str(d.location.column) + "', " +
                     "'type': '" + clang_severity_to_quickfix_type(d.severity) + "', " +
@@ -47,7 +47,7 @@ class VimQuickFixDiagnostics():
 
                 if len(d.fixits):
                     diagnostics.append(
-                        "{'filename': '" + str(args[2]) + "', " +
+                        "{'filename': '" + str(args[1]) + "', " +
                         "'lnum': '" + str(d.location.line) + "', " +
                         "'col': '" + str(d.location.column) + "', " +
                         "'type': 'I', " +

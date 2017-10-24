@@ -12,7 +12,9 @@ from services.parser.clang_parser import ClangParser
 
 class SourceCodeModel(YavideService):
     def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance)
+        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook)
+        self.compiler_args = None
+        self.project_root_directory = None
         self.parser = ClangParser()
         self.service = {
             0x0 : ClangIndexer(self.parser, VimIndexer(yavide_instance)),
@@ -24,5 +26,10 @@ class SourceCodeModel(YavideService):
     def __unknown_service(self, args):
         logging.error("Unknown service triggered! Valid services are: {0}".format(self.service))
 
+    def __startup_hook(self, args):
+        self.project_root_directory = args[0]
+        self.compiler_args          = args[1]
+        logging.info("SourceCodeModel configured with: project root directory='{0}', compiler args='{1}'".format(self.project_root_directory, self.compiler_args))
+
     def __call__(self, args):
-        self.service.get(int(args[0]), self.__unknown_service)(args[1:len(args)])
+        self.service.get(int(args[0]), self.__unknown_service)(self.project_root_directory, self.compiler_args, args[1:len(args)])

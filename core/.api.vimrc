@@ -923,7 +923,7 @@ function! Y_SrcCodeModel_Start()
     if g:project_service_src_code_model['services']['type_deduction']['enabled']
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
-    call Y_ServerStartService(g:project_service_src_code_model['id'], 'dummy_param')
+    call Y_ServerStartService(g:project_service_src_code_model['id'], [g:project_root_directory, g:project_compiler_args])
     call Y_SrcCodeIndexer_RunOnDirectory()
 endfunction
 
@@ -959,7 +959,6 @@ endfunction
 function! Y_SrcCodeHighlighter_Run()
     if g:project_service_src_code_model['services']['semantic_syntax_highlight']['enabled']
         let l:current_buffer = expand('%:p')
-        let l:compiler_args = g:project_compiler_args
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
@@ -967,7 +966,7 @@ function! Y_SrcCodeHighlighter_Run()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer])
     endif
 endfunction
 
@@ -1002,7 +1001,6 @@ endfunction
 function! Y_SrcCodeDiagnostics_Run()
     if g:project_service_src_code_model['services']['diagnostics']['enabled']
         let l:current_buffer = expand('%:p')
-        let l:compiler_args = g:project_compiler_args
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
@@ -1010,7 +1008,7 @@ function! Y_SrcCodeDiagnostics_Run()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:contents_filename, l:current_buffer])
     endif
 endfunction
 
@@ -1044,7 +1042,7 @@ function! Y_SrcCodeTypeDeduction_Run()
                 let l:contents_filename = '/tmp/yavideTempBufferContents'
                 call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
             endif
-            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args, v:beval_lnum, v:beval_col])
+            call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, l:current_buffer, v:beval_lnum, v:beval_col])
         endif
     endif
     return ''
@@ -1217,7 +1215,6 @@ endfunction
 function! Y_SrcCodeIndexer_RunOnSingleFile()
     if g:project_service_src_code_model['services']['indexer']['enabled']
         let l:current_buffer = expand('%:p')
-        let l:compiler_args = g:project_compiler_args
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
@@ -1225,7 +1222,7 @@ function! Y_SrcCodeIndexer_RunOnSingleFile()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, g:project_root_directory, l:contents_filename, l:current_buffer, l:compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, l:contents_filename, l:current_buffer])
     endif
 endfunction
 
@@ -1244,7 +1241,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectory()
     if g:project_service_src_code_model['services']['indexer']['enabled']
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory, g:project_compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1])
     endif
 endfunction
 
@@ -1303,7 +1300,7 @@ endfunction
 function! Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
     if g:project_service_src_code_model['services']['indexer']['enabled']
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x3, v:true])
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1, g:project_root_directory, g:project_compiler_args])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1])
     endif
 endfunction
 
