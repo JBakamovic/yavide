@@ -111,6 +111,20 @@ class ClangParser():
         logging.info("Fetching diagnostics for {0}: {1}".format(tunit.spelling, diag))
         return diag
 
+    def get_top_level_includes(self, tunit):
+        def visitor(cursor, parent, include_directives_list):
+            if cursor.location.file and cursor.location.file.name == tunit.spelling:  # we're only interested in symbols from associated translation unit
+                if cursor.kind == clang.cindex.CursorKind.INCLUSION_DIRECTIVE:
+                    include_directives_list.append((ClangParser.__get_included_file_name(cursor), cursor.location.line, cursor.location.column),)
+                return ChildVisitResult.CONTINUE.value  # We don't want to waste time traversing recursively for include directives
+            return ChildVisitResult.CONTINUE.value
+
+        top_level_includes = []
+        if tunit:
+            traverse(tunit.cursor, top_level_includes, visitor)
+        logging.info(top_level_includes)
+        return top_level_includes
+
     def traverse(self, cursor, client_data, client_visitor):
         traverse(cursor, client_data, client_visitor)
 
@@ -372,3 +386,30 @@ class ClangParser():
     @staticmethod
     def __get_overloaded_decl(cursor, num):
         return clang.cindex.conf.lib.clang_getOverloadedDecl(cursor, num)
+
+    # TODO Shall be removed once 'cindex.py' exposes it in its interface.
+    @staticmethod
+    def __get_included_file_name(inclusion_directive_cursor):
+        #
+        # NOTE Python binding for clang_getIncludedFile() is currently
+        #      incompatible with the implementation of clang.cindex.File.
+        #      Assert is being risen because clang.cindex.File object is
+        #      being constructed with the type which is not of ClangObject
+        #      type (e.g. clang.cindex.Cursor is ctypes.Structure)
+        #
+        #      This implementation workarounds this limitation.
+        #
+        _libclang = clang.cindex.conf.get_cindex_library()
+        _libclang.clang_getIncludedFile.argtypes = [clang.cindex.Cursor]
+        _libclang.clang_getIncludedFile.restype  =  clang.cindex.c_object_p
+        _libclang.clang_getFileName.argtypes     = [clang.cindex.c_object_p]
+        _libclang.clang_getFileName.restype      =  clang.cindex._CXString
+
+        return clang.cindex.conf.lib.clang_getCString(
+            _libclang.clang_getFileName(
+                _libclang.clang_getIncludedFile(
+                    inclusion_directive_cursor
+                )
+            )
+        )
+
