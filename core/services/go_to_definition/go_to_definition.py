@@ -21,9 +21,16 @@ class GoToDefinition():
 
         if self.callback:
             if cursor:
-                # We still want to be able to jump to definition (in original but edited file)
-                # eventhough we are operating on edited (and not saved) file
-                filename = cursor.location.file.name if contents_filename == original_filename else original_filename
+                # If we are currently editing the file and our resulting cursor is exactly in that file,
+                # then we should be reporting original filename instead of the temporary one.
+                # That makes it possible to jump to definitions in edited (and not yet saved) files.
+                if contents_filename != original_filename:
+                    if cursor.location.file.name == contents_filename:
+                        filename = original_filename
+                    else:
+                        filename = cursor.location.file.name
+                else:
+                    filename = cursor.location.file.name
                 self.callback([filename, cursor.location.line, cursor.location.column, cursor.location.offset])
             else:
                 self.callback(['', 0, 0, 0])
