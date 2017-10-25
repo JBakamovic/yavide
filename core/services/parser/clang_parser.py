@@ -87,10 +87,15 @@ class ClangParser():
             logging.info('We\'re operating on a temporary file. Modifying compiler args to include current file parent directory = {0}'.format(compiler_args))
 
         try:
+            # Build parser arguments
+            parser_args  = self.default_args
+            parser_args += list(str(compiler_args).split()) if compiler_args else ''
+            parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
+
             # Parse the translation unit
             tunit = self.index.parse(
                 path = contents_filename,
-                args = self.default_args + list(str(compiler_args).split()) + ['-working-directory=' + project_root_directory],
+                args = parser_args,
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
         except:
