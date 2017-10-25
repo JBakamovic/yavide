@@ -88,7 +88,8 @@ class ClangParser():
 
         try:
             # Build parser arguments
-            parser_args  = self.default_args
+            parser_args  = []
+            parser_args += self.default_args
             parser_args += list(str(compiler_args).split()) if compiler_args else ''
             parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
 
