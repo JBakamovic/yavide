@@ -1350,7 +1350,7 @@ function! Y_SrcCodeIndexer_FindAllReferences()
 endfunction
 
 function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
-    call setqflist(a:references, 'r')
+    call setloclist(0, a:references, 'r')
     redraw
 endfunction
 
