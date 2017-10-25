@@ -942,6 +942,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Run(service_id, args)
+    " TODO run this only if source code model is initialized (i.e. SrcCodeModel_Start() completed)
     call insert(a:args, a:service_id)
     call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
 endfunction
