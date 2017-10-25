@@ -6,7 +6,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Index given list of files.')
     parser.add_argument('--project_root_directory', required=True, help='a root directory of project to be indexed')
     parser.add_argument('--compiler_args',          required=True, help='list of compiler args to be used while indexing')
-    parser.add_argument('--filename_list',          required=True, help='list of filenames to be indexed')
+    parser.add_argument('--input_list',             required=True, help='input file containing all source filenames to be indexed (one filename per each line)')
     parser.add_argument('--output_db_filename',     required=True, help='indexing result will be recorded in this file (SQLite db)')
     parser.add_argument('--log_file',                              help='optional log file to log indexing actions')
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     services.indexer.clang_indexer.index_file_list(
         args.project_root_directory,
         args.compiler_args,
-        list(str(args.filename_list).split(', ')),
+        args.input_list,
         args.output_db_filename
     )
 

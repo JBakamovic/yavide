@@ -131,6 +131,7 @@ class ClangIndexer(object):
 
             process_list = []
             tmp_db_list = []
+            tmp_filename_list = []
 
             # We will slice the input file list into a number of chunks which corresponds to the amount of available CPU cores
             how_many_chunks = len(cpp_file_list) / multiprocessing.cpu_count()
@@ -138,10 +139,16 @@ class ClangIndexer(object):
             # Now we are able to parallelize the indexing operation across different CPU cores
             for cpp_file_list_chunk in slice_it(cpp_file_list, how_many_chunks):
                 # 'slice_it()' utility function may return None's as part of the slice (to fill up the slice up to the given length)
-                chunk_with_no_none_items = ', '.join(item for item in cpp_file_list_chunk if item)
+                chunk_with_no_none_items = '\n'.join(item for item in cpp_file_list_chunk if item)
+
+                # Each subprocess will get a file containing source files to be indexed
+                cpp_file_list_handle, cpp_file_list = tempfile.mkstemp(prefix='.yavide_idx_input', dir=proj_root_directory)
+                os.write(cpp_file_list_handle, chunk_with_no_none_items)
+                os.close(cpp_file_list_handle)
 
                 # Each subprocess will get an empty DB file to record indexing results into it
-                handle, tmp_db = tempfile.mkstemp(suffix=self.symbol_db_name, dir=proj_root_directory)
+                tmp_db_handle, tmp_db = tempfile.mkstemp(prefix=self.symbol_db_name, dir=proj_root_directory)
+                os.close(tmp_db_handle)
 
                 # Start indexing a given chunk in a new subprocess
                 #   Note: Running and handling subprocesses as following, and not via multiprocessing.Process module,
@@ -159,22 +166,22 @@ class ClangIndexer(object):
                 #               from another Python script ('clang_index.py') is the only way how I managed to get it
                 #               working correctly (each process will get their own instance of library)
                 cmd = "python2 " + clang_index_script + " --project_root_directory='" \
-                    + proj_root_directory + "' --compiler_args='" + compiler_args + "' --filename_list='" \
-                    + chunk_with_no_none_items + "' --output_db_filename='" + tmp_db + "' " + "--log_file='" + \
+                    + proj_root_directory + "' --compiler_args='" + compiler_args + "' --input_list='" \
+                    + cpp_file_list + "' --output_db_filename='" + tmp_db + "' " + "--log_file='" + \
                     logging.getLoggerClass().root.handlers[0].baseFilename + "'"
                 p = subprocess.Popen(shlex.split(cmd), env=my_env)
 
-                # Store handles to subprocesses and corresponding DB files so we can handle them later on
+                # Store handles to subprocesses and corresponding tmp files so we can handle them later on
                 process_list.append(p)
-                tmp_db_list.append((handle, tmp_db))
+                tmp_db_list.append(tmp_db)
+                tmp_filename_list.append(cpp_file_list)
 
             # Wait subprocesses to finish with their work
             for p in process_list:
                 p.wait()
 
-            # Merge the results of indexing operations (each process created a single indexing DB)
-            logging.info('about to start merging the databases ... ' + str(tmp_db_list))
-            for handle, db in tmp_db_list:
+            # Merge the results of indexing operations
+            for db in tmp_db_list:
                 tmp_symbol_db = SymbolDatabase(db)
                 symbols = tmp_symbol_db.get_all()
                 if symbols:
@@ -182,8 +189,11 @@ class ClangIndexer(object):
                         self.symbol_db.insert_single(s[0], s[1], s[2], s[3], s[4])
                 self.symbol_db.flush()
                 tmp_symbol_db.close()
-                os.close(handle)
                 os.remove(db)
+
+            # Get rid of temporary files containing source filenames
+            for f in tmp_filename_list:
+                os.remove(f)
 
             # TODO how to count total CPU time, for all sub-processes?
             logging.info("Indexing {0} is completed.".format(proj_root_directory))
@@ -248,12 +258,13 @@ class ClangIndexer(object):
             self.callback(id, [args, cursor_display_name, references])
 
 
-def index_file_list(proj_root_directory, compiler_args, filename_list, output_db_filename):
+def index_file_list(proj_root_directory, compiler_args, input_filename_list, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
     symbol_db.create_data_model()
     parser = ClangParser()
-    for filename in filename_list:
-        index_single_file(parser, proj_root_directory, filename, filename, compiler_args, symbol_db)
+    with open(input_filename_list, 'r') as input_list:
+        for filename in input_list:
+            index_single_file(parser, proj_root_directory, filename.strip(), filename.strip(), compiler_args, symbol_db)
     symbol_db.close()
 
 
