@@ -31,7 +31,7 @@ class VimIndexer(object):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_DropAllCompleted()")
 
     def __find_all_references(self, args):
-        other_args, cursor_display_name, references = args
+        other_args, references = args
         quickfix_list = []
         for ref in references:
             quickfix_list.append(
@@ -39,8 +39,8 @@ class VimIndexer(object):
                 "'lnum': '" + str(ref[2]) + "', " +
                 "'col': '" + str(ref[3]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(cursor_display_name) + "'}" # TODO Put something more meaningful here, i.e. the corresponding source code line
+                "'text': '" + str(ref[5]).replace('"', r'') + "'}"
             )
 
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r"") + ")")
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r'') + ")")
         logging.debug("References: " + str(quickfix_list))
