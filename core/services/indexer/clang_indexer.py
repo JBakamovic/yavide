@@ -44,8 +44,8 @@ class SymbolDatabase(object):
     def get_by_id(self, id):
         return self.db_connection.cursor().execute('SELECT * FROM symbol WHERE usr=?', (id,))
 
-    def insert_single(self, filename, unique_id, line, column, symbol_type):
-        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_type,))
+    def insert_single(self, filename, unique_id, line, column, symbol_type, context):
+        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_type, context,))
 
     def flush(self):
         self.db_connection.commit()
@@ -58,7 +58,7 @@ class SymbolDatabase(object):
 
     def create_data_model(self):
         self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
-        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
+        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, context text, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
         symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
         self.db_connection.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
 
@@ -185,8 +185,8 @@ class ClangIndexer(object):
                 tmp_symbol_db = SymbolDatabase(db)
                 symbols = tmp_symbol_db.get_all()
                 if symbols:
-                    for s in symbols:
-                        self.symbol_db.insert_single(s[0], s[1], s[2], s[3], s[4])
+                    for sym in symbols:
+                        self.symbol_db.insert_single(sym[0], sym[1], sym[2], sym[3], sym[4], sym[5])
                 self.symbol_db.flush()
                 tmp_symbol_db.close()
                 os.remove(db)
@@ -222,40 +222,35 @@ class ClangIndexer(object):
 
     def __find_all_references(self, id, proj_root_directory, compiler_args, args):
         start = time.clock()
-        cursor_display_name = ''
-        references = []
+        references = ()
         tunit = self.parser.parse(str(args[0]), str(args[0]), compiler_args, proj_root_directory)
         if tunit:
             cursor = self.parser.get_cursor(tunit, int(args[1]), int(args[2]))
             if cursor:
                 # TODO In order to make find-all-references work on edited (and not yet saved) files,
-                #      we would need to manipulate directly with USR. I
+                #      we would need to manipulate directly with USR.
                 #      In case of edited files, USR contains a name of a temporary file we serialized
-                #      the contents in and therefore will not match the USR in the database.
-                cursor_display_name = cursor.displayname
+                #      the contents in and therefore will not match the USR in the database (which in
+                #      contrast contains an original filename).
                 usr = cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr()
                 ast_node_id = self.parser.get_ast_node_id(cursor)
                 if ast_node_id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    symbols = self.symbol_db.get_by_id(usr)
+                    references = self.symbol_db.get_by_id(usr).fetchall()
                 elif ast_node_id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                    symbols = self.symbol_db.get_by_id(usr)
+                    references = self.symbol_db.get_by_id(usr).fetchall()
                 elif ast_node_id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                    symbols = self.symbol_db.get_by_id(usr)
+                    references = self.symbol_db.get_by_id(usr).fetchall()
                 elif ast_node_id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                    symbols = self.symbol_db.get_by_id(usr)
+                    references = self.symbol_db.get_by_id(usr).fetchall()
                 else:
-                    symbols = None
-
-                if symbols:
-                    for symbol in symbols:
-                        references.append((symbol[0], symbol[1], symbol[2], symbol[3]))
-                        logging.debug('symbol: ' + str(symbol))
-
-                time_elapsed = time.clock() - start
-                logging.info('Find-all-references operation of {0} [{1}, {2}, {3}] took {4}: {5}'.format(cursor_display_name, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed, str(references)))
+                    pass
+        time_elapsed = time.clock() - start
 
         if self.callback:
-            self.callback(id, [args, cursor_display_name, references])
+            self.callback(id, [args, references])
+
+        logging.info("Find-all-references operation of '{0}', [{1}, {2}], '{3}' took {4}".format(cursor.displayname, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed))
+        logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
 
 
 def index_file_list(proj_root_directory, compiler_args, input_filename_list, output_db_filename):
@@ -269,21 +264,27 @@ def index_file_list(proj_root_directory, compiler_args, input_filename_list, out
 
 
 def index_single_file(parser, proj_root_directory, contents_filename, original_filename, compiler_args, symbol_db):
+    def extract_cursor_context(filename, line):
+        import linecache
+        return linecache.getline(filename, line)
+
     def visitor(ast_node, ast_parent_node, parser):
-        if (ast_node.location.file and ast_node.location.file.name == tunit.spelling):  # we are not interested in symbols which got into this TU via includes
+        ast_node_location = ast_node.location
+        ast_node_tunit_spelling = ast_node.translation_unit.spelling
+        if (ast_node_location.file and ast_node_location.file.name == ast_node_tunit_spelling):  # we are not interested in symbols which got into this TU via includes
             id = parser.get_ast_node_id(ast_node)
             usr = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
             line = int(parser.get_ast_node_line(ast_node))
             column = int(parser.get_ast_node_column(ast_node))
             try:
                 if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    symbol_db.insert_single(tunit.spelling, usr, line, column, 1,)
+                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 1, extract_cursor_context(ast_node_tunit_spelling, line))
                 elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                    symbol_db.insert_single(tunit.spelling, usr, line, column, 3,)
+                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 3, extract_cursor_context(ast_node_tunit_spelling, line))
                 elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                    symbol_db.insert_single(tunit.spelling, usr, line, column, 2,)
+                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 2, extract_cursor_context(ast_node_tunit_spelling, line))
                 elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                    symbol_db.insert_single(tunit.spelling, usr, line, column, 4,)
+                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 4, extract_cursor_context(ast_node_tunit_spelling, line))
                 else:
                     pass
             except sqlite3.IntegrityError:
