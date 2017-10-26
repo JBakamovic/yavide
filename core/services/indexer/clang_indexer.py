@@ -44,8 +44,8 @@ class SymbolDatabase(object):
     def get_by_id(self, id):
         return self.db_connection.cursor().execute('SELECT * FROM symbol WHERE usr=?', (id,))
 
-    def insert_single(self, filename, unique_id, line, column, symbol_type, context):
-        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_type, context,))
+    def insert_single(self, filename, unique_id, line, column, symbol_kind, context):
+        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_kind, context,))
 
     def flush(self):
         self.db_connection.commit()
@@ -57,11 +57,17 @@ class SymbolDatabase(object):
         self.db_connection.cursor().execute('DELETE FROM symbol')
 
     def create_data_model(self):
-        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol_type (id integer, name text, PRIMARY KEY(id))')
-        self.db_connection.cursor().execute('CREATE TABLE IF NOT EXISTS symbol (filename text, usr text, line integer, column integer, type integer, context text, PRIMARY KEY(filename, usr, line, column), FOREIGN KEY (type) REFERENCES symbol_type(id))')
-        symbol_types = [(1, 'function'), (2, 'variable'), (3, 'user_defined_type'), (4, 'macro'),]
-        self.db_connection.cursor().executemany('INSERT INTO symbol_type VALUES (?, ?)', symbol_types)
-
+        self.db_connection.cursor().execute(
+            'CREATE TABLE IF NOT EXISTS symbol (         \
+                filename text,                           \
+                usr      text,                           \
+                line     integer,                        \
+                column   integer,                        \
+                kind     integer,                        \
+                context  text,                           \
+                PRIMARY KEY(filename, usr, line, column) \
+             )'
+        )
 
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
@@ -277,14 +283,21 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
             line = int(parser.get_ast_node_line(ast_node))
             column = int(parser.get_ast_node_column(ast_node))
             try:
-                if id in [ASTNodeId.getFunctionId(), ASTNodeId.getMethodId()]:
-                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 1, extract_cursor_context(ast_node_tunit_spelling, line))
-                elif id in [ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), ASTNodeId.getUnionId(), ASTNodeId.getTypedefId()]:
-                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 3, extract_cursor_context(ast_node_tunit_spelling, line))
-                elif id in [ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId()]:
-                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 2, extract_cursor_context(ast_node_tunit_spelling, line))
-                elif id in [ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()]:
-                    symbol_db.insert_single(ast_node_tunit_spelling, usr, line, column, 4, extract_cursor_context(ast_node_tunit_spelling, line))
+                if id in [
+                    ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), # handle user-defined types
+                    ASTNodeId.getUnionId(), ASTNodeId.getTypedefId(), ASTNodeId.getUsingDeclarationId(),
+                    ASTNodeId.getFunctionId(), ASTNodeId.getMethodId(),                                                 # handle functions and methods
+                    ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId(),         # handle local/function variables and member variables
+                    ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
+                ]:
+                    symbol_db.insert_single(
+                        ast_node_tunit_spelling,
+                        usr,
+                        line,
+                        column,
+                        ast_node.referenced._kind_id if ast_node.referenced else ast_node._kind_id,
+                        extract_cursor_context(ast_node_tunit_spelling, line)
+                    )
                 else:
                     pass
             except sqlite3.IntegrityError:
