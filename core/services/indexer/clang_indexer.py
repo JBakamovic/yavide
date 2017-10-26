@@ -58,14 +58,14 @@ class SymbolDatabase(object):
 
     def create_data_model(self):
         self.db_connection.cursor().execute(
-            'CREATE TABLE IF NOT EXISTS symbol (         \
-                filename text,                           \
-                usr      text,                           \
-                line     integer,                        \
-                column   integer,                        \
-                kind     integer,                        \
-                context  text,                           \
-                PRIMARY KEY(filename, usr, line, column) \
+            'CREATE TABLE IF NOT EXISTS symbol ( \
+                filename text,                   \
+                usr      text,                   \
+                line     integer,                \
+                column   integer,                \
+                kind     integer,                \
+                context  text,                   \
+                PRIMARY KEY(filename, usr, line) \
              )'
         )
 
