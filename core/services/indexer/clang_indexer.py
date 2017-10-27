@@ -291,7 +291,7 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
                     ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
                 ]:
                     symbol_db.insert_single(
-                        ast_node_tunit_spelling,
+                        ast_node_tunit_spelling[len(proj_root_directory):].lstrip(os.sep), # we normalize the path to be defined relative to the project root directory
                         usr,
                         line,
                         column,
