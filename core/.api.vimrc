@@ -1351,6 +1351,7 @@ endfunction
 
 function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
     call setloclist(0, a:references, 'r')
+    execute('lopen')
     redraw
 endfunction
 
