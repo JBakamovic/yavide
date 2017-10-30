@@ -29,7 +29,6 @@ endfunction
 function! Y_Utils_SerializeCurrentBufferContents(filename)
 python << EOF
 import vim
-import os
 temp_file = open(vim.eval('a:filename'), "w", 0)
 temp_file.writelines(line + '\n' for line in vim.current.buffer)
 EOF
@@ -1350,7 +1349,11 @@ function! Y_SrcCodeIndexer_FindAllReferences()
 endfunction
 
 function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
-    call setloclist(0, a:references, 'r')
+python << EOF
+import vim
+with open(vim.eval('a:references'), 'r') as f:
+    vim.eval("setloclist(0, [" + f.read() + "], 'r')")
+EOF
     execute('lopen')
     redraw
 endfunction
