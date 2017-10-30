@@ -1,9 +1,12 @@
 import logging
+import os
+import tempfile
 from common.yavide_utils import YavideUtils
 
 class VimIndexer(object):
     def __init__(self, yavide_instance):
         self.yavide_instance = yavide_instance
+        self.find_all_references_output = os.path.join(tempfile.gettempdir(), self.yavide_instance + 'find_all_references')
         self.op = {
             0x0 : self.__run_on_single_file,
             0x1 : self.__run_on_directory,
@@ -39,8 +42,14 @@ class VimIndexer(object):
                 "'lnum': '" + str(ref[2]) + "', " +
                 "'col': '" + str(ref[3]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(ref[5]).replace('"', r'') + "'}"
+                "'text': '" + str(ref[5]).replace("'", r"''").rstrip() + "'}"
             )
 
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAllReferencesCompleted(" + str(quickfix_list).replace('"', r'') + ")")
+        with open(self.find_all_references_output, 'w', 0) as f:
+            f.writelines(', '.join(item for item in quickfix_list))
+
+        YavideUtils.call_vim_remote_function(
+            self.yavide_instance,
+            "Y_SrcCodeIndexer_FindAllReferencesCompleted('" + self.find_all_references_output + "')"
+        )
         logging.debug("References: " + str(quickfix_list))
