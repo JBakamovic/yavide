@@ -42,7 +42,7 @@ let g:project_supported_types           = {
 "   Services
 "
 " --------------------------------------------------------------------------------------------------------------------------------------
-let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'start' : function("Y_SrcCodeModel_Start"), 'stop' : function("Y_SrcCodeModel_Stop"),
+let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'started' : 0, 'start' : function("Y_SrcCodeModel_Start"), 'stop' : function("Y_SrcCodeModel_Stop"),
 \                                              'services' : {
 \                                                   'indexer'                   : { 'id' : 0, 'enabled' : 1 },
 \                                                   'semantic_syntax_highlight' : { 'id' : 1, 'enabled' : 1 },
@@ -51,8 +51,8 @@ let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'start' 
 \                                                   'go_to_definition'          : { 'id' : 4, 'enabled' : 1 }
 \                                               }
 \                                            }
-let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }
-let g:project_service_src_code_formatter   = { 'id' : 2, 'enabled' : 1, 'start' : function("Y_SrcCodeFormatter_Start"), 'stop' : function("Y_SrcCodeFormatter_Stop") }
+let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'started' : 0, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }
+let g:project_service_src_code_formatter   = { 'id' : 2, 'enabled' : 1, 'started' : 0, 'start' : function("Y_SrcCodeFormatter_Start"), 'stop' : function("Y_SrcCodeFormatter_Stop") }
 let g:project_available_services           = [
 \                                               g:project_service_src_code_model,
 \                                               g:project_service_project_builder,

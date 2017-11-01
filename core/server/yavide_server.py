@@ -51,11 +51,11 @@ class YavideServer():
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def __shutdown_all_services(self, dummyServiceId, dummyPayload):
+    def __shutdown_all_services(self, dummyServiceId, payload):
         logging.info("Shutting down all registered services ... {0}".format(self.service))
         if self.service_processes:
             for id, svc in self.service.iteritems():
-                svc.send_shutdown_request(dummyPayload)
+                svc.send_shutdown_request(payload)
             for svc_id, svc_process in self.service_processes.iteritems():
                 svc_process.join()
             del self.service_processes
@@ -69,9 +69,9 @@ class YavideServer():
         else:
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
-    def __shutdown_and_exit(self, dummyServiceId, dummyPayload):
+    def __shutdown_and_exit(self, dummyServiceId, payload):
         logging.info("Shutting down the Yavide server ...")
-        self.__shutdown_all_services(dummyServiceId, dummyPayload)
+        self.__shutdown_all_services(dummyServiceId, payload)
         self.keep_listening = False
 
     def __send_service_request(self, serviceId, payload):

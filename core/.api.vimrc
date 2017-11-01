@@ -209,11 +209,7 @@ function! s:Y_Project_Load()
         endif
 
         " Start background services
-        for service in g:project_available_services
-            if service['enabled']
-                call service['start']()
-            endif
-        endfor
+        call Y_ServerStartAllServices()
 
         call Y_Buffer_CloseEmpty()
         let g:project_loaded = 1
@@ -318,11 +314,7 @@ function! Y_Project_Close()
     endif
 
     " Stop background services
-    for service in g:project_available_services
-        if service['enabled']
-            call service['stop']()
-        endif
-    endfor
+    call Y_ServerStopAllServices(v:true)
 
     " Close all buffers
     call Y_Buffer_CloseAll(1)
@@ -791,9 +783,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStartAllServices()
-python << EOF
-server_queue.put([0xF0, 0xFF, "start_all_services"])
-EOF
+    for service in g:project_available_services
+        if service['enabled']
+            call service['start']()
+        endif
+    endfor
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -823,10 +817,13 @@ endfunction
 " Description:  Stops all Yavide server background services.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopAllServices()
-python << EOF
-server_queue.put([0xFD, 0xFF, "stop_all_services"])
-EOF
+function! Y_ServerStopAllServices(subscribe_for_shutdown_callback)
+    " Stop background services
+    for service in g:project_available_services
+        if service['enabled']
+            call service['stop'](a:subscribe_for_shutdown_callback)
+        endif
+    endfor
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -834,9 +831,9 @@ endfunction
 " Description:  Stops specific Yavide server backround service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStopService(id)
+function! Y_ServerStopService(id, subscribe_for_shutdown_callback)
 python << EOF
-server_queue.put([0xFE, vim.eval('a:id'), 'stop_service'])
+server_queue.put([0xFE, vim.eval('a:id'), vim.eval('a:subscribe_for_shutdown_callback')])
 EOF
 endfunction
 
@@ -847,7 +844,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStop()
 python << EOF
-server_queue.put([0xFF, 0xFF, "shutdown_and_exit"])
+server_queue.put([0xFF, 0xFF, False])
 EOF
 endfunction
 
@@ -923,6 +920,10 @@ function! Y_SrcCodeModel_Start()
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
     call Y_ServerStartService(g:project_service_src_code_model['id'], [g:project_root_directory, g:project_compiler_args])
+endfunction
+
+function! Y_SrcCodeModel_StartCompleted()
+    let g:project_service_src_code_model['started'] = 1
     call Y_SrcCodeIndexer_RunOnDirectory()
 endfunction
 
@@ -931,8 +932,12 @@ endfunction
 " Description:  Stops the source code model background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeModel_Stop()
-    call Y_ServerStopService(g:project_service_src_code_model['id'])
+function! Y_SrcCodeModel_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_src_code_model['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_SrcCodeModel_StopCompleted()
+    let g:project_service_src_code_model['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -941,9 +946,10 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeModel_Run(service_id, args)
-    " TODO run this only if source code model is initialized (i.e. SrcCodeModel_Start() completed)
-    call insert(a:args, a:service_id)
-    call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
+    if g:project_service_src_code_model['started']
+        call insert(a:args, a:service_id)
+        call Y_ServerSendServiceRequest(g:project_service_src_code_model['id'], a:args)
+    endif
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1147,13 +1153,21 @@ function! Y_ProjectBuilder_Start()
     call Y_ServerStartService(g:project_service_project_builder['id'], args)
 endfunction
 
+function! Y_ProjectBuilder_StartCompleted()
+    let g:project_service_project_builder['started'] = 1
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_ProjectBuilder_Stop()
 " Description:  Stops the project builder background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ProjectBuilder_Stop()
-    call Y_ServerStopService(g:project_service_project_builder['id'])
+function! Y_ProjectBuilder_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_project_builder['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_ProjectBuilder_StopCompleted()
+    let g:project_service_project_builder['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1162,17 +1176,19 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Run(...)
-    let args = [g:project_env_build_command]
-    if a:0 != 0
-        let args = a:1
-        let i = 2
-        while i <= a:0
-            execute "let args = args . \" \" . a:" . i
-            let i = i + 1
-        endwhile
+    if g:project_service_project_builder['started']
+        let args = [g:project_env_build_command]
+        if a:0 != 0
+            let args = a:1
+            let i = 2
+            while i <= a:0
+                execute "let args = args . \" \" . a:" . i
+                let i = i + 1
+            endwhile
+        endif
+        call setqflist([])
+        call Y_ServerSendServiceRequest(g:project_service_project_builder['id'], args)
     endif
-    call setqflist([])
-    call Y_ServerSendServiceRequest(g:project_service_project_builder['id'], args)
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1201,13 +1217,21 @@ function! Y_SrcCodeFormatter_Start()
     call Y_ServerStartService(g:project_service_src_code_formatter['id'], l:configFile)
 endfunction
 
+function! Y_SrcCodeFormatter_StartCompleted()
+    let g:project_service_src_code_formatter['started'] = 1
+endfunction
+
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Stop()
 " Description:  Stops the project builder background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeFormatter_Stop()
-    call Y_ServerStopService(g:project_service_src_code_formatter['id'])
+function! Y_SrcCodeFormatter_Stop(subscribe_for_shutdown_callback)
+    call Y_ServerStopService(g:project_service_src_code_formatter['id'], a:subscribe_for_shutdown_callback)
+endfunction
+
+function! Y_SrcCodeFormatter_StopCompleted()
+    let g:project_service_src_code_formatter['started'] = 0
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1216,9 +1240,11 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
-    if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
-        let l:current_buffer = expand('%:p')
-        call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
+    if g:project_service_src_code_formatter['started']
+        if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
+            let l:current_buffer = expand('%:p')
+            call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
+        endif
     endif
 endfunction
 

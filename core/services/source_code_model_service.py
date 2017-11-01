@@ -1,4 +1,5 @@
 import logging
+from common.yavide_utils import YavideUtils
 from services.yavide_service import YavideService
 from services.syntax_highlighter.syntax_highlighter import SyntaxHighlighter
 from services.vim.syntax_generator import VimSyntaxGenerator
@@ -14,7 +15,7 @@ from services.parser.clang_parser import ClangParser
 
 class SourceCodeModel(YavideService):
     def __init__(self, yavide_instance):
-        YavideService.__init__(self, yavide_instance, self.__startup_hook)
+        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback)
         self.compiler_args = None
         self.project_root_directory = None
         self.parser = ClangParser()
@@ -29,10 +30,16 @@ class SourceCodeModel(YavideService):
     def __unknown_service(self, args):
         logging.error("Unknown service triggered! Valid services are: {0}".format(self.service))
 
-    def __startup_hook(self, args):
+    def __startup_callback(self, args):
         self.project_root_directory = args[0]
         self.compiler_args          = args[1]
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StartCompleted()")
         logging.info("SourceCodeModel configured with: project root directory='{0}', compiler args='{1}'".format(self.project_root_directory, self.compiler_args))
+
+    def __shutdown_callback(self, args):
+        reply_with_callback = bool(args)
+        if reply_with_callback:
+            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StopCompleted()")
 
     def __call__(self, args):
         self.service.get(int(args[0]), self.__unknown_service)(self.project_root_directory, self.compiler_args, args[1:len(args)])
