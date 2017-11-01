@@ -1352,9 +1352,9 @@ function! Y_SrcCodeIndexer_FindAllReferencesCompleted(references)
 python << EOF
 import vim
 with open(vim.eval('a:references'), 'r') as f:
-    vim.eval("setloclist(0, [" + f.read() + "], 'r')")
+    vim.eval("setqflist([" + f.read() + "], 'r')")
 EOF
-    execute('lopen')
+    execute('copen')
     redraw
 endfunction
 
