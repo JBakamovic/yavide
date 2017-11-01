@@ -13,8 +13,8 @@ from services.vim.go_to_definition import VimGoToDefinition
 from services.parser.clang_parser import ClangParser
 
 class SourceCodeModel(YavideService):
-    def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook)
+    def __init__(self, yavide_instance):
+        YavideService.__init__(self, yavide_instance, self.__startup_hook)
         self.compiler_args = None
         self.project_root_directory = None
         self.parser = ClangParser()

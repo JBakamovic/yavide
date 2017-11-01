@@ -2,9 +2,8 @@ import logging
 from multiprocessing import Queue
 
 class YavideService():
-    def __init__(self, server_queue, yavide_instance, startup_hook = None, shutdown_hook = None):
+    def __init__(self, yavide_instance, startup_hook = None, shutdown_hook = None):
         self.queue = Queue()
-        self.server_queue = server_queue
         self.yavide_instance = yavide_instance
         self.startup_hook = startup_hook
         self.shutdown_hook = shutdown_hook
