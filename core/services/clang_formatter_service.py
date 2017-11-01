@@ -4,8 +4,8 @@ from services.yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
 class ClangSourceCodeFormatter(YavideService):
-    def __init__(self, server_queue, yavide_instance):
-        YavideService.__init__(self, server_queue, yavide_instance, self.__startup_hook)
+    def __init__(self, yavide_instance):
+        YavideService.__init__(self, yavide_instance, self.__startup_hook)
         self.config_file = ""
         self.format_cmd = "clang-format -i -style=file -assume-filename="
 

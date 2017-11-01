@@ -12,9 +12,9 @@ class YavideServer():
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SourceCodeModel(self.msg_queue, self.yavide_instance),
-            0x1 : ProjectBuilder(self.msg_queue, self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.msg_queue, self.yavide_instance)
+            0x0 : SourceCodeModel(self.yavide_instance),
+            0x1 : ProjectBuilder(self.yavide_instance),
+            0x2 : ClangSourceCodeFormatter(self.yavide_instance)
         }
         self.service_processes = {}
         self.action = {
