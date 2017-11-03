@@ -1097,6 +1097,10 @@ function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, of
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeGetAllIncludes_Run()
+" Description:  Fetches all the include directives from current file.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeGetAllIncludes_Run()
     if g:project_service_src_code_model['services']['get_all_includes']['enabled']
         let l:current_buffer = expand('%:p')
@@ -1113,11 +1117,12 @@ endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeGetAllIncludes_Apply()
-" Description:  Populates the quickfix window with source code diagnostics.
+" Description:  Populates the quickfix window with all the top-level includes.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeGetAllIncludes_Apply(includes)
     call setloclist(0, a:includes, 'r')
+    execute('lopen')
     redraw
 endfunction
 

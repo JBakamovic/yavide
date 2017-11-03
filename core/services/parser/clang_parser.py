@@ -112,9 +112,32 @@ class ClangParser():
         return diag
 
     def get_includes(self, tunit):
-        if not tunit:
-            return None
-        return tunit.get_includes()
+        def visitor(cursor, parent, include_directives_list):
+            if cursor.location.file and cursor.location.file.name == tunit.spelling:  # we're only interested in symbols from associated translation unit
+                if cursor.kind == clang.cindex.CursorKind.INCLUSION_DIRECTIVE:
+                    include_directives_list.append((cursor.displayname, cursor.location.line, cursor.location.column),)
+                    for c in cursor.get_children():
+                        logging.info('child: ' + c.location.file.name)
+                return ChildVisitResult.CONTINUE.value  # We don't want to waste time traversing recursively for include directives
+            return ChildVisitResult.CONTINUE.value
+
+        def new_visitor(fobj, lptr, depth, includes):
+            if depth > 0:
+                import ctypes
+                a = ctypes.cast(lptr, ctypes.POINTER(clang.cindex.SourceLocation))
+                aPtr = ctypes.cast(ctypes.pointer(a), ctypes.POINTER(ctypes.c_void_p))
+                for i in range(0, depth):
+                    loc = ctypes.cast(aPtr.contents, clang.cindex.SourceLocation)
+                    logging.info(loc)
+                    includes.append(clang.cindex.FileInclusion(loc.file, clang.cindex.File(fobj), loc, depth))
+                    aPtr.contents.value += ctypes.sizeof(a._type_)     
+
+        inclusion_directive_list = []
+        if tunit:
+            #traverse(tunit.cursor, inclusion_directive_list, visitor)
+            clang.cindex.conf.lib.clang_getInclusions(tunit, clang.cindex.callbacks['translation_unit_includes'](new_visitor), inclusion_directive_list)
+                
+        return inclusion_directive_list
 
     def traverse(self, cursor, client_data, client_visitor):
         traverse(cursor, client_data, client_visitor)
