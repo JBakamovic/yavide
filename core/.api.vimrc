@@ -1089,6 +1089,11 @@ function! Y_SrcCodeNavigation_GoToDefinition()
     endif
 endfunction
 
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_SrcCodeNavigation_GoToDefinitionCompleted()
+" Description:  Jumps to the definition found.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, offset)
     if a:filename != ''
         execute('edit ' . a:filename)
@@ -1097,11 +1102,11 @@ function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, of
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeGetAllIncludes_Run()
-" Description:  Fetches all the include directives from current file.
+" Function:     Y_SrcCodeNavigation_GoToInclude()
+" Description:  Fetches the filename which include directive corresponds to on the given (current) line.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeGetAllIncludes_Run()
+function! Y_SrcCodeNavigation_GoToInclude()
     if g:project_service_src_code_model['services']['get_all_includes']['enabled']
         let l:current_buffer = expand('%:p')
 
@@ -1111,19 +1116,17 @@ function! Y_SrcCodeGetAllIncludes_Run()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['get_all_includes']['id'], [l:contents_filename, l:current_buffer])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['get_all_includes']['id'], [l:contents_filename, l:current_buffer, line('.')])
     endif
 endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_SrcCodeGetAllIncludes_Apply()
-" Description:  Populates the quickfix window with all the top-level includes.
+" Function:     Y_SrcCodeNavigation_GoToIncludeCompleted()
+" Description:  Opens the filename which corresponds to the include directive.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeGetAllIncludes_Apply(includes)
-    call setloclist(0, a:includes, 'r')
-    execute('lopen')
-    redraw
+function! Y_SrcCodeNavigation_GoToIncludeCompleted(filename)
+    execute('edit ' . a:filename)
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
