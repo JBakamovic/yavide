@@ -56,6 +56,7 @@ Category                          | Shortcut                          | Descript
 |                                  | `<,cs>`                           | Comment the selected line/block (other style)
 |                                  | `<,cu>`                           | Uncomment the selected line/block
 |**Source code navigation**        |                                   |
+|                                  | `<F3>`                            | Open file under the cursor
 |                                  | `<F4>`                            | Switch between header & corresponding implementation file
 |                                  | `<Shift-F4>`                      | Switch between header & implementation (in a vertical split window)
 |                                  | `<F12>` or `<Ctrl-LeftMouse>`     | Goto definition of token under the cursor

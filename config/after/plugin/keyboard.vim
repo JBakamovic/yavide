@@ -59,6 +59,8 @@ vnoremap    <S-Tab>             <gv
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+nmap        <F3>                :YavideSrcNavOpenFile<CR>|"                                     Open file under the cursor
+imap        <F3>                <ESC>:YavideSrcNavOpenFile<CR>i|"
 nmap        <F4>                :YavideSrcNavSwitchBetweenHeaderImpl<CR>|"                      Switch between header/source
 imap        <F4>                <ESC>YavideSrcNavSwitchBetweenHeaderImpl<CR>i|"
 nmap        <S-F4>              :YavideSrcNavSwitchBetweenHeaderImplVSplit<CR>|"                Switch between header/source in a vertical split

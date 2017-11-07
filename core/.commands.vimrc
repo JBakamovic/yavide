@@ -44,6 +44,7 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+:command! -nargs=0 -complete=file YavideSrcNavOpenFile                      :call Y_SrcCodeNavigation_GoToInclude()
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImpl       :call Y_SrcNav_SwitchBetweenHeaderImpl(0)
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImplVSplit :call Y_SrcNav_SwitchBetweenHeaderImpl(1)
 :command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                :call Y_SrcCodeNavigation_GoToDefinition()
