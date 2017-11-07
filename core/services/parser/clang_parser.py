@@ -111,33 +111,19 @@ class ClangParser():
         logging.info("Fetching diagnostics for {0}: {1}".format(tunit.spelling, diag))
         return diag
 
-    def get_includes(self, tunit):
+    def get_top_level_includes(self, tunit):
         def visitor(cursor, parent, include_directives_list):
             if cursor.location.file and cursor.location.file.name == tunit.spelling:  # we're only interested in symbols from associated translation unit
                 if cursor.kind == clang.cindex.CursorKind.INCLUSION_DIRECTIVE:
-                    include_directives_list.append((cursor.displayname, cursor.location.line, cursor.location.column),)
-                    for c in cursor.get_children():
-                        logging.info('child: ' + c.location.file.name)
+                    include_directives_list.append((ClangParser.__get_included_file_name(cursor), cursor.location.line, cursor.location.column),)
                 return ChildVisitResult.CONTINUE.value  # We don't want to waste time traversing recursively for include directives
             return ChildVisitResult.CONTINUE.value
 
-        def new_visitor(fobj, lptr, depth, includes):
-            if depth > 0:
-                import ctypes
-                a = ctypes.cast(lptr, ctypes.POINTER(clang.cindex.SourceLocation))
-                aPtr = ctypes.cast(ctypes.pointer(a), ctypes.POINTER(ctypes.c_void_p))
-                for i in range(0, depth):
-                    loc = ctypes.cast(aPtr.contents, clang.cindex.SourceLocation)
-                    logging.info(loc)
-                    includes.append(clang.cindex.FileInclusion(loc.file, clang.cindex.File(fobj), loc, depth))
-                    aPtr.contents.value += ctypes.sizeof(a._type_)     
-
-        inclusion_directive_list = []
+        top_level_includes = []
         if tunit:
-            #traverse(tunit.cursor, inclusion_directive_list, visitor)
-            clang.cindex.conf.lib.clang_getInclusions(tunit, clang.cindex.callbacks['translation_unit_includes'](new_visitor), inclusion_directive_list)
-                
-        return inclusion_directive_list
+            traverse(tunit.cursor, top_level_includes, visitor)
+        logging.info(top_level_includes)
+        return top_level_includes
 
     def traverse(self, cursor, client_data, client_visitor):
         traverse(cursor, client_data, client_visitor)
@@ -400,3 +386,30 @@ class ClangParser():
     @staticmethod
     def __get_overloaded_decl(cursor, num):
         return clang.cindex.conf.lib.clang_getOverloadedDecl(cursor, num)
+
+    # TODO Shall be removed once 'cindex.py' exposes it in its interface.
+    @staticmethod
+    def __get_included_file_name(inclusion_directive_cursor):
+        #
+        # NOTE Python binding for clang_getIncludedFile() is currently
+        #      incompatible with the implementation of clang.cindex.File.
+        #      Assert is being risen because clang.cindex.File object is
+        #      being constructed with the type which is not of ClangObject
+        #      type (e.g. clang.cindex.Cursor is ctypes.Structure)
+        #
+        #      This implementation workarounds this limitation.
+        #
+        _libclang = clang.cindex.conf.get_cindex_library()
+        _libclang.clang_getIncludedFile.argtypes = [clang.cindex.Cursor]
+        _libclang.clang_getIncludedFile.restype  =  clang.cindex.c_object_p
+        _libclang.clang_getFileName.argtypes     = [clang.cindex.c_object_p]
+        _libclang.clang_getFileName.restype      =  clang.cindex._CXString
+
+        return clang.cindex.conf.lib.clang_getCString(
+            _libclang.clang_getFileName(
+                _libclang.clang_getIncludedFile(
+                    inclusion_directive_cursor
+                )
+            )
+        )
+
