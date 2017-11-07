@@ -12,8 +12,8 @@ from services.vim.type_deduction import VimTypeDeduction
 from services.go_to_definition.go_to_definition import GoToDefinition
 from services.vim.go_to_definition import VimGoToDefinition
 from services.parser.clang_parser import ClangParser
-from services.get_all_includes.get_all_includes import GoToInclude
-from services.vim.get_all_includes import VimGoToInclude
+from services.go_to_include.go_to_include import GoToInclude
+from services.vim.go_to_include import VimGoToInclude
 
 class SourceCodeModel(YavideService):
     def __init__(self, yavide_instance):
