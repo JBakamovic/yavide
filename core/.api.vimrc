@@ -1126,7 +1126,9 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeNavigation_GoToIncludeCompleted(filename)
-    execute('edit ' . a:filename)
+    if a:filename != ''
+        execute('edit ' . a:filename)
+    endif
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
