@@ -1096,7 +1096,9 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, offset)
     if a:filename != ''
-        execute('edit ' . a:filename)
+        if expand('%:p') != a:filename
+            execute('edit ' . a:filename)
+        endif
         call cursor(a:line, a:column)
     endif
 endfunction
