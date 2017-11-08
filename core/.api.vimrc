@@ -1107,7 +1107,7 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeNavigation_GoToInclude()
-    if g:project_service_src_code_model['services']['get_all_includes']['enabled']
+    if g:project_service_src_code_model['services']['go_to_include']['enabled']
         let l:current_buffer = expand('%:p')
 
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
@@ -1116,7 +1116,7 @@ function! Y_SrcCodeNavigation_GoToInclude()
             let l:contents_filename = '/tmp/yavideTempBufferContents'
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
-        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['get_all_includes']['id'], [l:contents_filename, l:current_buffer, line('.')])
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_include']['id'], [l:contents_filename, l:current_buffer, line('.')])
     endif
 endfunction
 
