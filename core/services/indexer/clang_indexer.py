@@ -174,7 +174,7 @@ class ClangIndexer(object):
                 cmd = "python2 " + clang_index_script + " --project_root_directory='" \
                     + proj_root_directory + "' --compiler_args='" + compiler_args + "' --input_list='" \
                     + cpp_file_list + "' --output_db_filename='" + tmp_db + "' " + "--log_file='" + \
-                    logging.getLoggerClass().root.handlers[0].baseFilename + "'"
+                    logging.getLoggerClass().root.handlers[0].baseFilename + '_' + str(len(process_list)+1) + "'"
                 p = subprocess.Popen(shlex.split(cmd), env=my_env)
 
                 # Store handles to subprocesses and corresponding tmp files so we can handle them later on
