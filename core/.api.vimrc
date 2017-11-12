@@ -1094,7 +1094,7 @@ endfunction
 " Description:  Jumps to the definition found.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column, offset)
+function! Y_SrcCodeNavigation_GoToDefinitionCompleted(filename, line, column)
     if a:filename != ''
         if expand('%:p') != a:filename
             execute('edit ' . a:filename)
