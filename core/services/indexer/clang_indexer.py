@@ -42,9 +42,15 @@ class ClangIndexer(object):
         # We don't run indexer on files modified but not saved
         if contents_filename == original_filename:
             self.symbol_db.open(os.path.join(proj_root_directory, self.symbol_db_name))
-            # TODO doesn't update the index db well after symbol is added and then removed (after removal it is still there)
-            self.symbol_db.delete(original_filename)
-            index_single_file(self.parser, proj_root_directory, contents_filename, original_filename, compiler_args, self.symbol_db)
+            self.symbol_db.delete(get_basename(proj_root_directory, original_filename))
+            index_single_file(
+                self.parser,
+                proj_root_directory,
+                contents_filename,
+                original_filename,
+                compiler_args,
+                self.symbol_db
+            )
 
         if self.callback:
             self.callback(id, args)
@@ -156,9 +162,9 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, args)
 
-    def __drop_single_file(self, id, args):
+    def __drop_single_file(self, id, proj_root_directory, compiler_args, args):
         filename = str(args[0])
-        self.symbol_db.delete(filename)
+        self.symbol_db.delete(get_basename(proj_root_directory, filename))
         if self.callback:
             self.callback(id, args)
 
@@ -237,7 +243,7 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
                 ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
             ]:
                 symbol_db.insert_single(
-                    ast_node_tunit_spelling[len(proj_root_directory):].lstrip(os.sep), # we normalize the path to be defined relative to the project root directory
+                    get_basename(proj_root_directory, ast_node_tunit_spelling),
                     usr,
                     line,
                     column,
@@ -261,3 +267,5 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
     time_elapsed = time.clock() - start
     logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
 
+def get_basename(root_dir, full_path):
+    return full_path[len(root_dir):].lstrip(os.sep)
