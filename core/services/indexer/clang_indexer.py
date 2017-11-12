@@ -3,71 +3,17 @@ import multiprocessing
 import os
 import shlex
 import subprocess
-import sqlite3
 import time
 import tempfile
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.clang_parser import ChildVisitResult
 from services.parser.clang_parser import ClangParser
+from services.indexer.symbol_database import SymbolDatabase
 
 # TODO move this to utils
 import itertools
 def slice_it(iterable, n, padvalue=None):
     return itertools.izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
-
-class SymbolDatabase(object):
-    def __init__(self, db_filename = None):
-        self.filename = db_filename
-        if db_filename:
-            self.db_connection = sqlite3.connect(db_filename)
-        else:
-            self.db_connection = None
-
-    def __del__(self):
-        if self.db_connection:
-            self.db_connection.close()
-
-    def open(self, db_filename):
-        if not self.db_connection:
-            self.db_connection = sqlite3.connect(db_filename)
-            self.filename = db_filename
-
-    def close(self):
-        if self.db_connection:
-            self.db_connection.close()
-            self.db_connection = None
-
-    def get_all(self):
-        # TODO Use generators
-        return self.db_connection.cursor().execute('SELECT * FROM symbol')
-
-    def get_by_id(self, id):
-        return self.db_connection.cursor().execute('SELECT * FROM symbol WHERE usr=?', (id,))
-
-    def insert_single(self, filename, unique_id, line, column, symbol_kind, context):
-        self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?)', (filename, unique_id, line, column, symbol_kind, context,))
-
-    def flush(self):
-        self.db_connection.commit()
-
-    def delete(self, filename):
-        self.db_connection.cursor().execute('DELETE FROM symbol WHERE filename=?', (filename,))
-
-    def delete_all(self):
-        self.db_connection.cursor().execute('DELETE FROM symbol')
-
-    def create_data_model(self):
-        self.db_connection.cursor().execute(
-            'CREATE TABLE IF NOT EXISTS symbol ( \
-                filename text,                   \
-                usr      text,                   \
-                line     integer,                \
-                column   integer,                \
-                kind     integer,                \
-                context  text,                   \
-                PRIMARY KEY(filename, usr, line) \
-             )'
-        )
 
 class ClangIndexer(object):
     def __init__(self, parser, callback = None):
@@ -96,6 +42,7 @@ class ClangIndexer(object):
         # We don't run indexer on files modified but not saved
         if contents_filename == original_filename:
             self.symbol_db.open(os.path.join(proj_root_directory, self.symbol_db_name))
+            # TODO doesn't update the index db well after symbol is added and then removed (after removal it is still there)
             self.symbol_db.delete(original_filename)
             index_single_file(self.parser, proj_root_directory, contents_filename, original_filename, compiler_args, self.symbol_db)
 
@@ -192,7 +139,7 @@ class ClangIndexer(object):
                 symbols = tmp_symbol_db.get_all()
                 if symbols:
                     for sym in symbols:
-                        self.symbol_db.insert_single(sym[0], sym[1], sym[2], sym[3], sym[4], sym[5])
+                        self.symbol_db.insert_single(sym[0], sym[1], sym[2], sym[3], sym[4], sym[5], sym[6])
                 self.symbol_db.flush()
                 tmp_symbol_db.close()
                 os.remove(db)
@@ -282,25 +229,23 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
             usr = ast_node.referenced.get_usr() if ast_node.referenced else ast_node.get_usr()
             line = int(parser.get_ast_node_line(ast_node))
             column = int(parser.get_ast_node_column(ast_node))
-            try:
-                if id in [
-                    ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), # handle user-defined types
-                    ASTNodeId.getUnionId(), ASTNodeId.getTypedefId(), ASTNodeId.getUsingDeclarationId(),
-                    ASTNodeId.getFunctionId(), ASTNodeId.getMethodId(),                                                 # handle functions and methods
-                    ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId(),         # handle local/function variables and member variables
-                    ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
-                ]:
-                    symbol_db.insert_single(
-                        ast_node_tunit_spelling[len(proj_root_directory):].lstrip(os.sep), # we normalize the path to be defined relative to the project root directory
-                        usr,
-                        line,
-                        column,
-                        ast_node.referenced._kind_id if ast_node.referenced else ast_node._kind_id,
-                        extract_cursor_context(ast_node_tunit_spelling, line)
-                    )
-                else:
-                    pass
-            except sqlite3.IntegrityError:
+            if id in [
+                ASTNodeId.getClassId(), ASTNodeId.getStructId(), ASTNodeId.getEnumId(), ASTNodeId.getEnumValueId(), # handle user-defined types
+                ASTNodeId.getUnionId(), ASTNodeId.getTypedefId(), ASTNodeId.getUsingDeclarationId(),
+                ASTNodeId.getFunctionId(), ASTNodeId.getMethodId(),                                                 # handle functions and methods
+                ASTNodeId.getLocalVariableId(), ASTNodeId.getFunctionParameterId(), ASTNodeId.getFieldId(),         # handle local/function variables and member variables
+                ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
+            ]:
+                symbol_db.insert_single(
+                    ast_node_tunit_spelling[len(proj_root_directory):].lstrip(os.sep), # we normalize the path to be defined relative to the project root directory
+                    usr,
+                    line,
+                    column,
+                    ast_node.referenced._kind_id if ast_node.referenced else ast_node._kind_id,
+                    extract_cursor_context(ast_node_tunit_spelling, line),
+                    ast_node.is_definition()
+                )
+            else:
                 pass
             return ChildVisitResult.RECURSE.value  # If we are positioned in TU of interest, then we'll traverse through all descendants
         return ChildVisitResult.CONTINUE.value  # Otherwise, we'll skip to the next sibling

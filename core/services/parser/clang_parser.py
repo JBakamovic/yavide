@@ -195,10 +195,11 @@ class ClangParser():
                  )
         return cursor
 
-    def get_definition(self, tunit, line, column):
-        logging.info("Extracting definition of cursor from [{0}, {1}]: {2}.".format(line, column, tunit.spelling))
-        cursor = self.get_cursor(tunit, line, column)
+    def get_definition(self, cursor):
         if cursor:
+            logging.info("Extracting definition of cursor from '{0}': [{1},{2}] '{3}'.".format(
+                cursor.location.file.name, cursor.location.line, cursor.location.column, cursor.spelling)
+            )
             return cursor.get_definition()
         return None
 

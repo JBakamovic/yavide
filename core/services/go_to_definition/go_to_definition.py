@@ -1,3 +1,6 @@
+import os
+from services.indexer.symbol_database import SymbolDatabase
+
 class GoToDefinition():
     def __init__(self, parser, callback = None):
         self.parser = parser
@@ -9,29 +12,40 @@ class GoToDefinition():
         line              = int(args[2])
         column            = int(args[3])
 
-        cursor = self.parser.get_definition(
-            self.parser.parse(
-                contents_filename,
-                original_filename,
-                compiler_args,
-                proj_root_directory
-            ),
-            line, column
-        )
-
         if self.callback:
-            if cursor:
-                # If we are currently editing the file and our resulting cursor is exactly in that file,
-                # then we should be reporting original filename instead of the temporary one.
-                # That makes it possible to jump to definitions in edited (and not yet saved) files.
-                if contents_filename != original_filename:
-                    if cursor.location.file.name == contents_filename:
-                        filename = original_filename
-                    else:
-                        filename = cursor.location.file.name
-                else:
-                    filename = cursor.location.file.name
-                self.callback([filename, cursor.location.line, cursor.location.column, cursor.location.offset])
-            else:
-                self.callback(['', 0, 0, 0])
+            def_filename, def_line, def_column = '', 0, 0
+            cursor = self.parser.get_cursor(
+                        self.parser.parse(
+                            contents_filename, original_filename,
+                            compiler_args, proj_root_directory
+                        ),
+                        line, column
+                    )
+            definition = self.parser.get_definition(cursor)
 
+            # If unsuccessful, try once more by extracting the definition from indexed symbol database
+            if not definition:
+                symbol_db = SymbolDatabase(os.path.join(proj_root_directory, '.yavide_index.db'))
+                definition = symbol_db.get_definition(
+                                cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr(),
+                             ).fetchall()
+                if definition:
+                    def_filename, def_line, def_column = definition[0][0], definition[0][2], definition[0][3]
+            else:
+                loc = definition.location
+                def_filename, def_line, def_column = loc.file.name, loc.line, loc.column
+
+            # If we are currently editing the file and our resulting cursor is exactly in that file,
+            # then we should be reporting original filename instead of the temporary one.
+            # That makes it possible to jump to definitions in edited (and not yet saved) files.
+            if contents_filename != original_filename:
+                if def_filename == contents_filename:
+                    def_filename = original_filename
+
+            self.callback([def_filename, def_line, def_column])
+
+# TODO
+#       1. Remove creating symbol db path from here
+#          Remove os import
+#       2. Change DB schema columns order (i.e. filename, line, column, context, usr, is_definition)
+#       3. ?
