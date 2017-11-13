@@ -173,7 +173,6 @@ class ClangIndexer(object):
 
     def __drop_all(self, id, proj_root_directory, compiler_args, args):
         delete_file_from_disk = bool(args[0])
-        self.symbol_db.delete_all()
         if delete_file_from_disk:
             self.symbol_db.close()
             os.remove(self.symbol_db.filename)
