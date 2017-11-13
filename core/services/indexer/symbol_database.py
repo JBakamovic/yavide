@@ -22,6 +22,9 @@ class SymbolDatabase(object):
             self.db_connection.close()
             self.db_connection = None
 
+    def is_open(self):
+        return self.db_connection != None
+
     def get_all(self):
         # TODO Use generators
         return self.db_connection.cursor().execute('SELECT * FROM symbol')

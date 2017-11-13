@@ -2,8 +2,9 @@ import os
 from services.indexer.symbol_database import SymbolDatabase
 
 class GoToDefinition():
-    def __init__(self, parser, callback = None):
+    def __init__(self, parser, symbol_db, callback = None):
         self.parser = parser
+        self.symbol_db = symbol_db
         self.callback = callback
 
     def __call__(self, proj_root_directory, compiler_args, args):
@@ -25,8 +26,7 @@ class GoToDefinition():
 
             # If unsuccessful, try once more by extracting the definition from indexed symbol database
             if not definition:
-                symbol_db = SymbolDatabase(os.path.join(proj_root_directory, '.yavide_index.db'))
-                definition = symbol_db.get_definition(
+                definition = self.symbol_db.get_definition(
                                 cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr(),
                              ).fetchall()
                 if definition:
@@ -45,7 +45,5 @@ class GoToDefinition():
             self.callback([def_filename, def_line, def_column])
 
 # TODO
-#       1. Remove creating symbol db path from here
-#          Remove os import
 #       2. Change DB schema columns order (i.e. filename, line, column, context, usr, is_definition)
 #       3. ?

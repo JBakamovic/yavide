@@ -29,6 +29,9 @@ class ClangIndexer(object):
             0x10 : self.__find_all_references
         }
 
+    def get_symbol_db(self):
+        return self.symbol_db
+
     def __call__(self, proj_root_directory, compiler_args, args):
         self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), proj_root_directory, compiler_args, args[1:len(args)])
 
@@ -210,7 +213,6 @@ class ClangIndexer(object):
 
         logging.info("Find-all-references operation of '{0}', [{1}, {2}], '{3}' took {4}".format(cursor.displayname, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed))
         logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
-
 
 def index_file_list(proj_root_directory, compiler_args, input_filename_list, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)

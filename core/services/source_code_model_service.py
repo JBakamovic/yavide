@@ -21,12 +21,13 @@ class SourceCodeModel(YavideService):
         self.compiler_args = None
         self.project_root_directory = None
         self.parser = ClangParser()
+        self.clang_indexer = ClangIndexer(self.parser, VimIndexer(yavide_instance))
         self.service = {
-            0x0 : ClangIndexer(self.parser, VimIndexer(yavide_instance)),
+            0x0 : self.clang_indexer,
             0x1 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(yavide_instance, "/tmp/yavideSyntaxFile.vim")),
             0x2 : Diagnostics(self.parser, VimQuickFixDiagnostics(yavide_instance)),
             0x3 : TypeDeduction(self.parser, VimTypeDeduction(yavide_instance)),
-            0x4 : GoToDefinition(self.parser, VimGoToDefinition(yavide_instance)),
+            0x4 : GoToDefinition(self.parser, self.clang_indexer.get_symbol_db(), VimGoToDefinition(yavide_instance)),
             0x5 : GoToInclude(self.parser, VimGoToInclude(yavide_instance))
         }
 
