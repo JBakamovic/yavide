@@ -30,7 +30,7 @@ class GoToDefinition():
                                 cursor.referenced.get_usr() if cursor.referenced else cursor.get_usr(),
                              ).fetchall()
                 if definition:
-                    def_filename, def_line, def_column = definition[0][0], definition[0][2], definition[0][3]
+                    def_filename, def_line, def_column = definition[0][0], definition[0][1], definition[0][2]
             else:
                 loc = definition.location
                 def_filename, def_line, def_column = loc.file.name, loc.line, loc.column
@@ -44,6 +44,3 @@ class GoToDefinition():
 
             self.callback([def_filename, def_line, def_column])
 
-# TODO
-#       2. Change DB schema columns order (i.e. filename, line, column, context, usr, is_definition)
-#       3. ?

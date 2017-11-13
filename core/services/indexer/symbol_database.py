@@ -35,10 +35,11 @@ class SymbolDatabase(object):
     def get_definition(self, id):
         return self.db_connection.cursor().execute('SELECT * FROM symbol WHERE usr=? AND is_definition=1', (id,))
 
-    def insert_single(self, filename, unique_id, line, column, symbol_kind, context, is_definition):
+    def insert_single(self, filename, line, column, unique_id, context, symbol_kind, is_definition):
         try:
-            self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?, ?)', (filename, unique_id,
-                line, column, symbol_kind, context, is_definition,))
+            self.db_connection.cursor().execute('INSERT INTO symbol VALUES (?, ?, ?, ?, ?, ?, ?)',
+                (filename, line, column, unique_id, context, symbol_kind, is_definition,)
+            )
         except sqlite3.IntegrityError:
             pass
 
@@ -54,13 +55,13 @@ class SymbolDatabase(object):
     def create_data_model(self):
         self.db_connection.cursor().execute(
             'CREATE TABLE IF NOT EXISTS symbol ( \
-                filename text,                   \
-                usr      text,                   \
-                line     integer,                \
-                column   integer,                \
-                kind     integer,                \
-                context  text,                   \
-                is_definition boolean,           \
+                filename        text,            \
+                line            integer,         \
+                column          integer,         \
+                usr             text,            \
+                context         text,            \
+                kind            integer,         \
+                is_definition   boolean,         \
                 PRIMARY KEY(filename, usr, line) \
              )'
         )

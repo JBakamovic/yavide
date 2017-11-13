@@ -39,10 +39,10 @@ class VimIndexer(object):
         for ref in references:
             quickfix_list.append(
                 "{'filename': '" + str(ref[0]) + "', " +
-                "'lnum': '" + str(ref[2]) + "', " +
-                "'col': '" + str(ref[3]) + "', " +
+                "'lnum': '" + str(ref[1]) + "', " +
+                "'col': '" + str(ref[2]) + "', " +
                 "'type': 'I', " +
-                "'text': '" + str(ref[5]).replace("'", r"''").rstrip() + "'}"
+                "'text': '" + str(ref[4]).replace("'", r"''").rstrip() + "'}"
             )
 
         with open(self.find_all_references_output, 'w', 0) as f:

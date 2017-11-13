@@ -177,7 +177,7 @@ class ClangIndexer(object):
         if delete_file_from_disk:
             self.symbol_db.close()
             os.remove(self.symbol_db.filename)
-            logging.info('DB file removed ...')
+            logging.info('Indexer DB dropped.')
 
         if self.callback:
             self.callback(id, args)
@@ -246,11 +246,11 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
             ]:
                 symbol_db.insert_single(
                     get_basename(proj_root_directory, ast_node_tunit_spelling),
-                    usr,
                     line,
                     column,
-                    ast_node.referenced._kind_id if ast_node.referenced else ast_node._kind_id,
+                    usr,
                     extract_cursor_context(ast_node_tunit_spelling, line),
+                    ast_node.referenced._kind_id if ast_node.referenced else ast_node._kind_id,
                     ast_node.is_definition()
                 )
             else:
