@@ -1040,7 +1040,6 @@ function! Y_SrcCodeTypeDeduction_Run()
         " any make sense then.
         if getbufvar(v:beval_bufnr, "&buftype") == ''
             let l:current_buffer = fnamemodify(bufname(v:beval_bufnr), ':p')
-            let l:compiler_args = g:project_compiler_args
 
             " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
             let l:contents_filename = l:current_buffer
