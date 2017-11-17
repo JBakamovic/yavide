@@ -205,12 +205,12 @@ class ClangIndexer(object):
                     references = self.symbol_db.get_by_id(usr).fetchall()
                 else:
                     pass
+            logging.info("Find-all-references operation of '{0}', [{1}, {2}], '{3}' took {4}".format(cursor.displayname, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed))
         time_elapsed = time.clock() - start
 
         if self.callback:
             self.callback(id, [args, references])
 
-        logging.info("Find-all-references operation of '{0}', [{1}, {2}], '{3}' took {4}".format(cursor.displayname, cursor.location.line, cursor.location.column, tunit.spelling, time_elapsed))
         logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
 
 def index_file_list(proj_root_directory, compiler_args, input_filename_list, output_db_filename):
