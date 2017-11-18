@@ -206,6 +206,7 @@ function! s:Y_Project_Load()
         " Load project session information
         if filereadable(g:project_session_filename)
             execute('source ' . g:project_session_filename)
+            let g:project_compiler_args = g:project_root_directory
         endif
 
         " Start background services

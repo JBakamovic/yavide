@@ -37,6 +37,7 @@ class SourceCodeModel(YavideService):
     def __startup_callback(self, args):
         self.project_root_directory = args[0]
         self.compiler_args          = args[1]
+        self.parser.set_compiler_args_db(self.compiler_args)
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StartCompleted()")
         logging.info("SourceCodeModel configured with: project root directory='{0}', compiler args='{1}'".format(self.project_root_directory, self.compiler_args))
 

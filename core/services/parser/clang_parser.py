@@ -66,8 +66,46 @@ def get_system_includes():
 class ClangParser():
     def __init__(self):
         self.index = clang.cindex.Index.create()
-        self.default_args = ['-x', 'c++', '-std=c++14'] + get_system_includes()
+        self.default_args = ['-x', 'c++'] + get_system_includes()
+        self.parser_args = []
+        self.compilation_db = None
 
+    def set_compiler_args_db(self, db_filename):
+        if db_filename == 'compile_commands.json':
+            # TODO libclang cannot find stdargs.h
+            # Build parser arguments
+            #parser_args  = []
+            #parser_args += self.default_args
+            #parser_args += list(str(compiler_args).split()) if compiler_args else ''
+            #parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
+
+            try:
+                self.compilation_db = clang.cindex.CompilationDatabase.fromDirectory(os.path.dirname(db_filename))
+            except:
+                logging.error(sys.exc_info())
+
+        else if db_filename == 'compile_flags.txt':
+            pass
+        else:
+            pass
+
+    def get_compiler_args(self, filename):
+        compiler_args = []
+        if self.compilation_db:
+            compile_cmds = self.compilation_db.getCompileCommands(original_filename)
+            if compile_cmds:
+                for arg in compile_cmds[0].arguments:
+                    compiler_args.append(arg)
+                compiler_args = compiler_args[1:len(compiler_args)-4]
+            else: # probably the header
+                # TODO somehow cache previous results ...
+                #      in case it is a header-only library do what?
+                compiler_args += self.default_args
+        else:
+        return compiler_args
+           
+
+    # TODO differentiate between compile_flags.txt and compile_commands.json
     def parse(self, contents_filename, original_filename, compiler_args, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
@@ -87,16 +125,10 @@ class ClangParser():
             logging.info('We\'re operating on a temporary file. Modifying compiler args to include current file parent directory = {0}'.format(compiler_args))
 
         try:
-            # Build parser arguments
-            parser_args  = []
-            parser_args += self.default_args
-            parser_args += list(str(compiler_args).split()) if compiler_args else ''
-            parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
-
             # Parse the translation unit
             tunit = self.index.parse(
                 path = contents_filename,
-                args = parser_args,
+                args = self.get_compiler_args(original_filename),
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
         except:
