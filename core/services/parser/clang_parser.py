@@ -63,54 +63,89 @@ def get_system_includes():
     output = str(output)
     return output[output.find(pattern[0]) + len(pattern[0]) : output.find(pattern[1])].replace(' ', '-I').split('\\n')
 
-class ClangParser():
-    def __init__(self):
-        self.index = clang.cindex.Index.create()
-        self.default_args = ['-x', 'c++'] + get_system_includes()
-        self.parser_args = []
-        self.compilation_db = None
+# TODO libclang cannot find stdargs.h
+# Build parser arguments
+#parser_args  = []
+#parser_args += self.default_args
+#parser_args += list(str(compiler_args).split()) if compiler_args else ''
+#parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
 
-    def set_compiler_args_db(self, db_filename):
-        if db_filename == 'compile_commands.json':
-            # TODO libclang cannot find stdargs.h
-            # Build parser arguments
-            #parser_args  = []
-            #parser_args += self.default_args
-            #parser_args += list(str(compiler_args).split()) if compiler_args else ''
-            #parser_args += ['-working-directory=' + project_root_directory] if project_root_directory else ''
-
+class CompilerArgs():
+    class JSONCompilationDatabase():
+        def __init__(self, default_compiler_args, filename):
+            self.default_compiler_args = default_compiler_args
+            self.cached_compiler_args = []
             try:
-                self.compilation_db = clang.cindex.CompilationDatabase.fromDirectory(os.path.dirname(db_filename))
+                self.database = clang.cindex.CompilationDatabase.fromDirectory(os.path.dirname(filename))
             except:
                 logging.error(sys.exc_info())
 
-        else if db_filename == 'compile_flags.txt':
-            pass
-        else:
-            pass
+        def get(self, filename):
+            def eat_minus_c_compiler_option(json_comp_db_command):
+                return json_comp_db_command[0:len(json_comp_db_command)-2] # -c <source_code_filename>
 
-    def get_compiler_args(self, filename):
-        compiler_args = []
-        if self.compilation_db:
-            compile_cmds = self.compilation_db.getCompileCommands(original_filename)
+            def eat_minus_o_compiler_option(json_comp_db_command):
+                return json_comp_db_command[0:len(json_comp_db_command)-2] # -o <object_file>
+
+            def eat_compiler_invocation(json_comp_db_command):
+                return json_comp_db_command[1:len(json_comp_db_command)]   # i.e. /usr/bin/c++
+
+            compile_cmds = self.database.getCompileCommands(filename)
             if compile_cmds:
+                compiler_args = []
                 for arg in compile_cmds[0].arguments:
                     compiler_args.append(arg)
-                compiler_args = compiler_args[1:len(compiler_args)-4]
+                compiler_args = self.default_compiler_args + eat_compiler_invocation(eat_minus_o_compiler_option(eat_minus_c_compiler_option(compiler_args)))
             else: # probably the header
                 # TODO somehow cache previous results ...
                 #      in case it is a header-only library do what?
-                compiler_args += self.default_args
-        else:
-        return compiler_args
-           
+                #compiler_args = self.default_compiler_args this will make a circular reference --> bug!
+                return self.cached_compiler_args
+            self.cached_compiler_args = list(compiler_args)
+            return compiler_args
 
-    # TODO differentiate between compile_flags.txt and compile_commands.json
+    class CompileFlagsCompilationDatabase():
+        def __init__(self, default_compiler_args, filename):
+            self.default_compiler_args = default_compiler_args
+            self.compiler_args = [line.rstrip('\n') for line in open(filename)]
+
+        def get(self, filename):
+            return self.compiler_args
+
+    def __init__(self):
+        self.database = None
+        self.default_compiler_args = ['-x', 'c++'] + get_system_includes()
+        logging.info('Default compiler args = {0}'.format(self.default_compiler_args))
+
+    def set(self, compiler_args_filename):
+        if self.is_json_database(compiler_args_filename):
+            self.database = self.JSONCompilationDatabase(self.default_compiler_args, compiler_args_filename)
+        elif self.is_compile_flags_database(compiler_args_filename):
+            self.database = self.CompileFlagsCompilationDatabase(self.default_compiler_args, compiler_args_filename)
+        else:
+            logging.error('Unsupported way of providing compiler args.')
+
+    def get(self, source_code_filename):
+        return self.database.get(source_code_filename)
+
+    def is_json_database(self, compiler_args_filename):
+        return os.path.basename(compiler_args_filename) == 'compile_commands.json'
+
+    def is_compile_flags_database(self, compiler_args_filename):
+        return os.path.basename(compiler_args_filename) == 'compile_flags.txt'
+
+class ClangParser():
+    def __init__(self):
+        self.index = clang.cindex.Index.create()
+        self.compiler_args = CompilerArgs()
+
+    def set_compiler_args_db(self, compiler_args_filename):
+        logging.info("Setting up compiler args with '{0}'".format(compiler_args_filename))
+        self.compiler_args.set(compiler_args_filename)
+
     def parse(self, contents_filename, original_filename, compiler_args, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
-        logging.info('Default args = {0}'.format(self.default_args))
-        logging.info('User-provided compiler args = {0}'.format(compiler_args))
         logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         tunit = None
 
@@ -120,15 +155,17 @@ class ClangParser():
         #     unnecessary Clang parsing errors.
         #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
         #     potentially would not play well with other tools (indexer, version control, etc.).
+        compiler_args = self.compiler_args.get(original_filename)
+        logging.info('compiler args = ' + str(compiler_args))
         if contents_filename != original_filename:
-            compiler_args += ' -I' + os.path.dirname(original_filename)
+            compiler_args.insert(0, ' -I' + os.path.dirname(original_filename))
             logging.info('We\'re operating on a temporary file. Modifying compiler args to include current file parent directory = {0}'.format(compiler_args))
 
         try:
             # Parse the translation unit
             tunit = self.index.parse(
                 path = contents_filename,
-                args = self.get_compiler_args(original_filename),
+                args = compiler_args,
                 options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
             )
         except:
