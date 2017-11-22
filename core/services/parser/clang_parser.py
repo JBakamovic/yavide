@@ -117,6 +117,13 @@ class CompilerArgs():
         def get(self, filename):
             return self.compiler_args
 
+    class FallbackCompilationDatabase():
+        def __init__(self, default_compiler_args):
+            self.default_compiler_args = default_compiler_args
+
+        def get(self, filename):
+            return self.default_compiler_args
+
     def __init__(self, compiler_args_filename):
         self.database = None
         self.database_filename = None
@@ -134,7 +141,8 @@ class CompilerArgs():
         elif self.is_compile_flags_database(compiler_args_filename):
             self.database = self.CompileFlagsCompilationDatabase(self.default_compiler_args, compiler_args_filename)
         else:
-            logging.error('Unsupported way of providing compiler args: {0}'.format(compiler_args_filename))
+            self.database = self.FallbackCompilationDatabase(self.default_compiler_args)
+            logging.error("Unsupported way of providing compiler args: '{0}'. Parsing capabilities will be very limited or NOT functional at all!".format(compiler_args_filename))
 
     def get(self, source_code_filename, source_code_is_modified):
         compiler_args = self.database.get(source_code_filename)
