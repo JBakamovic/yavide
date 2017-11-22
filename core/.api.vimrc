@@ -111,57 +111,77 @@ function! s:Y_Project_Create(bEmptyProject)
                 call inputrestore()
 
                 if l:project_category > 0
-                    if a:bEmptyProject == 1
-                        " Create project root directory
-                        let l:project_root_directory = l:project_root_directory . '/' . l:project_name
-                        call mkdir(l:project_root_directory, "p")
-                    endif
-                    execute('cd ' . l:project_root_directory)
+                    " Ask user to provide the type of the compilation database
+                    let l:compilation_db_type_list = ['Compilation database type:']
+                    for [descr, comp_db_type] in items(g:project_supported_compilation_db)
+                        let l:comp_db_string = '[' . comp_db_type.id . '] ' . descr . ' :=> ' . comp_db_type.description
+                        call add(l:compilation_db_type_list, comp_db_string)
+                    endfor
+                    call inputsave()
+                    let l:project_compilation_db_type = inputlist(sort(l:compilation_db_type_list))
+                    call inputrestore()
 
-                    " Make this an absolute path
-                    let l:project_root_directory = getcwd()
-
-                    " Create project specific files
-                    call system('touch ' . g:project_configuration_filename)
-                    if (l:project_type == g:project_supported_types['C'].id ||
-\                       l:project_type == g:project_supported_types['C++'].id ||
-\                       l:project_type == g:project_supported_types['Mixed'].id)
-                        call system('touch ' . g:project_autocomplete_filename)
-                    endif
-                    if (l:project_category == g:project_supported_categories['Makefile'].id)
-                        if !filereadable('Makefile')
-                            call system('touch ' . 'Makefile')
+                    if l:project_compilation_db_type > 0
+                        " Create project root directory for new projects
+                        if a:bEmptyProject == 1
+                            let l:project_root_directory = l:project_root_directory . '/' . l:project_name
+                            call mkdir(l:project_root_directory, "p")
                         endif
-                    endif
+                        execute('cd ' . l:project_root_directory)
 
-                    " 'Mixed' type of projects require an information about programming languages being used throughout the project
-                    if (l:project_type == g:project_supported_types['Mixed'].id)
-                        " Let us 'auto-detect' the languages
-                        let l:lang_list = s:Y_Project_AutoDetectProgLanguages(l:project_root_directory)
+                        " Make this an absolute path
+                        let l:project_root_directory = getcwd()
 
-                        " Build a file extension list
-                        let l:extension_list = []
-                        if index(l:lang_list, 'Cxx') >= 0
-                            call extend(l:extension_list, g:project_type_c.extensions)
-                            call extend(l:extension_list, g:project_type_cpp.extensions)
+                        " Create project specific files
+                        call system('touch ' . g:project_configuration_filename)
+                        if (l:project_type == g:project_supported_types['C'].id ||
+    \                       l:project_type == g:project_supported_types['C++'].id ||
+    \                       l:project_type == g:project_supported_types['Mixed'].id)
+                            call system('touch ' . g:project_autocomplete_filename)
                         endif
-                        if index(l:lang_list, 'Java') >= 0
-                            call extend(l:extension_list, g:project_type_java.extensions)
+                        if (l:project_category == g:project_supported_categories['Makefile'].id)
+                            if !filereadable('Makefile')
+                                call system('touch ' . 'Makefile')
+                            endif
                         endif
 
-                        " Remove duplicates if any
-                        let g:project_type_mixed.extensions = filter(copy(l:extension_list), 'index(l:extension_list, v:val, v:key+1)==-1')
-                    endif
+                        " 'Mixed' type of projects require an information about programming languages being used throughout the project
+                        if (l:project_type == g:project_supported_types['Mixed'].id)
+                            " Let us 'auto-detect' the languages
+                            let l:lang_list = s:Y_Project_AutoDetectProgLanguages(l:project_root_directory)
 
-                    " Store project specific settings into the project configuration file
-                    let l:project_settings = []
-                    call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
-                    call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
-                    call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
-                    call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
-                    call add(l:project_settings, 'let g:' . 'project_compiler_args = ' . "\'\'")
-                    call writefile(l:project_settings, g:project_configuration_filename)
-                    return 0
+                            " Build a file extension list
+                            let l:extension_list = []
+                            if index(l:lang_list, 'Cxx') >= 0
+                                call extend(l:extension_list, g:project_type_c.extensions)
+                                call extend(l:extension_list, g:project_type_cpp.extensions)
+                            endif
+                            if index(l:lang_list, 'Java') >= 0
+                                call extend(l:extension_list, g:project_type_java.extensions)
+                            endif
+
+                            " Remove duplicates if any
+                            let g:project_type_mixed.extensions = filter(copy(l:extension_list), 'index(l:extension_list, v:val, v:key+1)==-1')
+                        endif
+
+                        " Store project specific settings into the project configuration file
+                        let l:project_settings = []
+                        call add(l:project_settings, 'let g:' . 'project_root_directory = ' . "\'" . l:project_root_directory . "\'")
+                        call add(l:project_settings, 'let g:' . 'project_name = ' . "\'" . l:project_name . "\'")
+                        call add(l:project_settings, 'let g:' . 'project_category = ' . l:project_category)
+                        call add(l:project_settings, 'let g:' . 'project_type = ' . l:project_type)
+                        " TODO allow out-of-source compilation db's
+                        if (l:project_compilation_db_type == g:project_supported_compilation_db['compile_commands.json'].id)
+                            let l:project_compilation_db_path = l:project_root_directory  . '/' . g:project_supported_compilation_db['compile_commands.json'].name
+                        elseif (l:project_compilation_db_type == g:project_supported_compilation_db['compile_flags.txt'].id)
+                            let l:project_compilation_db_path = l:project_root_directory  . '/' . g:project_supported_compilation_db['compile_flags.txt'].name
+                        else
+                            let l:project_compilation_db_path = ''
+                        endif
+                        call add(l:project_settings, 'let g:' . 'project_compilation_db_path = ' . "\'" . l:project_compilation_db_path . "\'")
+                        call writefile(l:project_settings, g:project_configuration_filename)
+                        return 0
+                    endif
                 endif
             endif
         endif
@@ -206,7 +226,6 @@ function! s:Y_Project_Load()
         " Load project session information
         if filereadable(g:project_session_filename)
             execute('source ' . g:project_session_filename)
-            let g:project_compiler_args = g:project_root_directory
         endif
 
         " Start background services
@@ -920,7 +939,7 @@ function! Y_SrcCodeModel_Start()
     if g:project_service_src_code_model['services']['type_deduction']['enabled']
         set ballooneval balloonexpr=Y_SrcCodeTypeDeduction_Run()
     endif
-    call Y_ServerStartService(g:project_service_src_code_model['id'], [g:project_root_directory, g:project_compiler_args])
+    call Y_ServerStartService(g:project_service_src_code_model['id'], [g:project_root_directory, g:project_compilation_db_path])
 endfunction
 
 function! Y_SrcCodeModel_StartCompleted()
