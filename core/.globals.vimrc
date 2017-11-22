@@ -13,7 +13,7 @@ let g:project_cxx_tags                    = ''
 let g:project_cxx_tags_filename           = '.cxx_tags'
 let g:project_cscope_db_filename          = 'cscope.out'
 let g:project_root_directory              = ''
-let g:project_compilation_db_path         = ''
+let g:project_env_compilation_db_path     = ''
 let g:project_env_build_preproces_command = ''
 let g:project_env_build_command           = ''
 let g:project_env_src_code_format_config  = '.clang-format'
@@ -27,11 +27,9 @@ let g:project_supported_categories      = {
 
 let g:project_compilation_db_json       = { 'id' : 1, 'name' : 'compile_commands.json', 'description' : 'JSON Compilation DB' }
 let g:project_compilation_db_simple_txt = { 'id' : 2, 'name' : 'compile_flags.txt',     'description' : 'Simple txt file containing compiler flags' }
-let g:project_compilation_db_none       = { 'id' : 3, 'name' : 'none',                  'description' : 'No configuration :=> no functionality :(' }
 let g:project_supported_compilation_db  = {
-\                                           'compile_commands.json' : g:project_compilation_db_json,
-\                                           'compile_flags.txt'     : g:project_compilation_db_simple_txt,
-\                                           'none'                  : g:project_compilation_db_none,
+\                                           'json' : g:project_compilation_db_json,
+\                                           'txt'  : g:project_compilation_db_simple_txt,
 \}
 
 let g:project_type_generic              = { 'id' : 1, 'extensions' : ['.*'] }
