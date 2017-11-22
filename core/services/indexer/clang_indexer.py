@@ -126,10 +126,12 @@ class ClangIndexer(object):
                 #           (5) Creating a new process via subprocess.Popen interface and running the indexing operation
                 #               from another Python script ('clang_index.py') is the only way how I managed to get it
                 #               working correctly (each process will get their own instance of library)
-                cmd = "python2 " + clang_index_script + " --project_root_directory='" \
-                    + proj_root_directory + "' --input_list='" + cpp_file_list + \
-                    "' --output_db_filename='" + tmp_db + "' " + "--log_file='" + \
-                    logging.getLoggerClass().root.handlers[0].baseFilename + '_' + str(len(process_list)+1) + "'"
+                cmd = "python2 " + clang_index_script + \
+                        "  --project_root_directory='" + proj_root_directory + \
+                        "' --compiler_args_filename='" + self.parser.get_compiler_args_db().filename() + \
+                        "' --input_list='" + cpp_file_list + \
+                        "' --output_db_filename='" + tmp_db + \
+                        "' " + "--log_file='" + logging.getLoggerClass().root.handlers[0].baseFilename + '_' + str(len(process_list)+1) + "'"
                 p = subprocess.Popen(shlex.split(cmd), env=my_env)
 
                 # Store handles to subprocesses and corresponding tmp files so we can handle them later on

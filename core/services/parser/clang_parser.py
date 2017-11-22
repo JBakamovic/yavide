@@ -119,16 +119,21 @@ class CompilerArgs():
 
     def __init__(self):
         self.database = None
+        self.database_filename = None
         self.default_compiler_args = ['-x', 'c++'] + get_system_includes()
         logging.info('Default compiler args = {0}'.format(self.default_compiler_args))
 
+    def filename(self):
+        return self.database_filename
+
     def set(self, compiler_args_filename):
+        self.database_filename = compiler_args_filename
         if self.is_json_database(compiler_args_filename):
             self.database = self.JSONCompilationDatabase(self.default_compiler_args, compiler_args_filename)
         elif self.is_compile_flags_database(compiler_args_filename):
             self.database = self.CompileFlagsCompilationDatabase(self.default_compiler_args, compiler_args_filename)
         else:
-            logging.error('Unsupported way of providing compiler args.')
+            logging.error('Unsupported way of providing compiler args: {0}'.format(compiler_args_filename))
 
     def get(self, source_code_filename, source_code_is_modified):
         compiler_args = self.database.get(source_code_filename)
@@ -153,6 +158,9 @@ class ClangParser():
     def __init__(self):
         self.index = clang.cindex.Index.create()
         self.compiler_args = CompilerArgs()
+
+    def get_compiler_args_db(self):
+        return self.compiler_args
 
     def set_compiler_args_db(self, compiler_args_filename):
         logging.info("Setting up compiler args with '{0}'".format(compiler_args_filename))
