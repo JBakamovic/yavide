@@ -16,11 +16,12 @@ def slice_it(iterable, n, padvalue=None):
     return itertools.izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 class ClangIndexer(object):
-    def __init__(self, parser, callback = None):
+    def __init__(self, parser, root_directory, callback = None):
         self.callback = callback
         self.symbol_db_name = '.yavide_index.db'
         self.symbol_db = SymbolDatabase()
         self.parser = parser
+        self.root_directory = root_directory
         self.op = {
             0x0 : self.__run_on_single_file,
             0x1 : self.__run_on_directory,
@@ -32,23 +33,23 @@ class ClangIndexer(object):
     def get_symbol_db(self):
         return self.symbol_db
 
-    def __call__(self, proj_root_directory, args):
-        self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), proj_root_directory, args[1:len(args)])
+    def __call__(self, args):
+        self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
 
     def __unknown_op(self, id, args):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
 
-    def __run_on_single_file(self, id, proj_root_directory, args):
+    def __run_on_single_file(self, id, args):
         contents_filename = str(args[0])
         original_filename = str(args[1])
 
         # We don't run indexer on files modified but not saved
         if contents_filename == original_filename:
-            self.symbol_db.open(os.path.join(proj_root_directory, self.symbol_db_name))
-            self.symbol_db.delete(get_basename(proj_root_directory, original_filename))
+            self.symbol_db.open(os.path.join(self.root_directory, self.symbol_db_name))
+            self.symbol_db.delete(get_basename(self.root_directory, original_filename))
             index_single_file(
                 self.parser,
-                proj_root_directory,
+                self.root_directory,
                 contents_filename,
                 original_filename,
                 self.symbol_db
@@ -57,10 +58,10 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, args)
 
-    def __run_on_directory(self, id, proj_root_directory, args):
+    def __run_on_directory(self, id, args):
         # Do not run indexer on whole directory if we already did it
         directory_already_indexed = True
-        indexer_db = os.path.join(proj_root_directory, self.symbol_db_name)
+        indexer_db = os.path.join(self.root_directory, self.symbol_db_name)
         if not os.path.exists(indexer_db):
             directory_already_indexed = False
 
@@ -69,14 +70,14 @@ class ClangIndexer(object):
 
         # Otherwise, index the whole directory
         if not directory_already_indexed:
-            logging.info("Starting to index whole directory '{0}' ... ".format(proj_root_directory))
+            logging.info("Starting to index whole directory '{0}' ... ".format(self.root_directory))
 
             # When creating the symbol db for the first time we need to create a data model for it
             self.symbol_db.create_data_model()
 
             # Build-up a list of source code files from given project directory
             cpp_file_list = []
-            for dirpath, dirs, files in os.walk(proj_root_directory):
+            for dirpath, dirs, files in os.walk(self.root_directory):
                 for file in files:
                     name, extension = os.path.splitext(file)
                     if extension in ['.cpp', '.cc', '.cxx', '.c', '.h', '.hh', '.hpp']:
@@ -103,12 +104,12 @@ class ClangIndexer(object):
                 chunk_with_no_none_items = '\n'.join(item for item in cpp_file_list_chunk if item)
 
                 # Each subprocess will get a file containing source files to be indexed
-                cpp_file_list_handle, cpp_file_list = tempfile.mkstemp(prefix='.yavide_idx_input', dir=proj_root_directory)
+                cpp_file_list_handle, cpp_file_list = tempfile.mkstemp(prefix='.yavide_idx_input', dir=self.root_directory)
                 os.write(cpp_file_list_handle, chunk_with_no_none_items)
                 os.close(cpp_file_list_handle)
 
                 # Each subprocess will get an empty DB file to record indexing results into it
-                tmp_db_handle, tmp_db = tempfile.mkstemp(prefix=self.symbol_db_name, dir=proj_root_directory)
+                tmp_db_handle, tmp_db = tempfile.mkstemp(prefix=self.symbol_db_name, dir=self.root_directory)
                 os.close(tmp_db_handle)
 
                 # Start indexing a given chunk in a new subprocess
@@ -127,7 +128,7 @@ class ClangIndexer(object):
                 #               from another Python script ('clang_index.py') is the only way how I managed to get it
                 #               working correctly (each process will get their own instance of library)
                 cmd = "python2 " + clang_index_script + \
-                        "  --project_root_directory='" + proj_root_directory + \
+                        "  --project_root_directory='" + self.root_directory + \
                         "' --compiler_args_filename='" + self.parser.get_compiler_args_db().filename() + \
                         "' --input_list='" + cpp_file_list + \
                         "' --output_db_filename='" + tmp_db + \
@@ -159,20 +160,20 @@ class ClangIndexer(object):
                 os.remove(f)
 
             # TODO how to count total CPU time, for all sub-processes?
-            logging.info("Indexing {0} is completed.".format(proj_root_directory))
+            logging.info("Indexing {0} is completed.".format(self.root_directory))
         else:
-            logging.info("Directory '{0}' already indexed ... ".format(proj_root_directory))
+            logging.info("Directory '{0}' already indexed ... ".format(self.root_directory))
 
         if self.callback:
             self.callback(id, args)
 
-    def __drop_single_file(self, id, proj_root_directory, args):
+    def __drop_single_file(self, id, args):
         filename = str(args[0])
-        self.symbol_db.delete(get_basename(proj_root_directory, filename))
+        self.symbol_db.delete(get_basename(self.root_directory, filename))
         if self.callback:
             self.callback(id, args)
 
-    def __drop_all(self, id, proj_root_directory, args):
+    def __drop_all(self, id, args):
         delete_file_from_disk = bool(args[0])
         if delete_file_from_disk:
             self.symbol_db.close()
@@ -182,10 +183,10 @@ class ClangIndexer(object):
         if self.callback:
             self.callback(id, args)
 
-    def __find_all_references(self, id, proj_root_directory, args):
+    def __find_all_references(self, id, args):
         start = time.clock()
         references = ()
-        tunit = self.parser.parse(str(args[0]), str(args[0]), proj_root_directory)
+        tunit = self.parser.parse(str(args[0]), str(args[0]))
         if tunit:
             cursor = self.parser.get_cursor(tunit, int(args[1]), int(args[2]))
             if cursor:
@@ -213,17 +214,17 @@ class ClangIndexer(object):
 
         logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
 
-def index_file_list(proj_root_directory, input_filename_list, compiler_args_filename, output_db_filename):
+def index_file_list(root_directory, input_filename_list, compiler_args_filename, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
     symbol_db.create_data_model()
     parser = ClangParser(compiler_args_filename)
     with open(input_filename_list, 'r') as input_list:
         for filename in input_list:
-            index_single_file(parser, proj_root_directory, filename.strip(), filename.strip(), symbol_db)
+            index_single_file(parser, root_directory, filename.strip(), filename.strip(), symbol_db)
     symbol_db.close()
 
 
-def index_single_file(parser, proj_root_directory, contents_filename, original_filename, symbol_db):
+def index_single_file(parser, root_directory, contents_filename, original_filename, symbol_db):
     def extract_cursor_context(filename, line):
         import linecache
         return linecache.getline(filename, line)
@@ -244,7 +245,7 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
                 ASTNodeId.getMacroDefinitionId(), ASTNodeId.getMacroInstantiationId()                               # handle macros
             ]:
                 symbol_db.insert_single(
-                    get_basename(proj_root_directory, ast_node_tunit_spelling),
+                    get_basename(root_directory, ast_node_tunit_spelling),
                     line,
                     column,
                     usr,
@@ -261,7 +262,7 @@ def index_single_file(parser, proj_root_directory, contents_filename, original_f
 
     # Index a single file
     start = time.clock()
-    tunit = parser.parse(contents_filename, original_filename, proj_root_directory)
+    tunit = parser.parse(contents_filename, original_filename)
     if tunit:
         parser.traverse(tunit.cursor, parser, visitor)
         symbol_db.flush()

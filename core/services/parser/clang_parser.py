@@ -163,10 +163,9 @@ class ClangParser():
     def get_compiler_args_db(self):
         return self.compiler_args
 
-    def parse(self, contents_filename, original_filename, project_root_directory):
+    def parse(self, contents_filename, original_filename):
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
-        logging.info('Compiler working-directory = {0}'.format(project_root_directory))
         tunit = None
 
         try:

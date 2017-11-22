@@ -3,19 +3,15 @@ class Diagnostics():
         self.parser = parser
         self.callback = callback
 
-    def __call__(self, proj_root_directory, args):
+    def __call__(self, args):
         contents_filename = str(args[0])
         original_filename = str(args[1])
 
-        tunit = self.parser.parse(
-            contents_filename,
-            original_filename,
-            proj_root_directory
-        )
-
         if self.callback:
             self.callback(
-                self.parser.get_diagnostics(tunit),
+                self.parser.get_diagnostics(
+                    self.parser.parse(contents_filename, original_filename)
+                ),
                 args
             )
 
