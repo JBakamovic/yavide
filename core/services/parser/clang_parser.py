@@ -84,8 +84,18 @@ class CompilerArgs():
                 return json_comp_db_command[1:len(json_comp_db_command)]   # i.e. /usr/bin/c++
 
             def cache_compiler_args(args_list):
-                # We need to cache existing compiler args to do our best while
-                # handling files which do not exist in JSON compilation database (i.e. headers)
+                # JSON compilation database ('compile_commands.json'):
+                #   1. Will include information about translation units only (.cxx)
+                #   2. Will NOT include information about header files
+                #
+                # That is the reason why we have to cache existing compiler
+                # arguments (i.e. the ones from translation units existing
+                # in JSON database) and apply them equally to any other file
+                # which does not exist in JSON database (i.e. header file).
+                #
+                # This approach will obviously not going to work if there
+                # are no translation units in the database at all. I.e. think
+                # of header-only libraries.
                 self.cached_compiler_args = list(args_list) # most simplest is to create a copy of current ones
 
             compiler_args = []
@@ -98,9 +108,6 @@ class CompilerArgs():
             else: # doesn't exist in JSON database, use cached compiler args
                 compiler_args = list(self.cached_compiler_args)
             return compiler_args
-
-            # TODO
-            #   In case it is a header-only library do what?
 
     class CompileFlagsCompilationDatabase():
         def __init__(self, default_compiler_args, filename):
