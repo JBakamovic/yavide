@@ -216,8 +216,7 @@ class ClangIndexer(object):
 def index_file_list(proj_root_directory, input_filename_list, compiler_args_filename, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
     symbol_db.create_data_model()
-    parser = ClangParser()
-    parser.set_compiler_args_db(compiler_args_filename)
+    parser = ClangParser(compiler_args_filename)
     with open(input_filename_list, 'r') as input_list:
         for filename in input_list:
             index_single_file(parser, proj_root_directory, filename.strip(), filename.strip(), symbol_db)

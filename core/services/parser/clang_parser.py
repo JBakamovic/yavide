@@ -117,11 +117,12 @@ class CompilerArgs():
         def get(self, filename):
             return self.compiler_args
 
-    def __init__(self):
+    def __init__(self, compiler_args_filename):
         self.database = None
         self.database_filename = None
         self.default_compiler_args = ['-x', 'c++'] + get_system_includes()
-        logging.info('Default compiler args = {0}'.format(self.default_compiler_args))
+        self.set(compiler_args_filename)
+        logging.info('Compiler args filename = {0}. Default compiler args = {1}'.format(compiler_args_filename, self.default_compiler_args))
 
     def filename(self):
         return self.database_filename
@@ -155,16 +156,12 @@ class CompilerArgs():
         return os.path.basename(compiler_args_filename) == 'compile_flags.txt'
 
 class ClangParser():
-    def __init__(self):
-        self.index = clang.cindex.Index.create()
-        self.compiler_args = CompilerArgs()
+    def __init__(self, compiler_args_filename):
+        self.index         = clang.cindex.Index.create()
+        self.compiler_args = CompilerArgs(compiler_args_filename)
 
     def get_compiler_args_db(self):
         return self.compiler_args
-
-    def set_compiler_args_db(self, compiler_args_filename):
-        logging.info("Setting up compiler args with '{0}'".format(compiler_args_filename))
-        self.compiler_args.set(compiler_args_filename)
 
     def parse(self, contents_filename, original_filename, project_root_directory):
         logging.info('Filename = {0}'.format(original_filename))
