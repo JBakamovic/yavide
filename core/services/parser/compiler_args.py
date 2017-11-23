@@ -50,7 +50,8 @@ class CompilerArgs():
 
     class CompileFlagsCompilationDatabase():
         def __init__(self, default_compiler_args, filename):
-            self.compiler_args = default_compiler_args + [line.rstrip('\n') for line in open(filename)]
+            self.root_project_directory = ['-working-directory=' + os.path.dirname(filename)] # TODO this assumes that compile_flags.txt is in the root project directory
+            self.compiler_args = self.root_project_directory + default_compiler_args + [line.rstrip('\n') for line in open(filename)]
 
         def get(self, filename):
             return self.compiler_args
