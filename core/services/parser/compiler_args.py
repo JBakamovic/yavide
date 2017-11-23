@@ -50,8 +50,7 @@ class CompilerArgs():
 
     class CompileFlagsCompilationDatabase():
         def __init__(self, default_compiler_args, filename):
-            self.default_compiler_args = default_compiler_args
-            self.compiler_args = [line.rstrip('\n') for line in open(filename)]
+            self.compiler_args = default_compiler_args + [line.rstrip('\n') for line in open(filename)]
 
         def get(self, filename):
             return self.compiler_args
