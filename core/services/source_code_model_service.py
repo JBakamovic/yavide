@@ -11,9 +11,10 @@ from services.type_deduction.type_deduction import TypeDeduction
 from services.vim.type_deduction import VimTypeDeduction
 from services.go_to_definition.go_to_definition import GoToDefinition
 from services.vim.go_to_definition import VimGoToDefinition
-from services.parser.clang_parser import ClangParser
 from services.go_to_include.go_to_include import GoToInclude
 from services.vim.go_to_include import VimGoToInclude
+from services.parser.clang_parser import ClangParser
+from services.parser.tunit_cache import TranslationUnitCache
 
 class SourceCodeModel(YavideService):
     def __init__(self, yavide_instance):
@@ -29,7 +30,7 @@ class SourceCodeModel(YavideService):
         compiler_args_filename = args[1]
 
         # Instantiate source-code-model services with Clang parser configured
-        self.parser        = ClangParser(compiler_args_filename)
+        self.parser        = ClangParser(compiler_args_filename, TranslationUnitCache())
         self.clang_indexer = ClangIndexer(self.parser, project_root_directory, VimIndexer(self.yavide_instance))
         self.service = {
             0x0 : self.clang_indexer,

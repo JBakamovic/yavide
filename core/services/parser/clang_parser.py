@@ -56,43 +56,11 @@ New version provides more functionality (i.e. AST parent node) which is needed i
 """
 clang.cindex.Cursor.get_children = get_children_patched
 
-class TranslationUnitPool():
-    def __init__(self):
-        self.tunit = {}
-
-    def fetch(self, tunit_filename):
-        return self.tunit.get(tunit_filename, None)
-
-    def insert(self, tunit_filename, tunit):
-        self.tunit[tunit_filename] = tunit
-
-    def drop(self, tunit_filename):
-        if tunit_filename in self.tunit:
-            del self.tunit[tunit_filename]
-
-    def clear(self):
-        self.tunit.clear()
-
-    def __len__(self):
-        return len(self.tunit)
-
-    def __setitem__(self, key, item):
-        self.insert(key, item)
-
-    def __getitem__(self, key):
-        return self.fetch(key)
-
-    def __delitem__(self, key):
-        self.drop(key)
-
-    def __iter__(self):
-        return self.tunit.iteritems()
-
 class ClangParser():
-    def __init__(self, compiler_args_filename):
+    def __init__(self, compiler_args_filename, tunit_cache):
         self.index         = clang.cindex.Index.create()
         self.compiler_args = CompilerArgs(compiler_args_filename)
-        self.tunit_pool    = TranslationUnitPool()
+        self.tunit_cache   = tunit_cache
 
     def get_compiler_args_db(self):
         return self.compiler_args
@@ -101,7 +69,7 @@ class ClangParser():
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
 
-        tunit = self.tunit_pool.fetch(contents_filename)
+        tunit = self.tunit_cache.fetch(contents_filename)
         if tunit is None:
             try:
                 # Parse the translation unit
@@ -110,11 +78,12 @@ class ClangParser():
                     args = self.compiler_args.get(original_filename, contents_filename != original_filename),
                     options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
                 )
-                self.tunit_pool.insert(tunit.spelling, tunit)
             except:
                 logging.error(sys.exc_info())
-        else:
-            logging.info('Using cached TUNIT entry!')
+
+        if tunit:
+            self.tunit_cache.insert(original_filename, tunit)
+
         return tunit
 
     def get_diagnostics(self, tunit):
