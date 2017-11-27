@@ -1,5 +1,6 @@
 import clang.cindex
 import logging
+import os
 import sys
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.compiler_args import CompilerArgs
@@ -68,7 +69,6 @@ class ClangParser():
     def parse(self, contents_filename, original_filename):
         def do_parse(contents_filename, original_filename):
             try:
-                # Parse the translation unit
                 return self.index.parse(
                     path = contents_filename,
                     args = self.compiler_args.get(original_filename, contents_filename != original_filename),
@@ -80,16 +80,21 @@ class ClangParser():
         logging.info('Filename = {0}'.format(original_filename))
         logging.info('Contents Filename = {0}'.format(contents_filename))
 
-        if original_filename != contents_filename:
-            tunit = do_parse(contents_filename, original_filename)
+        # Check if we have this tunit already in the cache ...
+        tunit, m_timestamp = self.tunit_cache.fetch(contents_filename)
+
+        if tunit is None:
+            tunit = do_parse(contents_filename, original_filename)      # If we don't, we simply have to parse it ...
         else:
-            tunit = self.tunit_cache.fetch(original_filename)
-            if tunit is None:
-                tunit = do_parse(contents_filename, original_filename)
-                if tunit:
-                    self.tunit_cache.insert(original_filename, tunit)
-            else:
-                logging.info('CACHED TUNIT ...')
+            logging.info('TUnit found in cache.')
+            if original_filename != contents_filename:                  # In case of edited-but-not-saved tunits we have to make sure that cached
+                if m_timestamp != os.path.getmtime(contents_filename):  # tunit content matches the content of current file (mtime has to match)
+                    tunit = do_parse(contents_filename, original_filename)
+                    logging.info('Cached TUnit contents do not match the current contents (i.e. file is edited furthermore)')
+
+        # Insert the tunit into the cache ...
+        if tunit:
+            self.tunit_cache.insert(contents_filename, tunit)
 
         return tunit
 

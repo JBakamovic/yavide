@@ -1,3 +1,5 @@
+import os
+
 class NoneTranslationUnitCache():
     def __init__(self):
         pass
@@ -26,19 +28,16 @@ class NoneTranslationUnitCache():
     def __delitem__(self, key):
         self.drop(key)
 
-    def __iter__(self):
-        return None
-
-# TODO add debug logs
 class TranslationUnitCache():
     def __init__(self):
         self.tunit = {}
 
     def fetch(self, tunit_filename):
-        return self.tunit.get(tunit_filename, None)
+        return self.tunit.get(tunit_filename, (None, None,))
 
     def insert(self, tunit_filename, tunit):
-        self.tunit[tunit_filename] = tunit
+        self.drop(tunit_filename)
+        self.tunit[tunit_filename] = (tunit, os.path.getmtime(tunit.spelling),)
 
     def drop(self, tunit_filename):
         if tunit_filename in self.tunit:
@@ -58,7 +57,4 @@ class TranslationUnitCache():
 
     def __delitem__(self, key):
         self.drop(key)
-
-    def __iter__(self):
-        return self.tunit.iteritems()
 
