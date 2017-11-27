@@ -66,14 +66,10 @@ class ClangParser():
         return self.compiler_args
 
     def parse(self, contents_filename, original_filename):
-        logging.info('Filename = {0}'.format(original_filename))
-        logging.info('Contents Filename = {0}'.format(contents_filename))
-
-        tunit = self.tunit_cache.fetch(contents_filename)
-        if tunit is None:
+        def do_parse(contents_filename, original_filename):
             try:
                 # Parse the translation unit
-                tunit = self.index.parse(
+                return self.index.parse(
                     path = contents_filename,
                     args = self.compiler_args.get(original_filename, contents_filename != original_filename),
                     options = clang.cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD # TODO CXTranslationUnit_KeepGoing?
@@ -81,8 +77,19 @@ class ClangParser():
             except:
                 logging.error(sys.exc_info())
 
-        if tunit:
-            self.tunit_cache.insert(original_filename, tunit)
+        logging.info('Filename = {0}'.format(original_filename))
+        logging.info('Contents Filename = {0}'.format(contents_filename))
+
+        if original_filename != contents_filename:
+            tunit = do_parse(contents_filename, original_filename)
+        else:
+            tunit = self.tunit_cache.fetch(original_filename)
+            if tunit is None:
+                tunit = do_parse(contents_filename, original_filename)
+                if tunit:
+                    self.tunit_cache.insert(original_filename, tunit)
+            else:
+                logging.info('CACHED TUNIT ...')
 
         return tunit
 
