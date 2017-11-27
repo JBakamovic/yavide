@@ -1005,7 +1005,7 @@ function! Y_SrcCodeHighlighter_Run()
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['semantic_syntax_highlight']['id'], [l:contents_filename, l:current_buffer])
@@ -1047,7 +1047,7 @@ function! Y_SrcCodeDiagnostics_Run()
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['diagnostics']['id'], [l:contents_filename, l:current_buffer])
@@ -1080,7 +1080,7 @@ function! Y_SrcCodeTypeDeduction_Run()
             " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
             let l:contents_filename = l:current_buffer
             if getbufvar(bufnr('%'), '&modified')
-                let l:contents_filename = '/tmp/yavideTempBufferContents'
+                let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
                 call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
             endif
             call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['type_deduction']['id'], [l:contents_filename, l:current_buffer, v:beval_lnum, v:beval_col])
@@ -1117,7 +1117,7 @@ function! Y_SrcCodeNavigation_GoToDefinition()
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_definition']['id'], [l:contents_filename, l:current_buffer, line('.'), col('.')])
@@ -1150,7 +1150,7 @@ function! Y_SrcCodeNavigation_GoToInclude()
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['go_to_include']['id'], [l:contents_filename, l:current_buffer, line('.')])
@@ -1349,7 +1349,7 @@ function! Y_SrcCodeIndexer_RunOnSingleFile()
         " If buffer contents are modified but not saved, we need to serialize contents of the current buffer into temporary file.
         let l:contents_filename = l:current_buffer
         if getbufvar(bufnr('%'), '&modified')
-            let l:contents_filename = '/tmp/yavideTempBufferContents'
+            let l:contents_filename = '/tmp/tmp_' . expand('%:t') 
             call Y_Utils_SerializeCurrentBufferContents(l:contents_filename)
         endif
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x0, l:contents_filename, l:current_buffer])
