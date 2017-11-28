@@ -10,7 +10,7 @@ class UnlimitedCache():
 
     def __setitem__(self, key, value):
         if key in self.store:
-            del self.tunit[tunit_filename]
+            del self.store[key]
         self.store[key] = value
 
     def __delitem__(self, key):
@@ -31,10 +31,12 @@ class FifoCache():
         return self.store[key]
 
     def __setitem__(self, key, value):
-        if key not in self.store:
+        if key in self.store:
+            del self.store[key]
+        else:
             if len(self.store) == self.max_capacity:
-                self.store.popitem(last=False)
-            self.store[key] = value
+                self.store.popitem(last=False) # last=False --> FIFO, last=True --> LIFO
+        self.store[key] = value
 
     def __delitem__(self, key):
         del self.store[key]
