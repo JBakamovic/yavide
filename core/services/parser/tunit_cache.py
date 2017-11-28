@@ -97,8 +97,8 @@ class FifoCache():
         return len(self.store)
 
 class TranslationUnitCache():
-    def __init__(self, cache=FifoCache(5)):
-        self.tunit = cache
+    def __init__(self, cache_impl):
+        self.tunit = cache_impl
 
     def fetch(self, tunit_filename):
         if tunit_filename in self.tunit:
