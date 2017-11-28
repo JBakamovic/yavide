@@ -75,6 +75,15 @@ class NoneTranslationUnitCache():
     def insert(self, tunit_filename, tunit):
         pass
 
+    def iterkeys(self):
+        return None
+
+    def itervalues(self):
+        return None
+
+    def iteritems(self):
+        return None
+
     def __setitem__(self, key, item):
         self.insert(key, item)
 
@@ -98,6 +107,15 @@ class TranslationUnitCache():
 
     def insert(self, tunit_filename, tunit):
         self.tunit[tunit_filename] = (tunit, os.path.getmtime(tunit.spelling),)
+
+    def iterkeys(self):
+        return self.tunit.iterkeys()
+
+    def itervalues(self):
+        return self.tunit.itervalues()
+
+    def iteritems(self):
+        return self.tunit.iteritems()
 
     def __setitem__(self, key, item):
         self.insert(key, item)
