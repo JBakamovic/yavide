@@ -8,7 +8,7 @@ import tempfile
 from services.parser.ast_node_identifier import ASTNodeId
 from services.parser.clang_parser import ChildVisitResult
 from services.parser.clang_parser import ClangParser
-from services.parser.tunit_cache import NoneTranslationUnitCache
+from services.parser.tunit_cache import NoCache
 from services.indexer.symbol_database import SymbolDatabase
 
 # TODO move this to utils
@@ -218,7 +218,7 @@ class ClangIndexer(object):
 def index_file_list(root_directory, input_filename_list, compiler_args_filename, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
     symbol_db.create_data_model()
-    parser = ClangParser(compiler_args_filename, NoneTranslationUnitCache())
+    parser = ClangParser(compiler_args_filename, NoCache())
     with open(input_filename_list, 'r') as input_list:
         for filename in input_list:
             index_single_file(parser, root_directory, filename.strip(), filename.strip(), symbol_db)

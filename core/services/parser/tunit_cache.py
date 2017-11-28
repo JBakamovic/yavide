@@ -1,6 +1,37 @@
 import os
 from collections import OrderedDict
 
+class NoCache():
+    def __init__(self):
+        pass
+
+    def fetch(self, tunit_filename):
+        return (None, None,)
+
+    def insert(self, tunit_filename, tunit):
+        pass
+
+    def iterkeys(self):
+        return iter(())
+
+    def itervalues(self):
+        return iter(())
+
+    def iteritems(self):
+        return iter(())
+
+    def __setitem__(self, key, item):
+        self.insert(key, item)
+
+    def __getitem__(self, key):
+        return self.fetch(key)
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self):
+        return 0
+
 class UnlimitedCache():
     def __init__(self):
         self.store = {}
@@ -64,37 +95,6 @@ class FifoCache():
 
     def __len__(self):
         return len(self.store)
-
-class NoneTranslationUnitCache():
-    def __init__(self):
-        pass
-
-    def fetch(self, tunit_filename):
-        return (None, None,)
-
-    def insert(self, tunit_filename, tunit):
-        pass
-
-    def iterkeys(self):
-        return None
-
-    def itervalues(self):
-        return None
-
-    def iteritems(self):
-        return None
-
-    def __setitem__(self, key, item):
-        self.insert(key, item)
-
-    def __getitem__(self, key):
-        return self.fetch(key)
-
-    def __iter__(self):
-        return None
-
-    def __len__(self):
-        return 0
 
 class TranslationUnitCache():
     def __init__(self, cache=FifoCache(5)):
