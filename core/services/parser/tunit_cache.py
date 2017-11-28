@@ -61,6 +61,9 @@ class NoneTranslationUnitCache():
     def __getitem__(self, key):
         return self.fetch(key)
 
+    def __iter__(self):
+        return None
+
     def __len__(self):
         return 0
 
@@ -81,6 +84,9 @@ class TranslationUnitCache():
 
     def __getitem__(self, key):
         return self.fetch(key)
+
+    def __iter__(self):
+        return self.tunit.__iter__()
 
     def __len__(self):
         return len(self.tunit)
