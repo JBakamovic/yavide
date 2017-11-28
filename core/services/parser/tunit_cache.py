@@ -5,6 +5,15 @@ class UnlimitedCache():
     def __init__(self):
         self.store = {}
 
+    def iterkeys(self):
+        return self.store.iterkeys()
+
+    def itervalues(self):
+        return self.store.itervalues()
+
+    def iteritems(self):
+        return self.store.iteritems()
+
     def __getitem__(self, key):
         return self.store[key]
 
@@ -26,6 +35,15 @@ class FifoCache():
     def __init__(self, max_capacity):
         self.max_capacity = max_capacity
         self.store = OrderedDict()
+
+    def iterkeys(self):
+        return self.store.iterkeys()
+
+    def itervalues(self):
+        return self.store.itervalues()
+
+    def iteritems(self):
+        return self.store.iteritems()
 
     def __getitem__(self, key):
         return self.store[key]
@@ -52,7 +70,7 @@ class NoneTranslationUnitCache():
         pass
 
     def fetch(self, tunit_filename):
-        return None
+        return (None, None,)
 
     def insert(self, tunit_filename, tunit):
         pass
