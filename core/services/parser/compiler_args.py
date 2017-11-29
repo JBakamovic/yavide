@@ -64,7 +64,7 @@ class CompilerArgs():
             self.default_compiler_args = default_compiler_args
 
         def get(self, filename):
-            return self.default_compiler_args
+            return list(self.default_compiler_args)
 
     def __init__(self, compiler_args_filename):
         self.database = None
