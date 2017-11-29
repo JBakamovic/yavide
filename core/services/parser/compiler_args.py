@@ -45,7 +45,10 @@ class CompilerArgs():
                 compiler_args = self.default_compiler_args + eat_compiler_invocation(eat_minus_o_compiler_option(eat_minus_c_compiler_option(compiler_args)))
                 cache_compiler_args(compiler_args)
             else: # doesn't exist in JSON database, use cached compiler args
-                compiler_args = list(self.cached_compiler_args)
+                if self.cached_compiler_args:
+                    compiler_args = list(self.cached_compiler_args)
+                else:
+                    compiler_args = list(self.default_compiler_args) # no cached compiler args yet, use default compiler args
             return compiler_args
 
     class CompileFlagsCompilationDatabase():
