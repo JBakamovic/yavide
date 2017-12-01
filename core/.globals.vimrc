@@ -17,6 +17,7 @@ let g:project_env_compilation_db_path     = ''
 let g:project_env_build_preproces_command = ''
 let g:project_env_build_command           = ''
 let g:project_env_src_code_format_config  = '.clang-format'
+let g:project_env_clang_tidy_config       = '.clang-tidy'
 
 let g:project_category_generic          = { 'id' : 1 }
 let g:project_category_makefile         = { 'id' : 2 }
@@ -61,10 +62,12 @@ let g:project_service_src_code_model       = { 'id' : 0, 'enabled' : 1, 'started
 \                                            }
 let g:project_service_project_builder      = { 'id' : 1, 'enabled' : 1, 'started' : 0, 'start' : function("Y_ProjectBuilder_Start"), 'stop' : function("Y_ProjectBuilder_Stop") }
 let g:project_service_src_code_formatter   = { 'id' : 2, 'enabled' : 1, 'started' : 0, 'start' : function("Y_SrcCodeFormatter_Start"), 'stop' : function("Y_SrcCodeFormatter_Stop") }
+let g:project_service_clang_tidy_checker   = { 'id' : 3, 'enabled' : 1, 'started' : 0, 'start' : function("Y_ClangTidy_Start"), 'stop' : function("Y_ClangTidy_Stop") }
 let g:project_available_services           = [
 \                                               g:project_service_src_code_model,
 \                                               g:project_service_project_builder,
-\                                               g:project_service_src_code_formatter
+\                                               g:project_service_src_code_formatter,
+\                                               g:project_service_clang_tidy_checker,
 \]
 
 " --------------------------------------------------------------------------------------------------------------------------------------
