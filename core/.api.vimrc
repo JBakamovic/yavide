@@ -1327,6 +1327,7 @@ endfunction
 function! Y_ClangTidy_Apply(clang_tidy_results_filename)
     execute('cgetfile '.a:clang_tidy_results_filename)
     execute('copen')
+    redraw
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
