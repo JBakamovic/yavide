@@ -7,12 +7,13 @@
   * [Find All References](#find-all-references)
   * [Go To Definition](#go-to-definition)
   * [Go To Include](#go-to-include)
-  * [Type deduction](#type-deduction)
-  * [Fixits and diagnostics](#fixits-and-diagnostics)
-  * [Semantic syntax highlighting](#semantic-syntax-highlighting)
-  * [Clang-format](#clang-format)
+  * [Type Deduction](#type-deduction)
+  * [Fixits and Diagnostics](#fixits-and-diagnostics)
+  * [Semantic Syntax Highlighting](#semantic-syntax-highlighting)
+  * [Clang-Format](#clang-format)
+  * [Clang-Tidy](#clang-tidy)
   * [JSON Compilation Database](#json-compilation-database)
-  * [Project builder](#project-builder)
+  * [Project Builder](#project-builder)
 
 # Framework
 Naturally, one does not want to block the main UI thread and obstruct the user workflow while doing some lenghty operations. Lengthy operations are 
@@ -163,12 +164,18 @@ A new strategy wouldn't apply all the syntax rules which have been generated for
 hopefully fix the issue but for this to be a complete working solution we have to be able to catch all the buffer scrolling events. This is unfortunatelly not exposed by Vim in a seamless way
 so we will have to apply some workarounds which will make this happen (very soon I hope).
 
-## Clang-format
+## Clang-Format
 
-Create `.clang-format` config file in the project root directory. Upon each modification which has been saved, code will be automatically formatted.
+Create `.clang-format` configuration file in the project root directory. Upon each modification which has been saved, code will be automatically formatted.
 If there is no configuration file provided, there will be no effect and service is basically disabled.
 
 ![clang-format in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/auto_formatter_in_action.gif)
+
+## Clang-Tidy
+
+Create `.clang-tidy` configuration file in the project root directory. 
+
+![clang-tidy in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/auto_formatter_in_action.gif)
 
 ## JSON Compilation Database
 
