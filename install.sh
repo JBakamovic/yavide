@@ -48,9 +48,9 @@ guess_system_package_manager(){
     fi
 
     if [ $SYSTEM_PACKAGE_TYPE == "rpm" ]; then
-        SYSTEM_PACKAGE_SET="gvim ctags cppcheck git wget pcre-devel python-pip python-devel clang-devel clang-libs"
+        SYSTEM_PACKAGE_SET="gvim ctags cppcheck git wget pcre-devel python-pip python-devel clang-devel clang-libs clang-tools-extra"
     elif [ $SYSTEM_PACKAGE_TYPE == "deb" ]; then
-        SYSTEM_PACKAGE_SET="vim-gnome ctags cppcheck git wget libpcre3 libpcre3-dev python-pip python-dev libclang-dev"
+        SYSTEM_PACKAGE_SET="vim-gnome ctags cppcheck git wget libpcre3 libpcre3-dev python-pip python-dev libclang-dev clang-tidy"
     elif [ $SYSTEM_PACKAGE_TYPE == "archpkg" || $SYSTEM_PACKAGE_TYPE == "ebuild" ]; then
         SYSTEM_PACKAGE_SET="gvim ctags cppcheck git wget pcre python-pip python clang"
     fi
