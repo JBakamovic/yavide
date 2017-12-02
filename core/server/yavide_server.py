@@ -4,6 +4,7 @@ import tempfile
 from multiprocessing import Process, Queue
 from services.yavide_service import YavideService
 from services.clang_formatter_service import ClangSourceCodeFormatter
+from services.clang_tidy_service import ClangTidy
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
 
@@ -14,7 +15,8 @@ class YavideServer():
         self.service = {
             0x0 : SourceCodeModel(self.yavide_instance),
             0x1 : ProjectBuilder(self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.yavide_instance)
+            0x2 : ClangSourceCodeFormatter(self.yavide_instance),
+            0x3 : ClangTidy(self.yavide_instance)
         }
         self.service_processes = {}
         self.action = {
