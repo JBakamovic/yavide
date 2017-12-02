@@ -57,6 +57,7 @@
 :command! -nargs=* -complete=file YavideAnalyzerCppCheck             :call Y_Analyzer_RunCppCheck(".", <f-args>)
 :command! -nargs=* -complete=file YavideAnalyzerCppCheckBuf          :call Y_Analyzer_RunCppCheck("%", <f-args>)
 :command! -nargs=* -complete=file YavideAnalyzerClangCheck           :call Y_Analyzer_RunClangChecker("." <f-args>)
+:command! -nargs=* -complete=file YavideAnalyzerClangTidyBuf         :call Y_ClangTidy_Run()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build commands
