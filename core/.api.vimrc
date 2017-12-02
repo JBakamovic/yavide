@@ -1285,7 +1285,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ClangTidy_Start()
     let l:configFile = g:project_root_directory . '/' . g:project_env_clang_tidy_config
-    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path])
+    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path, g:clang_tidy_apply_fixes])
 endfunction
 
 function! Y_ClangTidy_StartCompleted()
@@ -1312,9 +1312,9 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ClangTidy_Run()
     if g:project_service_clang_tidy_checker['started']
-        if filereadable(g:project_root_directory . '/' . g:project_env_src_code_format_config)
+        if filereadable(g:project_root_directory . '/' . g:project_env_clang_tidy_config)
             let l:current_buffer = expand('%:p')
-            call Y_ServerSendServiceRequest(g:project_service_src_code_formatter['id'], l:current_buffer)
+            call Y_ServerSendServiceRequest(g:project_service_clang_tidy_checker['id'], l:current_buffer)
         endif
     endif
 endfunction
@@ -1325,7 +1325,8 @@ endfunction
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ClangTidy_Apply(clang_tidy_results_filename)
-    " TODO populate quickfix (multiple-files) or location-list (single file)
+    execute('cgetfile '.a:clang_tidy_results_filename)
+    execute('copen')
 endfunction
 
 " --------------------------------------------------------------------------------------------------------------------------------------
@@ -1335,7 +1336,7 @@ endfunction
 " --------------------------------------------------------------------------------------------------------------------------------------
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Start()
-" Description:  Starts the project builder background service.
+" Description:  Starts the source code formatting background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Start()
@@ -1349,7 +1350,7 @@ endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Stop()
-" Description:  Stops the project builder background service.
+" Description:  Stops the source code formatting background service.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Stop(subscribe_for_shutdown_callback)
@@ -1362,7 +1363,7 @@ endfunction
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_SrcCodeFormatter_Run()
-" Description:  Triggers the build for current project.
+" Description:  Triggers the formatting on current buffer.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeFormatter_Run()
