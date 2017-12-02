@@ -54,10 +54,11 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code static analysis commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=* -complete=file YavideAnalyzerCppCheck             :call Y_Analyzer_RunCppCheck(".", <f-args>)
-:command! -nargs=* -complete=file YavideAnalyzerCppCheckBuf          :call Y_Analyzer_RunCppCheck("%", <f-args>)
-:command! -nargs=* -complete=file YavideAnalyzerClangCheck           :call Y_Analyzer_RunClangChecker("." <f-args>)
-:command! -nargs=* -complete=file YavideAnalyzerClangTidyBuf         :call Y_ClangTidy_Run()
+:command! -nargs=* -complete=file YavideAnalyzerCppCheck                :call Y_Analyzer_RunCppCheck(".", <f-args>)
+:command! -nargs=* -complete=file YavideAnalyzerCppCheckBuf             :call Y_Analyzer_RunCppCheck("%", <f-args>)
+:command! -nargs=* -complete=file YavideAnalyzerClangCheck              :call Y_Analyzer_RunClangChecker("." <f-args>)
+:command! -nargs=* -complete=file YavideAnalyzerClangTidyBuf            :call Y_ClangTidy_Run(v:false)
+:command! -nargs=* -complete=file YavideAnalyzerClangTidyApplyFixesBuf  :call Y_ClangTidy_Run(v:true)
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build commands

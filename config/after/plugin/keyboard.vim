@@ -85,5 +85,7 @@ imap        <F7>                <ESC>:w<CR>:YavideBuildRun<CR>|"
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Static analysis
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-nmap        <F5>                :YavideAnalyzerClangTidyBuf<CR>|"                               Run clang-tidy over current buffer
+nmap        <F5>                :YavideAnalyzerClangTidyBuf<CR>|"                               Run clang-tidy over current buffer (do not apply fixes)
 imap        <F5>                <ESC>:YavideAnalyzerClangTidyBuf<CR>i|"
+nmap        <S-F5>              :YavideAnalyzerClangTidyApplyFixesBuf<CR>|"                     Run clang-tidy over current buffer (apply fixes)
+imap        <S-F5>              <ESC>:YavideAnalyzerClangTidyApplyFixesBuf<CR>i|"

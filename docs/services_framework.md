@@ -173,9 +173,15 @@ If there is no configuration file provided, there will be no effect and service 
 
 ## Clang-Tidy
 
-Create `.clang-tidy` configuration file in the project root directory. 
+[Clang-Tidy](http://clang.llvm.org/extra/clang-tidy/) is a Clang-based static analysis tool and one can run it on
+per-file basis within the `Yavide` environment. For tool to be run one must have a properly configured `.clang-tidy`
+at the root of the project directory. Integration which allows a full run on the whole project is yet to be implemented.
 
-![clang-tidy in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/auto_formatter_in_action.gif)
+In case of any issues found by the tool, tool can also apply the fixes automatically for you. One can run the tool
+in either mode (discover-issues-only or discover-and-apply-fixes).
+
+![clang-tidy in action](https://raw.githubusercontent.com/wiki/JBakamovic/yavide/images/clang_tidy_in_action.gif)
+
 
 ## JSON Compilation Database
 

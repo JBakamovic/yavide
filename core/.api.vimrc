@@ -1285,7 +1285,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ClangTidy_Start()
     let l:configFile = g:project_root_directory . '/' . g:project_env_clang_tidy_config
-    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path, g:clang_tidy_apply_fixes])
+    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path])
 endfunction
 
 function! Y_ClangTidy_StartCompleted()
@@ -1310,11 +1310,11 @@ endfunction
 " Description:  Triggers the build for current project.
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ClangTidy_Run()
+function! Y_ClangTidy_Run(apply_fixes)
     if g:project_service_clang_tidy_checker['started']
         if filereadable(g:project_root_directory . '/' . g:project_env_clang_tidy_config)
             let l:current_buffer = expand('%:p')
-            call Y_ServerSendServiceRequest(g:project_service_clang_tidy_checker['id'], l:current_buffer)
+            call Y_ServerSendServiceRequest(g:project_service_clang_tidy_checker['id'], [l:current_buffer, a:apply_fixes])
         endif
     endif
 endfunction
