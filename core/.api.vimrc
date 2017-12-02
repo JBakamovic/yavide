@@ -1371,6 +1371,7 @@ endfunction
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_SrcCodeIndexer_RunOnDirectory()
     if g:project_service_src_code_model['services']['indexer']['enabled']
+        echomsg 'Indexing on ' . g:project_root_directory . ' started ... It may take a while if it is run for the first time.'
         call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x1])
     endif
 endfunction
