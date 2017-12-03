@@ -11,7 +11,7 @@
 * 1st of December, 2017
     * Implemented Clang-based [indexer](docs/services_framework.md#indexing)
     * Implemented Clang-based [find-all-references](docs/services_framework.md#find-all-references)
-    * Implemented Clang-based [go-to-definition](docs/services_framework#go-to-definition)
+    * Implemented Clang-based [go-to-definition](docs/services_framework.md#go-to-definition)
     * Implemented Clang-based [go-to-include](docs/services_framework.md#go-to-include)
     * Implemented support for [JSON compilation databases](docs/services_framework.md#json-compilation-database)
     * Implemented translation-unit caching mechanisms
