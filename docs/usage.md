@@ -66,6 +66,8 @@ Category                          | Shortcut                          | Descript
 |                                  | `<Alt-Left>`                      | Jump back to previous cursor location
 |                                  | `<Alt-Right>`                     | Jump to next cursor location
 |**Source code static analysis**   |                                   |
+|                                  | `<F5>`                            | Runs the `clang-tidy` static analysis on current buffer
+|                                  | `<S-F5>`                          | Runs the `clang-tidy` static analysis on current buffer and applies the fixes for issues found
 |                                  | `:YavideAnalyzerCppCheckBuf`      | Runs the `cppcheck` static analysis on current buffer
 |                                  | `:YavideAnalyzerCppCheck`         | Runs the `cppcheck` static analysis on whole project
 |**Build management**              |                                   |
