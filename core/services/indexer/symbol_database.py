@@ -1,6 +1,9 @@
 import sqlite3
 
 class SymbolDatabase(object):
+    VERSION_MAJOR = 0
+    VERSION_MINOR = 1
+
     def __init__(self, db_filename = None):
         self.filename = db_filename
         if db_filename:
@@ -65,4 +68,13 @@ class SymbolDatabase(object):
                 PRIMARY KEY(filename, usr, line) \
              )'
         )
-
+        self.db_connection.cursor().execute(
+            'CREATE TABLE IF NOT EXISTS version ( \
+                major integer,            \
+                minor integer,            \
+                PRIMARY KEY(major, minor) \
+             )'
+        )
+        self.db_connection.cursor().execute(
+            'INSERT INTO version VALUES (?, ?)', (SymbolDatabase.VERSION_MAJOR, SymbolDatabase.VERSION_MINOR,)
+        )
