@@ -37,18 +37,26 @@ class CompilerArgs():
                 # of header-only libraries.
                 self.cached_compiler_args = list(args_list) # most simplest is to create a copy of current ones
 
-            compiler_args = []
-            compile_cmds  = self.database.getCompileCommands(filename)
-            if compile_cmds:
-                for arg in compile_cmds[0].arguments:
-                    compiler_args.append(arg)
-                compiler_args = self.default_compiler_args + eat_compiler_invocation(eat_minus_o_compiler_option(eat_minus_c_compiler_option(compiler_args)))
+            def extract_compiler_args(compile_cmd):
+                args = []
+                if compile_cmd:
+                    for arg in compile_cmd[0].arguments:
+                        args.append(arg)
+                    args = self.default_compiler_args + eat_compiler_invocation(eat_minus_o_compiler_option(eat_minus_c_compiler_option(args)))
+                return list(args)
+
+            compiler_args = extract_compiler_args(self.database.getCompileCommands(filename))
+            if compiler_args:
                 cache_compiler_args(compiler_args)
-            else: # doesn't exist in JSON database, use cached compiler args
-                if self.cached_compiler_args:
+            else:                                                   # 'filename' entry doesn't exist in JSON database (i.e. header file)
+                if self.cached_compiler_args:                       # use cached compiler args if available
                     compiler_args = list(self.cached_compiler_args)
-                else:
-                    compiler_args = list(self.default_compiler_args) # no cached compiler args yet, use default compiler args
+                else:                                               # otherwise use the compiler arguments from the very first entry in the JSON database (assuming that similar flags if not the same will be valid)
+                    compiler_args = extract_compiler_args(self.database.getAllCompileCommands())
+                    if compiler_args:
+                        cache_compiler_args(compiler_args)
+                    else:                                           # if that also failed (i.e. no entries in the JSON db; header-only libs), use default compiler args
+                        compiler_args = list(self.default_compiler_args)
             return compiler_args
 
     class CompileFlagsCompilationDatabase():
