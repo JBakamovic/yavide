@@ -48,11 +48,11 @@ guess_system_package_manager(){
     fi
 
     if [ $SYSTEM_PACKAGE_TYPE == "rpm" ]; then
-        SYSTEM_PACKAGE_SET="gvim git wget pcre-devel python-pip python-devel clang-devel clang-libs"
+        SYSTEM_PACKAGE_SET="gvim ctags cppcheck git wget pcre-devel python-pip python-devel clang-devel clang-libs"
     elif [ $SYSTEM_PACKAGE_TYPE == "deb" ]; then
-        SYSTEM_PACKAGE_SET="vim-gnome git wget libpcre3 libpcre3-dev python-pip python-dev libclang-dev"
+        SYSTEM_PACKAGE_SET="vim-gnome ctags cppcheck git wget libpcre3 libpcre3-dev python-pip python-dev libclang-dev"
     elif [ $SYSTEM_PACKAGE_TYPE == "archpkg" || $SYSTEM_PACKAGE_TYPE == "ebuild" ]; then
-        SYSTEM_PACKAGE_SET="gvim git wget pcre python-pip python clang"
+        SYSTEM_PACKAGE_SET="gvim ctags cppcheck git wget pcre python-pip python clang"
     fi
 
     PIP_PACKAGE_SET="clang"
@@ -242,19 +242,6 @@ echo "Installing clang_complete ..."
 echo "----------------------------------------------------------------------------"
 cd $YAVIDE_INSTALL_DIR/core/external/clang_complete
 make install
-
-echo -e "\n"
-echo "----------------------------------------------------------------------------"
-echo "Installing cppcheck ..."
-echo "----------------------------------------------------------------------------"
-cd $YAVIDE_INSTALL_DIR/core/external/
-echo "$passwd" | sudo -S mkdir cppcheck && cd cppcheck
-echo "$passwd" | sudo -S mkdir download && cd download
-echo "$passwd" | sudo -S wget http://sourceforge.net/projects/cppcheck/files/cppcheck/1.67/cppcheck-1.67.tar.bz2/download -O cppcheck.tar.bz2
-echo "$passwd" | sudo -S tar xf cppcheck.tar.bz2 && cd cppcheck-1.67
-echo "$passwd" | sudo -S make install SRCDIR=build CFGDIR=$YAVIDE_INSTALL_DIR/core/external/cppcheck/cfg HAVE_RULES=yes
-cd ../../
-echo "$passwd" | sudo -S rm -r download
 
 echo -e "\n"
 echo "----------------------------------------------------------------------------"
