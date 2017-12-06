@@ -72,7 +72,7 @@ class CompilerArgs():
             self.default_compiler_args = default_compiler_args
 
         def get(self, filename):
-            return list(self.default_compiler_args)
+            return self.default_compiler_args
 
     def __init__(self, compiler_args_filename):
         self.database = None
@@ -95,7 +95,13 @@ class CompilerArgs():
             logging.error("Unsupported way of providing compiler args: '{0}'. Parsing capabilities will be very limited or NOT functional at all!".format(compiler_args_filename))
 
     def get(self, source_code_filename, source_code_is_modified):
-        compiler_args = self.database.get(source_code_filename)
+        def find_first_occurence_of_minus_i_compiler_option(compiler_args):
+            for index, arg in enumerate(compiler_args):
+                if str(arg).startswith('-I'):
+                    return index
+            return None
+
+        compiler_args = list(self.database.get(source_code_filename)) # make a copy; we don't want to keep modifying the original compiler args
         if source_code_is_modified:
             # Append additional include path to the compiler args which points to the parent directory of current buffer.
             #   * This needs to be done because we will be doing analysis on temporary file which is located outside the project
@@ -103,7 +109,11 @@ class CompilerArgs():
             #     unnecessary Clang parsing errors.
             #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
             #     potentially would not play well with other tools (indexer, version control, etc.).
-            compiler_args.insert(0, ' -I' + os.path.dirname(source_code_filename))
+            index = 0
+            first_include_index = find_first_occurence_of_minus_i_compiler_option(compiler_args)
+            if first_include_index is not None:
+                index = first_include_index
+            compiler_args.insert(index, '-I.' + os.path.dirname(source_code_filename))
         logging.info('Compiler args = ' + str(compiler_args))
         return compiler_args
 
