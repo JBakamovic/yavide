@@ -101,6 +101,12 @@ class CompilerArgs():
                     return index
             return None
 
+        def find_last_occurence_of_minus_i_compiler_option(compiler_args):
+            for index, arg in enumerate(reversed(compiler_args)):
+                if str(arg).startswith('-I'):
+                    return len(compiler_args) - index
+            return None
+
         compiler_args = list(self.database.get(source_code_filename)) # make a copy; we don't want to keep modifying the original compiler args
         if source_code_is_modified:
             # Append additional include path to the compiler args which points to the parent directory of current buffer.
@@ -110,10 +116,10 @@ class CompilerArgs():
             #   * An alternative would be to generate tmp files in original location but that would pollute project directory and
             #     potentially would not play well with other tools (indexer, version control, etc.).
             index = 0
-            first_include_index = find_first_occurence_of_minus_i_compiler_option(compiler_args)
-            if first_include_index is not None:
-                index = first_include_index
-            compiler_args.insert(index, '-I.' + os.path.dirname(source_code_filename))
+            last_include_index = find_last_occurence_of_minus_i_compiler_option(compiler_args)
+            if last_include_index is not None:
+                index = last_include_index
+            compiler_args.insert(index, '-I' + os.path.dirname(source_code_filename))
         logging.info('Compiler args = ' + str(compiler_args))
         return compiler_args
 
