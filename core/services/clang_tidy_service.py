@@ -7,8 +7,8 @@ from services.yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
 class ClangTidy(YavideService):
-    def __init__(self, yavide_instance):
-        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback)
+    def __init__(self, yavide_instance, request_callback):
+        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback, request_callback)
         self.config_file = ''
         self.output_file = tempfile.NamedTemporaryFile(prefix=self.yavide_instance, suffix='_clang_tidy_output')
         self.compiler_options = ''
@@ -38,8 +38,7 @@ class ClangTidy(YavideService):
         logging.info("Triggering clang-tidy over '{0}' with '{1}'".format(filename, cmd))
         with open(self.output_file.name, 'w') as f:
             start = time.clock()
-            subprocess.call(cmd, shell=True, stdout=f)
+            ret = subprocess.call(cmd, shell=True, stdout=f)
             end = time.clock()
         logging.info("Clang-Tidy over '{0}' completed in {1}s.".format(filename, end-start))
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_ClangTidy_Apply('" + self.output_file.name + "')")
-
+        return ret, self.output_file.name

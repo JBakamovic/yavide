@@ -7,16 +7,20 @@ from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.clang_tidy_service import ClangTidy
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
+from services.vim.clang_format.clang_format import VimClangFormat
+from services.vim.clang_tidy.clang_tidy import VimClangTidy
+from services.vim.builder.builder import VimBuilder
+from services.vim.source_code_model.source_code_model import VimSourceCodeModel
 
 class YavideServer():
     def __init__(self, msg_queue, yavide_instance):
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SourceCodeModel(self.yavide_instance),
-            0x1 : ProjectBuilder(self.yavide_instance),
-            0x2 : ClangSourceCodeFormatter(self.yavide_instance),
-            0x3 : ClangTidy(self.yavide_instance)
+            0x0 : SourceCodeModel(self.yavide_instance, VimSourceCodeModel(self.yavide_instance)),
+            0x1 : ProjectBuilder(self.yavide_instance, VimBuilder(self.yavide_instance)),
+            0x2 : ClangSourceCodeFormatter(self.yavide_instance, VimClangFormat(self.yavide_instance)),
+            0x3 : ClangTidy(self.yavide_instance, VimClangTidy(self.yavide_instance))
         }
         self.service_processes = {}
         self.action = {

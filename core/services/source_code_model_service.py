@@ -2,23 +2,17 @@ import logging
 from common.yavide_utils import YavideUtils
 from services.yavide_service import YavideService
 from services.syntax_highlighter.syntax_highlighter import SyntaxHighlighter
-from services.vim.syntax_generator import VimSyntaxGenerator
 from services.diagnostics.diagnostics import Diagnostics
-from services.vim.quickfix_diagnostics import VimQuickFixDiagnostics
 from services.indexer.clang_indexer import ClangIndexer
-from services.vim.indexer import VimIndexer
 from services.type_deduction.type_deduction import TypeDeduction
-from services.vim.type_deduction import VimTypeDeduction
 from services.go_to_definition.go_to_definition import GoToDefinition
-from services.vim.go_to_definition import VimGoToDefinition
 from services.go_to_include.go_to_include import GoToInclude
-from services.vim.go_to_include import VimGoToInclude
 from services.parser.clang_parser import ClangParser
 from services.parser.tunit_cache import TranslationUnitCache, FifoCache
 
 class SourceCodeModel(YavideService):
-    def __init__(self, yavide_instance):
-        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback)
+    def __init__(self, yavide_instance, request_callback):
+        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback, request_callback)
         self.parser = None
         self.service = {}
 
@@ -31,14 +25,14 @@ class SourceCodeModel(YavideService):
 
         # Instantiate source-code-model services with Clang parser configured
         self.parser        = ClangParser(compiler_args_filename, TranslationUnitCache(FifoCache(20)))
-        self.clang_indexer = ClangIndexer(self.parser, project_root_directory, VimIndexer(self.yavide_instance))
+        self.clang_indexer = ClangIndexer(self.parser, project_root_directory)
         self.service = {
             0x0 : self.clang_indexer,
-            0x1 : SyntaxHighlighter(self.parser, VimSyntaxGenerator(self.yavide_instance, "/tmp/yavideSyntaxFile.vim")),
-            0x2 : Diagnostics(self.parser, VimQuickFixDiagnostics(self.yavide_instance)),
-            0x3 : TypeDeduction(self.parser, VimTypeDeduction(self.yavide_instance)),
-            0x4 : GoToDefinition(self.parser, self.clang_indexer.get_symbol_db(), VimGoToDefinition(self.yavide_instance)),
-            0x5 : GoToInclude(self.parser, VimGoToInclude(self.yavide_instance))
+            0x1 : SyntaxHighlighter(self.parser),
+            0x2 : Diagnostics(self.parser),
+            0x3 : TypeDeduction(self.parser),
+            0x4 : GoToDefinition(self.parser, self.clang_indexer.get_symbol_db()),
+            0x5 : GoToInclude(self.parser)
         }
 
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StartCompleted()")
@@ -50,4 +44,4 @@ class SourceCodeModel(YavideService):
             YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeModel_StopCompleted()")
 
     def __call__(self, args):
-        self.service.get(int(args[0]), self.__unknown_service)(args[1:len(args)])
+        return self.service.get(int(args[0]), self.__unknown_service)(args[1:len(args)])

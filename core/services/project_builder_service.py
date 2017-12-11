@@ -6,8 +6,8 @@ from services.yavide_service import YavideService
 from common.yavide_utils import YavideUtils
 
 class ProjectBuilder(YavideService):
-    def __init__(self, yavide_instance):
-        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback)
+    def __init__(self, yavide_instance, request_callback):
+        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback, request_callback)
         self.build_cmd_dir = ""
         self.build_cmd_output_file = ""
 
@@ -30,5 +30,4 @@ class ProjectBuilder(YavideService):
         ret = subprocess.call(cmd, shell=True, stdout=self.build_cmd_output_file, stderr=self.build_cmd_output_file)
         end = time.clock()
         logging.info("Cmd '{0}' took {1}".format(cmd, end-start))
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_ProjectBuilder_Apply('" + self.build_cmd_output_file.name + "')")
-
+        return ret, self.build_cmd_output_file.name

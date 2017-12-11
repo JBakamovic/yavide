@@ -15,8 +15,8 @@ class VimIndexer(object):
             0x10 : self.__find_all_references
         }
 
-    def __call__(self, op_id, args):
-        self.op.get(op_id, self.__unknown_op)(args)
+    def __call__(self, success, args, payload):
+        self.op.get(int(payload[1]), self.__unknown_op)(args)
 
     def __unknown_op(self, args):
         logging.error("Unknown operation triggered! Valid operations are: {0}".format(self.op))
@@ -34,7 +34,7 @@ class VimIndexer(object):
         YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_DropAllCompleted()")
 
     def __find_all_references(self, args):
-        other_args, references = args
+        references = args
         quickfix_list = []
         for ref in references:
             quickfix_list.append(

@@ -17,8 +17,7 @@ def slice_it(iterable, n, padvalue=None):
     return itertools.izip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 class ClangIndexer(object):
-    def __init__(self, parser, root_directory, callback = None):
-        self.callback = callback
+    def __init__(self, parser, root_directory):
         self.symbol_db_name = '.yavide_index.db'
         self.symbol_db = SymbolDatabase()
         self.parser = parser
@@ -35,7 +34,7 @@ class ClangIndexer(object):
         return self.symbol_db
 
     def __call__(self, args):
-        self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
+        return self.op.get(int(args[0]), self.__unknown_op)(int(args[0]), args[1:len(args)])
 
     def __unknown_op(self, id, args):
         logging.error("Unknown operation with ID={0} triggered! Valid operations are: {1}".format(id, self.op))
@@ -48,7 +47,7 @@ class ClangIndexer(object):
         if contents_filename == original_filename:
             self.symbol_db.open(os.path.join(self.root_directory, self.symbol_db_name))
             self.symbol_db.delete(get_basename(self.root_directory, original_filename))
-            index_single_file(
+            success = index_single_file(
                 self.parser,
                 self.root_directory,
                 contents_filename,
@@ -56,8 +55,7 @@ class ClangIndexer(object):
                 self.symbol_db
             )
 
-        if self.callback:
-            self.callback(id, args)
+        return success, None
 
     def __run_on_directory(self, id, args):
         # Do not run indexer on whole directory if we already did it
@@ -165,14 +163,12 @@ class ClangIndexer(object):
         else:
             logging.info("Directory '{0}' already indexed ... ".format(self.root_directory))
 
-        if self.callback:
-            self.callback(id, args)
+        return True, None
 
     def __drop_single_file(self, id, args):
         filename = str(args[0])
         self.symbol_db.delete(get_basename(self.root_directory, filename))
-        if self.callback:
-            self.callback(id, args)
+        return True, None
 
     def __drop_all(self, id, args):
         delete_file_from_disk = bool(args[0])
@@ -180,9 +176,7 @@ class ClangIndexer(object):
             self.symbol_db.close()
             os.remove(self.symbol_db.filename)
             logging.info('Indexer DB dropped.')
-
-        if self.callback:
-            self.callback(id, args)
+        return True, None
 
     def __find_all_references(self, id, args):
         start = time.clock()
@@ -209,11 +203,9 @@ class ClangIndexer(object):
                 else:
                     pass
             logging.info("Find-all-references operation of '{0}', [{1}, {2}], '{3}' took {4}".format(cursor.displayname, cursor.location.line, cursor.location.column, tunit.spelling, time.clock() - start))
+            logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
 
-        if self.callback:
-            self.callback(id, [args, references])
-
-        logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
+        return tunit != None, references
 
 def index_file_list(root_directory, input_filename_list, compiler_args_filename, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
@@ -269,6 +261,7 @@ def index_single_file(parser, root_directory, contents_filename, original_filena
         symbol_db.flush()
     time_elapsed = time.clock() - start
     logging.info("Indexing {0} took {1}.".format(original_filename, time_elapsed))
+    return tunit != None
 
 def get_basename(root_dir, full_path):
     return full_path[len(root_dir):].lstrip(os.sep)

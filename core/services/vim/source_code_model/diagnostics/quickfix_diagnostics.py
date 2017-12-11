@@ -5,7 +5,7 @@ class VimQuickFixDiagnostics():
     def __init__(self, yavide_instance):
         self.yavide_instance = yavide_instance
 
-    def __call__(self, diagnostics_iter, args):
+    def __call__(self, success, diagnostics_iter, payload):
         def clang_severity_to_quickfix_type(severity):
             # Clang severity | Vim Quickfix type
             # ----------------------------------
@@ -31,7 +31,7 @@ class VimQuickFixDiagnostics():
         if diagnostics_iter:
             for d in diagnostics_iter:
                 diagnostics.append(
-                    "{'filename': '" + str(args[1]) + "', " +
+                    "{'filename': '" + str(payload[1]) + "', " +
                     "'lnum': '" + str(d.location.line) + "', " +
                     "'col': '" + str(d.location.column) + "', " +
                     "'type': '" + clang_severity_to_quickfix_type(d.severity) + "', " +
@@ -47,7 +47,7 @@ class VimQuickFixDiagnostics():
 
                 if len(d.fixits):
                     diagnostics.append(
-                        "{'filename': '" + str(args[1]) + "', " +
+                        "{'filename': '" + str(payload[1]) + "', " +
                         "'lnum': '" + str(d.location.line) + "', " +
                         "'col': '" + str(d.location.column) + "', " +
                         "'type': 'I', " +
