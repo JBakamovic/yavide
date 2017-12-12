@@ -17,9 +17,9 @@ class YavideServer():
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SourceCodeModel(self.yavide_instance, VimSourceCodeModel(self.yavide_instance)),
+            0x0 : SourceCodeModel(VimSourceCodeModel(self.yavide_instance)),
             0x1 : ProjectBuilder(self.yavide_instance, VimBuilder(self.yavide_instance)),
-            0x2 : ClangSourceCodeFormatter(self.yavide_instance, VimClangFormat(self.yavide_instance)),
+            0x2 : ClangSourceCodeFormatter(VimClangFormat(self.yavide_instance)),
             0x3 : ClangTidy(self.yavide_instance, VimClangTidy(self.yavide_instance))
         }
         self.service_processes = {}
@@ -123,7 +123,7 @@ def yavide_server_run(msg_queue, yavide_instance):
     # Logger setup
     FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
     yavide_server_log = tempfile.gettempdir() + '/' + yavide_instance + '_server.log'
-    logging.basicConfig(filename=yavide_server_log, filemode='w', format=FORMAT, level=logging.INFO)
+    logging.basicConfig(filename=yavide_server_log, filemode='w', format=FORMAT, level=logging.DEBUG)
     logging.info('Starting a Yavide server ...')
 
     # Run

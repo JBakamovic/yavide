@@ -4,17 +4,16 @@ import subprocess
 import tempfile
 import time
 from services.yavide_service import YavideService
-from common.yavide_utils import YavideUtils
 
 class ClangTidy(YavideService):
-    def __init__(self, yavide_instance, request_callback):
-        YavideService.__init__(self, yavide_instance, self.__startup_callback, self.__shutdown_callback, request_callback)
+    def __init__(self, output_prefix, service_plugin):
+        YavideService.__init__(self, service_plugin)
         self.config_file = ''
-        self.output_file = tempfile.NamedTemporaryFile(prefix=self.yavide_instance, suffix='_clang_tidy_output')
+        self.output_file = tempfile.NamedTemporaryFile(prefix=output_prefix, suffix='_clang_tidy_output')
         self.compiler_options = ''
         self.cmd = 'clang-tidy'
 
-    def __startup_callback(self, args):
+    def startup_callback(self, args):
         self.config_file = args[0]
         compilation_database = args[1]
         root, ext = os.path.splitext(compilation_database)
@@ -25,12 +24,9 @@ class ClangTidy(YavideService):
             with open(compilation_database) as f:
                 self.compiler_options = '-- ' + f.read().replace('\n', ' ')
             logging.info("clang-tidy will use compiler flags given inline: '{0}'.".format(self.compiler_options))
-        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_ClangTidy_StartCompleted()")
 
-    def __shutdown_callback(self, args):
-        reply_with_callback = bool(args)
-        if reply_with_callback:
-            YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_ClangTidy_StopCompleted()")
+    def shutdown_callback(self, args):
+        pass
 
     def __call__(self, args):
         filename, apply_fixes = args
