@@ -5,15 +5,14 @@ import time
 from services.service import Service
 
 class ProjectBuilder(Service):
-    def __init__(self, output_prefix, service_plugin):
+    def __init__(self, service_plugin):
         Service.__init__(self, service_plugin)
         self.build_cmd_dir = ""
         self.build_cmd_output_file = ""
-        self.build_output_prefix = output_prefix
 
     def startup_callback(self, args):
         self.build_cmd_dir = args[0]
-        self.build_cmd_output_file = tempfile.NamedTemporaryFile(prefix=self.build_output_prefix, suffix='build', delete=True)
+        self.build_cmd_output_file = tempfile.NamedTemporaryFile(prefix=args[1] + '_', delete=True)
         logging.info("Args = {0}, build_cmd_output_file = {1}.".format(args, self.build_cmd_output_file.name))
 
     def shutdown_callback(self, args):

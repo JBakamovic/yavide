@@ -4,7 +4,14 @@
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ProjectBuilder_Start()
-    let args = [g:project_root_directory, g:project_env_build_command]
+python << EOF
+import os
+import tempfile
+build_output_file = tempfile.gettempdir() + os.sep + vim.eval('v:servername')  + '_build_output'
+vim.command("let l:output_file = '" + build_output_file + "'")
+EOF
+
+    let args = [g:project_root_directory, l:output_file]
     call Y_ServerStartService(g:project_service_project_builder['id'], args)
 endfunction
 
