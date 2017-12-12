@@ -6,16 +6,16 @@ import time
 from services.service import Service
 
 class ClangTidy(Service):
-    def __init__(self, output_prefix, service_plugin):
+    def __init__(self, service_plugin):
         Service.__init__(self, service_plugin)
         self.config_file = ''
-        self.output_file = tempfile.NamedTemporaryFile(prefix=output_prefix, suffix='_clang_tidy_output')
         self.compiler_options = ''
         self.cmd = 'clang-tidy'
 
     def startup_callback(self, args):
         self.config_file = args[0]
         compilation_database = args[1]
+        self.output_file = tempfile.NamedTemporaryFile(prefix=args[2] + '_', delete=True)
         root, ext = os.path.splitext(compilation_database)
         if ext == '.json':  # In case we have a JSON compilation database we simply use one
             self.compiler_options = '-p ' + compilation_database

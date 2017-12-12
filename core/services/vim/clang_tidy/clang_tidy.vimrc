@@ -4,8 +4,15 @@
 " Dependency:
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ClangTidy_Start()
+python << EOF
+import os
+import tempfile
+clang_tidy_output_file = tempfile.gettempdir() + os.sep + vim.eval('v:servername')  + '_clang_tidy_output'
+vim.command("let l:output_file = '" + clang_tidy_output_file + "'")
+EOF
+
     let l:configFile = g:project_root_directory . '/' . g:project_env_clang_tidy_config
-    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path])
+    call Y_ServerStartService(g:project_service_clang_tidy_checker['id'], [l:configFile, g:project_env_compilation_db_path, l:output_file])
 endfunction
 
 function! Y_ClangTidy_StartCompleted()
