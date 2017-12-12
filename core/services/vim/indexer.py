@@ -12,7 +12,8 @@ class VimIndexer(object):
             0x1 : self.__run_on_directory,
             0x2 : self.__drop_single_file,
             0x3 : self.__drop_all,
-            0x10 : self.__find_all_references
+            0x10 : self.__find_all_references,
+            0x11 : self.__find_corresponding_include_header
         }
 
     def __call__(self, op_id, args):
@@ -53,3 +54,8 @@ class VimIndexer(object):
             "Y_SrcCodeIndexer_FindAllReferencesCompleted('" + self.find_all_references_output + "')"
         )
         logging.debug("References: " + str(quickfix_list))
+
+    def __find_corresponding_include_header(self, args):
+        filename, line, column = args
+        YavideUtils.call_vim_remote_function(self.yavide_instance, "Y_SrcCodeIndexer_FindAppropriateHeaderIncludeCompleted('" + filename + "', " + str(line) + ", " + str(column) + ")")
+        logging.info('Include header found at {0} [{1}, {2}]'.format(filename, line, column))

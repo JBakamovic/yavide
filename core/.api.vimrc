@@ -1513,6 +1513,20 @@ EOF
     redraw
 endfunction
 
+function! Y_SrcCodeIndexer_FindAppropriateHeaderInclude()
+    if g:project_service_src_code_model['services']['indexer']['enabled']
+        call Y_SrcCodeModel_Run(g:project_service_src_code_model['services']['indexer']['id'], [0x11, expand('%:p'), line('.'), col('.')])
+    endif
+endfunction
+
+function! Y_SrcCodeIndexer_FindAppropriateHeaderIncludeCompleted(filename, line, column)
+    if a:filename != ''
+        echomsg 'Header found: ' . a:filename
+    else
+        echomsg 'Header not found.'
+    endif
+endfunction
+
 " --------------------------------------------------------------------------------------------------------------------------------------
 "
 "   LAYOUT MANAGEMENT API

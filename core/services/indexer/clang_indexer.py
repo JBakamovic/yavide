@@ -28,7 +28,8 @@ class ClangIndexer(object):
             0x1 : self.__run_on_directory,
             0x2 : self.__drop_single_file,
             0x3 : self.__drop_all,
-            0x10 : self.__find_all_references
+            0x10 : self.__find_all_references,
+            0x11 : self.__find_corresponding_include_header
         }
 
     def get_symbol_db(self):
@@ -214,6 +215,32 @@ class ClangIndexer(object):
             self.callback(id, [args, references])
 
         logging.info("\n{0}".format('\n'.join(str(ref) for ref in references)))
+
+    def __find_corresponding_include_header(self, id, args):
+        import clang.cindex
+        def visitor(cursor, parent, cursor_spelling):
+            if cursor.location.file and cursor.location.file.name == tunit.spelling:
+                logging.info('cursor = ' + str(cursor.spelling))
+                if cursor.location.line == int(args[1]) and cursor.kind == clang.cindex.CursorKind.TYPE_REF and cursor.spelling != '':
+                    cursor_spelling = cursor.spelling
+                    logging.info('cursor spelling = {0}'.format(cursor.spelling))
+                    return ChildVisitResult.BREAK.value
+                return ChildVisitResult.RECURSE.value
+            return ChildVisitResult.CONTINUE.value
+
+        def_filename, def_line, def_column = '', 0, 0
+        tunit = self.parser.parse(str(args[0]), str(args[0]))
+        if tunit:
+            cursor_spelling = ''
+            self.parser.traverse(tunit.cursor, cursor_spelling, visitor)
+            if cursor_spelling != '':
+                logging.info('Looking for a symbol definition that looks like ' + cursor_spelling)
+                definition = self.symbol_db.get_definition(cursor_spelling).fetchall()
+                if definition:
+                    def_filename, def_line, def_column = definition[0][0], definition[0][1], definition[0][2]
+
+        if self.callback:
+            self.callback(id, [def_filename, def_line, def_column])
 
 def index_file_list(root_directory, input_filename_list, compiler_args_filename, output_db_filename):
     symbol_db = SymbolDatabase(output_db_filename)
