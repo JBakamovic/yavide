@@ -1,16 +1,9 @@
 import logging
-import sys
-import tempfile
 from multiprocessing import Process, Queue
-from services.service import Service
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.clang_tidy_service import ClangTidy
 from services.project_builder_service import ProjectBuilder
 from services.source_code_model_service import SourceCodeModel
-from services.vim.clang_format.clang_format import VimClangFormat
-from services.vim.clang_tidy.clang_tidy import VimClangTidy
-from services.vim.builder.builder import VimBuilder
-from services.vim.source_code_model.source_code_model import VimSourceCodeModel
 
 class Server():
     def __init__(self, msg_queue, source_code_model_plugin, builder_plugin, clang_format_plugin, clang_tidy_plugin):
@@ -96,51 +89,9 @@ class Server():
             self.action.get(int(payload[0]), self.__unknown_action)(int(payload[1]), payload[2])
         logging.info("Server shut down.")
 
-def handle_exception(exc_type, exc_value, exc_traceback):
-    logging.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
-def catch_unhandled_exceptions():
-    # This is what usually should be enough
-    sys.excepthook = handle_exception
 
-    # But sys.excepthook does not work anymore within multi-threaded/multi-process environment (see https://bugs.python.org/issue1230540)
-    # So what we can do is to override the Service.listen() implementation so it includes try-catch block with exceptions
-    # being forwarded to the sys.excepthook function.
-    run_original = Service.listen
-    def listen(self):
-        try:
-            run_original(self)
-        except:
-            sys.excepthook(*sys.exc_info())
-    Service.listen = listen
 
-def server_run(client, msg_queue, args, log_file):
-    # Setup catching unhandled exceptions
-    catch_unhandled_exceptions()
-
-    # Logger setup
-    FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
-    logging.basicConfig(filename=log_file, filemode='w', format=FORMAT, level=logging.DEBUG)
-    logging.info('Starting a server ...')
-
-    # Run
-    try:
-        get_server_instance(client, msg_queue, args).listen()
-    except:
-        sys.excepthook(*sys.exc_info())
-
-def get_server_instance(client, msg_queue, args):
-    if client == 'Vim':
-        vim_instance = args
-        return Server(
-            msg_queue,
-            VimSourceCodeModel(vim_instance),
-            VimBuilder(vim_instance),
-            VimClangFormat(vim_instance),
-            VimClangTidy(vim_instance)
-        )
-    else:
-        raise NameError("'{0}' client not supported!".format(client))
 
 def test__clang_indexer__run_on_directory():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
@@ -150,7 +101,7 @@ def test__clang_indexer__run_on_directory():
     q = Queue()
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
-    yavide_server_run(q, 'YAVIDE_DEV')
+    server_run(q, 'YAVIDE_DEV')
 
 def test__clang_indexer__find_all_references():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
@@ -163,7 +114,7 @@ def test__clang_indexer__find_all_references():
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x0, 0x1, proj_root_dir, compiler_args]])   # run-on-directory
     q.put([0xF2, 0, [0x0, 0x11, filename, line, col]])           # find-all-references
-    yavide_server_run(q, 'YAVIDE_DEV')
+    server_run(q, 'YAVIDE_DEV')
 
 def test__clang_syntax_highlighter():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
@@ -173,7 +124,7 @@ def test__clang_syntax_highlighter():
     q = Queue()
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x1, proj_root_dir, filename, filename, compiler_args]]) # syntax-highlight
-    yavide_server_run(q, 'YAVIDE_DEV')
+    server_run(q, 'YAVIDE_DEV')
 
 def test__clang_diagnostics():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
@@ -183,7 +134,7 @@ def test__clang_diagnostics():
     q = Queue()
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x2, proj_root_dir, filename, filename, compiler_args]]) # diagnostics
-    yavide_server_run(q, 'YAVIDE_DEV')
+    server_run(q, 'YAVIDE_DEV')
 
 def test__clang_type_deduction():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"
@@ -195,7 +146,7 @@ def test__clang_type_deduction():
     q = Queue()
     q.put([0xF1, 0, "dummy"])
     q.put([0xF2, 0, [0x3, proj_root_dir, filename, filename, compiler_args, line, col]]) # type-deduction
-    yavide_server_run(q, 'YAVIDE_DEV')
+    server_run(q, 'YAVIDE_DEV')
 
 
 def main():
@@ -214,7 +165,7 @@ def main():
     q.put([0xF2, 0, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xF2, 2, "/home/vagrant/repositories/navi_development/nav_business_ctrl/src/datastore/src/navctrl/datastore/Dataset.cpp"])
     q.put([0xFF, 0, "shutdown_and_exit"])
-    yavide_server_run(q, "YAVIDE1")
+    server_run(q, "YAVIDE1")
 
 if __name__ == "__main__":
     main()

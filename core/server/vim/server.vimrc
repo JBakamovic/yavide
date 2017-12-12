@@ -5,24 +5,16 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStart()
 python << EOF
-from server.server import server_run
-from multiprocessing import Process
 import os
+import server.runner
 import tempfile
-
 vim_server_name = vim.eval('v:servername')
-server = Process(
-    target=server_run,
-    args=(
-        'Vim',
-        server_queue,
-        vim_server_name,
-        tempfile.gettempdir() + os.sep + vim_server_name + '_server.log'
-    ),
-    name=vim_server_name + "_server"
+server.runner.run(
+    'Vim',
+    server_queue,
+    vim_server_name,
+    tempfile.gettempdir() + os.sep + vim_server_name + '_server.log'
 )
-server.daemon = False
-server.start()
 EOF
 endfunction
 
