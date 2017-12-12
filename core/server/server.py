@@ -13,14 +13,13 @@ from services.vim.builder.builder import VimBuilder
 from services.vim.source_code_model.source_code_model import VimSourceCodeModel
 
 class Server():
-    def __init__(self, msg_queue, yavide_instance):
+    def __init__(self, msg_queue, source_code_model_plugin, builder_plugin, clang_format_plugin, clang_tidy_plugin):
         self.msg_queue = msg_queue
-        self.yavide_instance = yavide_instance
         self.service = {
-            0x0 : SourceCodeModel(VimSourceCodeModel(self.yavide_instance)),
-            0x1 : ProjectBuilder(self.yavide_instance, VimBuilder(self.yavide_instance)),
-            0x2 : ClangSourceCodeFormatter(VimClangFormat(self.yavide_instance)),
-            0x3 : ClangTidy(self.yavide_instance, VimClangTidy(self.yavide_instance))
+            0x0 : SourceCodeModel(source_code_model_plugin),
+            0x1 : ProjectBuilder(builder_plugin),
+            0x2 : ClangSourceCodeFormatter(clang_format_plugin),
+            0x3 : ClangTidy(clang_tidy_plugin)
         }
         self.service_processes = {}
         self.action = {
@@ -33,7 +32,6 @@ class Server():
             # TODO add runtime debugging switch action
         }
         self.keep_listening = True
-        logging.info("Yavide instance: {0}".format(self.yavide_instance))
         logging.info("Registered services: {0}".format(self.service))
         logging.info("Actions: {0}".format(self.action))
 
@@ -116,21 +114,33 @@ def catch_unhandled_exceptions():
             sys.excepthook(*sys.exc_info())
     Service.listen = listen
 
-def server_run(msg_queue, yavide_instance):
+def server_run(client, msg_queue, args, log_file):
     # Setup catching unhandled exceptions
     catch_unhandled_exceptions()
 
     # Logger setup
     FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
-    yavide_server_log = tempfile.gettempdir() + '/' + yavide_instance + '_server.log'
-    logging.basicConfig(filename=yavide_server_log, filemode='w', format=FORMAT, level=logging.DEBUG)
+    logging.basicConfig(filename=log_file, filemode='w', format=FORMAT, level=logging.DEBUG)
     logging.info('Starting a server ...')
 
     # Run
     try:
-        Server(msg_queue, yavide_instance).listen()
+        get_server_instance(client, msg_queue, args).listen()
     except:
         sys.excepthook(*sys.exc_info())
+
+def get_server_instance(client, msg_queue, args):
+    if client == 'Vim':
+        vim_instance = args
+        return Server(
+            msg_queue,
+            VimSourceCodeModel(vim_instance),
+            VimBuilder(vim_instance),
+            VimClangFormat(vim_instance),
+            VimClangTidy(vim_instance)
+        )
+    else:
+        raise NameError("'{0}' client not supported!".format(client))
 
 def test__clang_indexer__run_on_directory():
     proj_root_dir = "/home/jbakamovic/development/projects/cppcheck"

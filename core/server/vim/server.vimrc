@@ -7,8 +7,20 @@ function! Y_ServerStart()
 python << EOF
 from server.server import server_run
 from multiprocessing import Process
+import os
+import tempfile
 
-server = Process(target=server_run, args=(server_queue, vim.eval('v:servername')), name="server")
+vim_server_name = vim.eval('v:servername')
+server = Process(
+    target=server_run,
+    args=(
+        'Vim',
+        server_queue,
+        vim_server_name,
+        tempfile.gettempdir() + os.sep + vim_server_name + '_server.log'
+    ),
+    name=vim_server_name + "_server"
+)
 server.daemon = False
 server.start()
 EOF
