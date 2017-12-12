@@ -2,11 +2,11 @@ import logging
 import subprocess
 import tempfile
 import time
-from services.yavide_service import YavideService
+from services.service import Service
 
-class ProjectBuilder(YavideService):
+class ProjectBuilder(Service):
     def __init__(self, output_prefix, service_plugin):
-        YavideService.__init__(self, service_plugin)
+        Service.__init__(self, service_plugin)
         self.build_cmd_dir = ""
         self.build_cmd_output_file = ""
         self.build_output_prefix = output_prefix

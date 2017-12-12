@@ -1,5 +1,5 @@
 import logging
-from services.yavide_service import YavideService
+from services.service import Service
 from services.syntax_highlighter.syntax_highlighter import SyntaxHighlighter
 from services.diagnostics.diagnostics import Diagnostics
 from services.indexer.clang_indexer import ClangIndexer
@@ -9,9 +9,9 @@ from services.go_to_include.go_to_include import GoToInclude
 from services.parser.clang_parser import ClangParser
 from services.parser.tunit_cache import TranslationUnitCache, FifoCache
 
-class SourceCodeModel(YavideService):
+class SourceCodeModel(Service):
     def __init__(self, service_plugin):
-        YavideService.__init__(self, service_plugin)
+        Service.__init__(self, service_plugin)
         self.parser = None
         self.service = {}
 

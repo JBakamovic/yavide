@@ -3,11 +3,11 @@ import os
 import subprocess
 import tempfile
 import time
-from services.yavide_service import YavideService
+from services.service import Service
 
-class ClangTidy(YavideService):
+class ClangTidy(Service):
     def __init__(self, output_prefix, service_plugin):
-        YavideService.__init__(self, service_plugin)
+        Service.__init__(self, service_plugin)
         self.config_file = ''
         self.output_file = tempfile.NamedTemporaryFile(prefix=output_prefix, suffix='_clang_tidy_output')
         self.compiler_options = ''

@@ -1,10 +1,10 @@
 import logging
 import subprocess
-from services.yavide_service import YavideService
+from services.service import Service
 
-class ClangSourceCodeFormatter(YavideService):
+class ClangSourceCodeFormatter(Service):
     def __init__(self, service_plugin):
-        YavideService.__init__(self, service_plugin)
+        Service.__init__(self, service_plugin)
         self.config_file = ""
         self.format_cmd = "clang-format -i -style=file -assume-filename="
 

@@ -1,7 +1,7 @@
 import logging
 from multiprocessing import Queue
 
-class YavideService():
+class Service():
     def __init__(self, service_plugin):
         self.queue = Queue()
         self.service_plugin = service_plugin
@@ -37,7 +37,7 @@ class YavideService():
             payload = self.queue.get()
             logging.info("Request received. Payload = {0}".format(payload))
             self.action.get(payload[0], self.__unknown_action)(payload[1])
-        logging.info("Yavide service shut down.")
+        logging.info("Service shut down.")
 
     def send_startup_request(self, payload):
         self.queue.put([0x0, payload])
