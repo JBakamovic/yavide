@@ -2,7 +2,7 @@ import logging
 import sys
 import tempfile
 from multiprocessing import Process, Queue
-from services.yavide_service import YavideService
+from services.service import Service
 from services.clang_formatter_service import ClangSourceCodeFormatter
 from services.clang_tidy_service import ClangTidy
 from services.project_builder_service import ProjectBuilder
@@ -12,7 +12,7 @@ from services.vim.clang_tidy.clang_tidy import VimClangTidy
 from services.vim.builder.builder import VimBuilder
 from services.vim.source_code_model.source_code_model import VimSourceCodeModel
 
-class YavideServer():
+class Server():
     def __init__(self, msg_queue, yavide_instance):
         self.msg_queue = msg_queue
         self.yavide_instance = yavide_instance
@@ -76,7 +76,7 @@ class YavideServer():
             logging.error("No service found with serviceId = {0}.".format(serviceId))
 
     def __shutdown_and_exit(self, dummyServiceId, payload):
-        logging.info("Shutting down the Yavide server ...")
+        logging.info("Shutting down the server ...")
         self.__shutdown_all_services(dummyServiceId, payload)
         self.keep_listening = False
 
@@ -96,7 +96,7 @@ class YavideServer():
             payload = self.msg_queue.get()
             logging.info("Request received. Payload = {0}".format(payload))
             self.action.get(int(payload[0]), self.__unknown_action)(int(payload[1]), payload[2])
-        logging.info("Yavide server shut down.")
+        logging.info("Server shut down.")
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     logging.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
@@ -106,17 +106,17 @@ def catch_unhandled_exceptions():
     sys.excepthook = handle_exception
 
     # But sys.excepthook does not work anymore within multi-threaded/multi-process environment (see https://bugs.python.org/issue1230540)
-    # So what we can do is to override the YavideService.listen() implementation so it includes try-catch block with exceptions
+    # So what we can do is to override the Service.listen() implementation so it includes try-catch block with exceptions
     # being forwarded to the sys.excepthook function.
-    run_original = YavideService.listen
+    run_original = Service.listen
     def listen(self):
         try:
             run_original(self)
         except:
             sys.excepthook(*sys.exc_info())
-    YavideService.listen = listen
+    Service.listen = listen
 
-def yavide_server_run(msg_queue, yavide_instance):
+def server_run(msg_queue, yavide_instance):
     # Setup catching unhandled exceptions
     catch_unhandled_exceptions()
 
@@ -124,11 +124,11 @@ def yavide_server_run(msg_queue, yavide_instance):
     FORMAT = '[%(levelname)s] [%(filename)s:%(lineno)s] %(funcName)25s(): %(message)s'
     yavide_server_log = tempfile.gettempdir() + '/' + yavide_instance + '_server.log'
     logging.basicConfig(filename=yavide_server_log, filemode='w', format=FORMAT, level=logging.DEBUG)
-    logging.info('Starting a Yavide server ...')
+    logging.info('Starting a server ...')
 
     # Run
     try:
-        YavideServer(msg_queue, yavide_instance).listen()
+        Server(msg_queue, yavide_instance).listen()
     except:
         sys.excepthook(*sys.exc_info())
 

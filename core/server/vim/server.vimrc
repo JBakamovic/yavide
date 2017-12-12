@@ -5,10 +5,10 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! Y_ServerStart()
 python << EOF
-from server.yavide_server import yavide_server_run
+from server.server import server_run
 from multiprocessing import Process
 
-server = Process(target=yavide_server_run, args=(server_queue, vim.eval('v:servername')), name="yavide_server") 
+server = Process(target=server_run, args=(server_queue, vim.eval('v:servername')), name="server")
 server.daemon = False
 server.start()
 EOF
