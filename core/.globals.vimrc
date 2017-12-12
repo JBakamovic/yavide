@@ -70,13 +70,3 @@ let g:project_available_services           = [
 \                                               g:project_service_clang_tidy_checker,
 \]
 
-" --------------------------------------------------------------------------------------------------------------------------------------
-"
-"   Global (python) variables
-"
-" --------------------------------------------------------------------------------------------------------------------------------------
-python << EOF
-from multiprocessing import Queue
-server_queue = Queue()
-EOF
-

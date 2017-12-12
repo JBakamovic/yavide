@@ -1,4 +1,12 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Client-server communication is queue-based
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+python << EOF
+from multiprocessing import Queue
+server_queue = Queue()
+EOF
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Function:     Y_ServerStart()
 " Description:  Starts Yavide server background service.
 " Dependency:
@@ -15,6 +23,17 @@ server.runner.run(
     vim_server_name,
     tempfile.gettempdir() + os.sep + vim_server_name + '_server.log'
 )
+EOF
+endfunction
+
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Function:     Y_ServerStop()
+" Description:  Stops Yavide server background service.
+" Dependency:
+" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! Y_ServerStop()
+python << EOF
+server_queue.put([0xFF, 0xFF, False])
 EOF
 endfunction
 
@@ -75,17 +94,6 @@ endfunction
 function! Y_ServerStopService(id, subscribe_for_shutdown_callback)
 python << EOF
 server_queue.put([0xFE, vim.eval('a:id'), vim.eval('a:subscribe_for_shutdown_callback')])
-EOF
-endfunction
-
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Function:     Y_ServerStop()
-" Description:  Stops Yavide server background service.
-" Dependency:
-" """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! Y_ServerStop()
-python << EOF
-server_queue.put([0xFF, 0xFF, False])
 EOF
 endfunction
 
