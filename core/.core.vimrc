@@ -19,13 +19,9 @@ execute pathogen#infect(
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core'                    . '/' . '{}',
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'common'   . '/' . '{}',
 \    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'external' . '/' . '{}',
-\    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'indexer'  . '/' . '{}',
-\    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'syntax'   . '/' . '{}',
-\    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'server'   . '/' . '{}',
-\    g:YAVIDE_ROOT_DIRECTORY . '/' . 'core' . '/' . 'ui'       . '/' . '{}'
 \)
 
 " Setup the runtime path for Python modules
-python import sys, vim
-python sys.path.append(vim.eval('g:YAVIDE_CORE_DIRECTORY'))
-
+"python import sys, vim
+"python sys.path.append(vim.eval('g:YAVIDE_CORE_DIRECTORY'))
+"

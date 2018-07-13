@@ -1,0 +1,3 @@
+[submodule "core/external/cxxd-vim"]
+	path = core/external/cxxd-vim
+	url = https://github.com/JBakamovic/cxxd-vim.git

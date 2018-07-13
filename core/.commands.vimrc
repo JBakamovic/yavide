@@ -44,12 +44,12 @@
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code navigation commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=0 -complete=file YavideSrcNavOpenFile                      :call Y_SrcCodeNavigation_GoToInclude()
+:command! -nargs=0 -complete=file YavideSrcNavOpenFile                      CxxdGoToInclude
+:command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                CxxdGoToDefinition
+:command! -nargs=0 -complete=file YavideSrcNavFindAllReferences             CxxdFindAllReferences
+:command! -nargs=0 -complete=file YavideSrcNavRebuildIndex                  CxxdRebuildIndex
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImpl       :call Y_SrcNav_SwitchBetweenHeaderImpl(0)
 :command! -nargs=0 -complete=file YavideSrcNavSwitchBetweenHeaderImplVSplit :call Y_SrcNav_SwitchBetweenHeaderImpl(1)
-:command! -nargs=0 -complete=file YavideSrcNavGoToDefinition                :call Y_SrcCodeNavigation_GoToDefinition()
-:command! -nargs=0 -complete=file YavideSrcNavFindAllReferences             :call Y_SrcCodeIndexer_FindAllReferences()
-:command! -nargs=0 -complete=file YavideSrcNavRebuildIndex                  :call Y_SrcCodeIndexer_DropAllAndRunOnDirectory()
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Source code static analysis commands
@@ -57,11 +57,11 @@
 :command! -nargs=* -complete=file YavideAnalyzerCppCheck                :call Y_Analyzer_RunCppCheck(".", <f-args>)
 :command! -nargs=* -complete=file YavideAnalyzerCppCheckBuf             :call Y_Analyzer_RunCppCheck("%", <f-args>)
 :command! -nargs=* -complete=file YavideAnalyzerClangCheck              :call Y_Analyzer_RunClangChecker("." <f-args>)
-:command! -nargs=* -complete=file YavideAnalyzerClangTidyBuf            :call Y_ClangTidy_Run(v:false)
-:command! -nargs=* -complete=file YavideAnalyzerClangTidyApplyFixesBuf  :call Y_ClangTidy_Run(v:true)
+:command! -nargs=* -complete=file YavideAnalyzerClangTidyBuf            CxxdAnalyzerClangTidyBuf
+:command! -nargs=* -complete=file YavideAnalyzerClangTidyApplyFixesBuf  CxxdAnalyzerClangTidyApplyFixesBuf
 
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Build commands
 " """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-:command! -nargs=* -complete=file YavideBuildRun                     :call Y_ProjectBuilder_Run(<f-args>)
+:command! -nargs=+ -complete=file YavideBuildRun                     CxxdBuildRun
 

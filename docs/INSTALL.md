@@ -22,7 +22,7 @@ In `debian`-based distributions, one may install the requirements by running:
 # Installation
 Default installation path is set to `/opt/yavide`. To use different installation directory, provide it as a command line argument to `install.sh` script.
 
-1. `cd ~/ && git clone https://github.com/JBakamovic/yavide.git`
+1. `cd ~/ && git clone --recursive https://github.com/JBakamovic/yavide.git`
 2. `cd yavide && ./install.sh <install_directory>`
   * if `<install_directory>` is empty, installation path will be set to `/opt/yavide`
   * if `<install_directory>` is not empty, installation path will be set to `<install_directory>/yavide`

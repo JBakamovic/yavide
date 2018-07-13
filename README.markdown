@@ -8,6 +8,13 @@
 * [FAQ](#faq)
 
 # Changes
+* 13th of July, 2018
+    * Core functionality has been extracted to separate repositories:
+        * [cxxd](https://github.com/JBakamovic/cxxd), an implementation of C/C++ language server
+        * [cxxd-vim](https://github.com/JBakamovic/cxxd-vim), a Vim frontend developed for `cxxd`
+    * `Yavide` will include those as dependencies and will continue to function normally but
+      **all development activity and focus is now moved to those projects** so in order to get
+      more features and stability please start using them directly from your ordinary Vim config.
 * 2nd of December, 2017
     * Implemented Clang-based [indexer](docs/services_framework.md#indexing)
     * Implemented Clang-based [find-all-references](docs/services_framework.md#find-all-references)
