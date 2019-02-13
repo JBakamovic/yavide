@@ -1,3 +1,5 @@
+# All development activities have been moved to [cxxd](https://github.com/JBakamovic/cxxd) and [cxxd-vim](https://github.com/JBakamovic/cxxd-vim) repositories. To keep up with the latest developments it is encouraged to use [cxxd-vim](https://github.com/JBakamovic/cxxd-vim) plugin. See first section of [FAQ](#faq) for more details.
+
 # Contents
 * [Changes](#changes)
 * [Installation](#installation)
@@ -111,5 +113,9 @@ This is an alphabetically ordered list of third-party Vim plugins currently util
 * vim-pathogen (https://github.com/tpope/vim-pathogen)
 
 # FAQ
+## Why development focus has been moved to [cxxd](https://github.com/JBakamovic/cxxd) and [cxxd-vim](https://github.com/JBakamovic/cxxd-vim)?
+TL;DR Having separated one big monolithic `Yavide` repository into two separate ones (`cxxd` & `cxxd-vim`) brought us more modular, reusable, testable and flexible design. There are many many other advantages to this approach for all of them to be noted down here briefly but the important part now is that the frontend logic (e.g. UI implementation) is now separated from the backend implementation (C/C++ language server features). Both of these developments can now be driven separately and in parallel. Furthermore, `cxxd-vim` behaves like a real Vim plugin so you won't need to use hacky install scripts anymore but a regular way of installing just like for any other Vim plugin out there (e.g. Vundle). For many other details please have a look at respective repositories.
+
+## Other questions
 See [FAQ](docs/FAQ.md).
 
